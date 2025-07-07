@@ -993,14 +993,21 @@
                 const room = await this.getRoom(roomCode);
                 if (!room || room.deck.length === 0) return null;
 
+                // Vérifier et initialiser players si nécessaire
+                if (!room.players || !Array.isArray(room.players)) {
+                    room.players = [];
+                }
+
                 const card = room.deck.pop();
                 
                 if (target === 'dealer') {
+                    room.dealerCards = room.dealerCards || [];
                     room.dealerCards.push(card);
                     room.dealerScore = this.calculateScore(room.dealerCards);
                 } else {
                     const player = room.players[target];
                     if (player) {
+                        player.cards = player.cards || [];
                         player.cards.push(card);
                         player.score = this.calculateScore(player.cards);
                     }
@@ -1013,6 +1020,11 @@
             async startNewHand(roomCode) {
                 const room = await this.getRoom(roomCode);
                 if (!room) return false;
+
+                // Vérifier et initialiser players si nécessaire
+                if (!room.players || !Array.isArray(room.players)) {
+                    room.players = [];
+                }
 
                 // Reset complet
                 room.players.forEach(player => {
@@ -1063,6 +1075,11 @@
             async playerAction(roomCode, playerName, action) {
                 const room = await this.getRoom(roomCode);
                 if (!room) return false;
+
+                // Vérifier et initialiser players si nécessaire
+                if (!room.players || !Array.isArray(room.players)) {
+                    room.players = [];
+                }
 
                 const playerIndex = room.players.findIndex(p => p.name === playerName);
                 const player = room.players[playerIndex];
@@ -1137,6 +1154,11 @@
             async finishGame(roomCode) {
                 const room = await this.getRoom(roomCode);
                 if (!room) return;
+
+                // Vérifier et initialiser players si nécessaire
+                if (!room.players || !Array.isArray(room.players)) {
+                    room.players = [];
+                }
 
                 // Déterminer les gagnants
                 room.players.forEach(player => {
@@ -1459,6 +1481,11 @@
         function updateGameDisplay(room) {
             if (!room) return;
 
+            // Vérifier et initialiser la structure de la room si nécessaire
+            if (!room.players || !Array.isArray(room.players)) {
+                room.players = [];
+            }
+
             updatePlayerCount(room);
             updatePlayerPositions(room);
             updateDealerDisplay(room);
@@ -1552,6 +1579,11 @@
             if (playerControls) playerControls.style.display = 'none';
             if (waitingControls) waitingControls.style.display = 'none';
             if (dealerPlayBtn) dealerPlayBtn.style.display = 'none';
+
+            // Vérifier et initialiser players si nécessaire
+            if (!room.players || !Array.isArray(room.players)) {
+                room.players = [];
+            }
 
             if (isDealer) {
                 if (dealerControls) dealerControls.style.display = 'flex';
