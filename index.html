@@ -1660,17 +1660,34 @@
             const container = document.getElementById('dealerCards');
             if (!container) return;
             container.innerHTML = '';
-            room.dealerCards.forEach(card => {
-                const el = document.createElement('div');
-                if (card.hidden) {
-                    el.className = 'card hidden';
-                    el.innerHTML = `<div class='card-value'>?</div><div class='card-suit'>🂠</div>`;
-                } else {
+            if (room.dealerCards && room.dealerCards.length > 0) {
+                // Si phase playing et la 2ème carte est cachée, n'afficher que la première
+                if (room.gameState === 'playing' && room.dealerCards.length > 1 && room.dealerCards[1].hidden) {
+                    const card = room.dealerCards[0];
+                    const el = document.createElement('div');
                     el.className = `card ${card.isRed ? 'red' : 'black'}`;
                     el.innerHTML = `<div class='card-value'>${card.value}</div><div class='card-suit'>${card.suit}</div>`;
+                    container.appendChild(el);
+                    // Afficher une carte cachée
+                    const hidden = document.createElement('div');
+                    hidden.className = 'card hidden';
+                    hidden.innerHTML = `<div class='card-value'>?</div><div class='card-suit'>🂠</div>`;
+                    container.appendChild(hidden);
+                } else {
+                    // Afficher toutes les cartes
+                    room.dealerCards.forEach(card => {
+                        const el = document.createElement('div');
+                        if (card.hidden) {
+                            el.className = 'card hidden';
+                            el.innerHTML = `<div class='card-value'>?</div><div class='card-suit'>🂠</div>`;
+                        } else {
+                            el.className = `card ${card.isRed ? 'red' : 'black'}`;
+                            el.innerHTML = `<div class='card-value'>${card.value}</div><div class='card-suit'>${card.suit}</div>`;
+                        }
+                        container.appendChild(el);
+                    });
                 }
-                container.appendChild(el);
-            });
+            }
             // Afficher le score : ? si carte cachée, sinon le vrai score
             const scoreElement = document.getElementById('dealerScore');
             if (scoreElement) {
@@ -1743,26 +1760,18 @@
 
         async function startNewHand() {
             if (!isDealer) return;
-            
             // Nettoyer les cartes existantes
             const casinoTable = document.querySelector('.casino-table');
             if (casinoTable) {
                 const existingCards = casinoTable.querySelectorAll('.card:not(.deck-card)');
                 existingCards.forEach(card => card.remove());
             }
-            
+            initialDealIndex = 0;
+            initialDealRound = 0;
             const success = await gameServer.startNewHand(currentRoom);
             if (success) {
                 showNotification('🎴 Nouvelle main en cours...', 'info');
-                
-                // Animation du deck
-                const deckStack = document.getElementById('deckStack');
-                if (deckStack) {
-                    deckStack.style.animation = 'dealerGlow 0.5s ease-in-out';
-                    setTimeout(() => {
-                        deckStack.style.animation = '';
-                    }, 500);
-                }
+                // Le croupier doit cliquer sur Distribuer pour chaque carte
             }
         }
 
@@ -2002,14 +2011,52 @@
         initializeGame();
 
         let nextDealTarget = 0; // 0 = joueur1, …, N-1 = joueurN, N = dealer
+        let initialDealIndex = 0; // 0 = joueur1, ..., N-1 = joueurN, N = croupier, recommence pour la 2ème carte
+        let initialDealRound = 0; // 0 = première carte, 1 = deuxième carte
+
         async function dealerDealOne() {
             if (!isDealer || !currentRoom) return;
             const room = await gameServer.getRoom(currentRoom);
-            const targets = room.players.map((_, i) => i).concat('dealer');
-            const target = targets[nextDealTarget];
-            await gameServer.dealCard(currentRoom, target);
-            showNotification(`Carte distribuée à ${target === 'dealer' ? 'Croupier' : room.players[target].name}`, 'info');
-            nextDealTarget = (nextDealTarget + 1) % targets.length;
+            if (!room) return;
+            if (room.gameState !== 'dealing') return;
+            const totalPlayers = room.players.length;
+            if (totalPlayers === 0) return;
+            // Déterminer la cible
+            let target;
+            if (initialDealIndex < totalPlayers) {
+                target = initialDealIndex;
+            } else {
+                target = 'dealer';
+            }
+            // Pour la 2ème carte du croupier, elle est cachée
+            if (target === 'dealer' && initialDealRound === 1) {
+                const card = room.deck.pop();
+                card.hidden = true;
+                room.dealerCards = room.dealerCards || [];
+                room.dealerCards.push(card);
+                room.dealerScore = gameServer.calculateScore(room.dealerCards);
+                await gameServer.updateRoom(currentRoom, room);
+            } else {
+                await gameServer.dealCard(currentRoom, target);
+            }
+            initialDealIndex++;
+            if (initialDealIndex > totalPlayers) {
+                initialDealIndex = 0;
+                initialDealRound++;
+            }
+            // Après 2 tours, passer à la phase 'playing'
+            if (initialDealRound === 2) {
+                initialDealIndex = 0;
+                initialDealRound = 0;
+                // Activer le premier joueur
+                const updatedRoom = await gameServer.getRoom(currentRoom);
+                if (updatedRoom.players.length > 0) {
+                    updatedRoom.players.forEach(p => p.isActive = false);
+                    updatedRoom.players[0].isActive = true;
+                    updatedRoom.gameState = 'playing';
+                    await gameServer.updateRoom(currentRoom, updatedRoom);
+                }
+            }
         }
 
         async function doubleDown() {
