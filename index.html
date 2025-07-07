@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎰 Blackjack Casino Royal 🎰</title>
-    <!-- Firebase SDK -->
+    <!-- Firebase SDK v9 Compat pour ton projet -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.2/firebase-app-compat.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.2/firebase-database-compat.min.js"></script>
     <style>
@@ -648,6 +648,13 @@
             50% { left: 100%; }
             100% { left: 100%; }
         }
+
+        /* Animation sparkle */
+        @keyframes sparkle {
+            0% { transform: scale(0) rotate(0deg); opacity: 1; }
+            50% { transform: scale(2) rotate(180deg); opacity: 0.8; }
+            100% { transform: scale(0) rotate(360deg); opacity: 0; }
+        }
     </style>
 </head>
 <body>
@@ -769,40 +776,46 @@
         let isAnimating = false;
         let database = null;
 
-        // Configuration Firebase (base de données publique pour le jeu)
+        // 🔥 TA VRAIE CONFIGURATION FIREBASE 🔥
         const firebaseConfig = {
-            apiKey: "AIzaSyBpZmZkNzQ2MjY5MzI0OTQ4NzY4ODk2OQ",
-            authDomain: "blackjack-royal-game.firebaseapp.com",
-            databaseURL: "https://blackjack-royal-game-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "blackjack-royal-game",
-            storageBucket: "blackjack-royal-game.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:abcdef123456"
+            apiKey: "AIzaSyBlF0Rv-vaLHlopMYNbs7JnLyiqi-HUnn4",
+            authDomain: "blackjack-casino-royal.firebaseapp.com",
+            databaseURL: "https://blackjack-casino-royal-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "blackjack-casino-royal",
+            storageBucket: "blackjack-casino-royal.firebasestorage.app",
+            messagingSenderId: "554706185893",
+            appId: "1:554706185893:web:847eefcd131c6a929f674c"
         };
 
-        // Système de backend en ligne avec Firebase
+        // Système de backend intelligent (Firebase + localStorage)
         class OnlineGameServer {
             constructor() {
+                this.useLocalStorage = true; // Mode localStorage par défaut pour Claude.ai
                 this.initFirebase();
             }
 
             async initFirebase() {
+                // Détecter l'environnement Claude.ai
+                const isClaudeArtifact = window.location.hostname.includes('claudeusercontent.com') || 
+                                        window.location.hostname.includes('claude.ai');
+                
+                if (isClaudeArtifact) {
+                    console.log("🎮 Mode DEMO activé (localStorage)");
+                    console.log("ℹ️ Pour le multijoueur en ligne, hébergez ce code sur votre serveur");
+                    this.useLocalStorage = true;
+                    database = null;
+                    return;
+                }
+
                 try {
-                    // Configuration Firebase publique pour GitHub Pages
-                    firebase.initializeApp({
-                        apiKey: "AIzaSyDemoKey123",
-                        authDomain: "blackjack-demo.firebaseapp.com",  
-                        databaseURL: "https://blackjack-demo-default-rtdb.firebaseio.com/",
-                        projectId: "blackjack-demo",
-                        storageBucket: "blackjack-demo.appspot.com",
-                        messagingSenderId: "123456789",
-                        appId: "1:123456789:web:demo123"
-                    });
+                    // Utiliser Firebase seulement sur ton propre hébergement
+                    firebase.initializeApp(firebaseConfig);
                     database = firebase.database();
-                    console.log("🔥 Firebase connecté!");
+                    console.log("🔥 Firebase connecté avec succès!");
+                    this.useLocalStorage = false;
+                    
                 } catch (error) {
-                    console.log("ℹ️ Firebase non disponible, utilisation localStorage");
-                    // Fallback vers localStorage
+                    console.log("🔄 Fallback vers localStorage");
                     this.useLocalStorage = true;
                     database = null;
                 }
@@ -835,16 +848,16 @@
                 try {
                     if (database) {
                         await database.ref(`rooms/${code}`).set(room);
+                        console.log(`✅ Room ${code} créée dans Firebase`);
                     } else {
                         localStorage.setItem(`blackjack_room_${code}`, JSON.stringify(room));
+                        console.log(`✅ Room ${code} créée dans localStorage`);
                     }
                     
-                    // Mettre à jour l'URL avec le code de la room
                     window.history.pushState({}, '', `?roomid=${code}`);
-                    
                     return code;
                 } catch (error) {
-                    console.error("Erreur création room:", error);
+                    console.error("❌ Erreur création room:", error);
                     return null;
                 }
             }
@@ -856,17 +869,24 @@
                     if (database) {
                         const snapshot = await database.ref(`rooms/${code}`).once('value');
                         room = snapshot.val();
+                        console.log(`🔍 Room ${code} trouvée dans Firebase:`, room ? 'Oui' : 'Non');
                     } else {
                         room = JSON.parse(localStorage.getItem(`blackjack_room_${code}`) || 'null');
+                        console.log(`🔍 Room ${code} trouvée dans localStorage:`, room ? 'Oui' : 'Non');
                     }
                     
-                    if (!room) return false;
+                    if (!room) {
+                        console.log(`❌ Room ${code} n'existe pas`);
+                        return false;
+                    }
                     
                     if (room.players.find(p => p.name === playerName)) {
+                        console.log(`❌ Nom ${playerName} déjà pris`);
                         return false;
                     }
                     
                     if (room.players.length >= 5) {
+                        console.log(`❌ Room ${code} pleine`);
                         return false;
                     }
 
@@ -884,16 +904,16 @@
                     
                     if (database) {
                         await database.ref(`rooms/${code}`).set(room);
+                        console.log(`✅ ${playerName} a rejoint la room ${code} (Firebase)`);
                     } else {
                         localStorage.setItem(`blackjack_room_${code}`, JSON.stringify(room));
+                        console.log(`✅ ${playerName} a rejoint la room ${code} (localStorage)`);
                     }
                     
-                    // Mettre à jour l'URL
                     window.history.pushState({}, '', `?roomid=${code}`);
-                    
                     return true;
                 } catch (error) {
-                    console.error("Erreur rejoindre room:", error);
+                    console.error("❌ Erreur rejoindre room:", error);
                     return false;
                 }
             }
@@ -964,7 +984,7 @@
                     }
                     return true;
                 } catch (error) {
-                    console.error("Erreur mise à jour room:", error);
+                    console.error("❌ Erreur mise à jour room:", error);
                     return false;
                 }
             }
@@ -1146,7 +1166,7 @@
                         return JSON.parse(localStorage.getItem(`blackjack_room_${code}`) || 'null');
                     }
                 } catch (error) {
-                    console.error("Erreur récupération room:", error);
+                    console.error("❌ Erreur récupération room:", error);
                     return null;
                 }
             }
@@ -1174,47 +1194,36 @@
 
                     return true;
                 } catch (error) {
-                    console.error("Erreur quitter room:", error);
+                    console.error("❌ Erreur quitter room:", error);
                     return false;
                 }
             }
 
             // Listener en temps réel pour les changements
             setupRoomListener(roomCode, callback) {
-                if (database) {
+                if (database && !this.useLocalStorage) {
                     database.ref(`rooms/${roomCode}`).on('value', (snapshot) => {
                         const room = snapshot.val();
                         callback(room);
                     });
                 } else {
-                    // Fallback avec polling pour localStorage
-                    setInterval(() => {
-                        const room = this.getRoom(roomCode);
+                    // Mode localStorage avec simulation temps réel
+                    const pollInterval = setInterval(async () => {
+                        const room = await this.getRoom(roomCode);
                         callback(room);
-                    }, 1000);
+                    }, 500); // Plus fréquent pour une meilleure réactivité
+                    this.pollInterval = pollInterval;
                 }
             }
 
             removeRoomListener(roomCode) {
-                if (database) {
+                if (database && !this.useLocalStorage) {
                     database.ref(`rooms/${roomCode}`).off();
+                } else if (this.pollInterval) {
+                    clearInterval(this.pollInterval);
                 }
             }
         }
-
-        // Fonctions d'animation
-
-        // Ajouter l'animation sparkle au CSS
-        const sparkleCSS = `
-            @keyframes sparkle {
-                0% { transform: scale(0) rotate(0deg); opacity: 1; }
-                50% { transform: scale(2) rotate(180deg); opacity: 0.8; }
-                100% { transform: scale(0) rotate(360deg); opacity: 0; }
-            }
-        `;
-        const style = document.createElement('style');
-        style.textContent = sparkleCSS;
-        document.head.appendChild(style);
 
         // Fonctions de l'interface
         async function createRoom() {
@@ -1242,6 +1251,7 @@
                 showNotification('🎰 Table créée! Partagez ce lien:', 'success');
                 showShareableLink();
                 showGameInterface();
+                setupRoomListener();
             } else {
                 showNotification('❌ Erreur lors de la création', 'error');
             }
@@ -1250,42 +1260,61 @@
         function showShareableLink() {
             const url = `${window.location.origin}${window.location.pathname}?roomid=${currentRoom}`;
             
-            // Créer un popup avec le lien
             const linkPopup = document.createElement('div');
             linkPopup.style.cssText = `
                 position: fixed;
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                background: rgba(0, 0, 0, 0.9);
+                background: rgba(0, 0, 0, 0.95);
                 color: white;
                 padding: 30px;
                 border-radius: 15px;
                 z-index: 10000;
                 text-align: center;
                 border: 2px solid #FFD700;
-                max-width: 90%;
+                max-width: 500px;
+                max-height: 80vh;
+                overflow-y: auto;
             `;
+            
+            const isDemo = gameServer.useLocalStorage;
             
             linkPopup.innerHTML = `
                 <h3>🎉 Table créée!</h3>
                 <p style="margin: 15px 0; color: #FFD700;">Code: <strong>${currentRoom}</strong></p>
-                <p style="margin: 10px 0;">Partagez ce lien avec vos amis:</p>
-                <input type="text" value="${url}" style="width: 100%; padding: 10px; border: none; border-radius: 5px; margin: 10px 0; font-family: monospace;" readonly onclick="this.select()">
-                <div>
+                
+                ${isDemo ? `
+                    <div style="background: rgba(255, 165, 0, 0.2); padding: 15px; border-radius: 10px; margin: 15px 0;">
+                        <h4>🎮 Mode DEMO</h4>
+                        <p style="font-size: 14px; margin: 10px 0;">
+                            Actuellement en mode local. Pour un vrai multijoueur en ligne :
+                        </p>
+                        <ol style="text-align: left; font-size: 13px; margin: 10px 0;">
+                            <li>Télécharge ce fichier HTML</li>
+                            <li>Héberge-le sur ton serveur/GitHub Pages</li>
+                            <li>Firebase fonctionnera automatiquement !</li>
+                        </ol>
+                    </div>
+                ` : ''}
+                
+                <p style="margin: 10px 0;">Lien de la table :</p>
+                <input type="text" value="${url}" style="width: 100%; padding: 10px; border: none; border-radius: 5px; margin: 10px 0; font-family: monospace; font-size: 12px;" readonly onclick="this.select()">
+                
+                <div style="margin-top: 20px;">
                     <button onclick="copyToClipboard('${url}'); this.parentElement.parentElement.remove();" style="background: #FFD700; color: black; border: none; padding: 10px 20px; border-radius: 5px; margin: 5px; cursor: pointer;">📋 Copier le lien</button>
+                    <button onclick="downloadHTML()" style="background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin: 5px; cursor: pointer;">💾 Télécharger</button>
                     <button onclick="this.parentElement.parentElement.remove();" style="background: #666; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin: 5px; cursor: pointer;">Fermer</button>
                 </div>
             `;
             
             document.body.appendChild(linkPopup);
             
-            // Auto-suppression après 10 secondes
             setTimeout(() => {
                 if (linkPopup.parentElement) {
                     linkPopup.remove();
                 }
-            }, 10000);
+            }, 15000);
         }
 
         function copyToClipboard(text) {
@@ -1294,6 +1323,23 @@
             }).catch(() => {
                 showNotification('❌ Erreur copie', 'error');
             });
+        }
+
+        function downloadHTML() {
+            // Créer le contenu HTML complet à télécharger
+            const htmlContent = document.documentElement.outerHTML;
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'blackjack-casino-royal.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('💾 Fichier téléchargé! Hébergez-le pour le multijoueur en ligne', 'success');
         }
 
         function showJoinRoom() {
@@ -1343,21 +1389,29 @@
             
             showNotification('🎉 Bienvenue à la table!', 'success');
             showGameInterface();
+            setupRoomListener();
         }
 
-        // Fonction pour rejoindre automatiquement via l'URL
+        function setupRoomListener() {
+            if (currentRoom) {
+                gameServer.setupRoomListener(currentRoom, (room) => {
+                    if (room) {
+                        updateGameDisplay(room);
+                    }
+                });
+            }
+        }
+
         async function joinFromURL() {
             const urlParams = new URLSearchParams(window.location.search);
             const roomId = urlParams.get('roomid');
             
             if (roomId && roomId.length === 6) {
-                // Pré-remplir le code
                 const codeInput = document.getElementById('roomCode');
                 if (codeInput) {
                     codeInput.value = roomId.toUpperCase();
                     showJoinRoom();
                     
-                    // Focus sur le nom si pas déjà rempli
                     const nameInput = document.getElementById('playerName');
                     if (nameInput && !nameInput.value.trim()) {
                         nameInput.focus();
@@ -1379,8 +1433,6 @@
                 document.getElementById('waitingControls').style.display = 'flex';
             }
 
-            gameUpdateInterval = setInterval(updateGameDisplay, 1000);
-            updateGameDisplay();
             setupPlayerPositions();
         }
 
@@ -1404,13 +1456,8 @@
             }
         }
 
-        function updateGameDisplay() {
-            const room = gameServer.getRoom(currentRoom);
-            if (!room) {
-                showNotification('La table a été fermée', 'error');
-                leaveGame();
-                return;
-            }
+        function updateGameDisplay(room) {
+            if (!room) return;
 
             updatePlayerCount(room);
             updatePlayerPositions(room);
@@ -1592,7 +1639,6 @@
             if (lobby) lobby.style.display = 'flex';
             if (gameInterface) gameInterface.style.display = 'none';
             
-            // Nettoyer l'URL
             window.history.pushState({}, '', window.location.pathname);
             
             currentRoom = null;
@@ -1709,7 +1755,6 @@
             }, 500);
         }
 
-        // Event listeners avec vérifications de sécurité
         function setupEventListeners() {
             const roomCodeInput = document.getElementById('roomCode');
             const playerNameInput = document.getElementById('playerName');
@@ -1733,7 +1778,6 @@
                     }
                 });
                 
-                // Auto-focus sur le champ nom
                 playerNameInput.focus();
             }
 
@@ -1746,22 +1790,30 @@
 
         // Initialisation sécurisée
         async function initializeGame() {
-            // Attendre que le DOM soit complètement chargé
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', initializeGame);
                 return;
             }
             
+            console.log("🎮 Initialisation du Blackjack Casino Royal...");
+            
             gameServer = new OnlineGameServer();
             
-            // Attendre l'initialisation de Firebase
+            // Attendre l'initialisation
             await new Promise(resolve => setTimeout(resolve, 1000));
             
             createParticles();
             setupEventListeners();
-            
-            // Vérifier si on arrive avec un roomid dans l'URL
             joinFromURL();
+            
+            // Afficher le mode de fonctionnement
+            if (gameServer.useLocalStorage) {
+                console.log("✅ Jeu initialisé en mode DEMO (localStorage)");
+                showNotification('🎮 Mode DEMO - Multijoueur local uniquement', 'info');
+            } else {
+                console.log("✅ Jeu initialisé avec Firebase (multijoueur en ligne)");
+                showNotification('🔥 Multijoueur en ligne activé!', 'success');
+            }
         }
 
         // Démarrer l'initialisation
