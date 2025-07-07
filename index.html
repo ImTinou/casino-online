@@ -1148,37 +1148,56 @@
             }
 
             async dealInitialCards(roomCode) {
+                console.log("🎴 Starting initial card distribution for room:", roomCode);
                 const room = await this.getRoom(roomCode);
-                if (!room) return;
+                if (!room) {
+                    console.error("❌ Room not found in dealInitialCards");
+                    return;
+                }
 
                 // Assurer que room.players existe
                 if (!room.players || !Array.isArray(room.players)) {
+                    console.error("❌ room.players is undefined or not array");
                     room.players = [];
                 }
 
-                if (room.players.length === 0) return;
+                if (room.players.length === 0) {
+                    console.error("❌ No players in room");
+                    return;
+                }
+
+                console.log("👥 Players found:", room.players.length);
 
                 // Assurer que room.deck et room.dealerCards existent
                 if (!room.deck || !Array.isArray(room.deck)) {
+                    console.log("🔄 Creating new deck");
                     room.deck = this.createDeck();
                 }
                 if (!room.dealerCards || !Array.isArray(room.dealerCards)) {
                     room.dealerCards = [];
                 }
 
+                console.log("🃏 Deck size:", room.deck.length);
+
                 // Distribuer 2 cartes à chaque joueur, puis 2 au croupier
                 for (let round = 0; round < 2; round++) {
+                    console.log(`🔄 Distribution round ${round + 1}`);
+                    
                     // Cartes aux joueurs
                     for (let playerIndex = 0; playerIndex < room.players.length; playerIndex++) {
+                        console.log(`📤 Dealing to player ${playerIndex} (${room.players[playerIndex].name})`);
                         await this.dealCard(roomCode, 'player', playerIndex, 0);
                         await new Promise(resolve => setTimeout(resolve, 300));
                     }
                     
                     // Carte au croupier (2ème cachée)
                     const hidden = round === 1;
+                    console.log(`📤 Dealing to dealer (hidden: ${hidden})`);
                     await this.dealCard(roomCode, 'dealer', -1, -1, hidden);
                     await new Promise(resolve => setTimeout(resolve, 300));
                 }
+
+                console.log("✅ Initial distribution complete, calculating scores...");
 
                 // Vérifier les blackjacks et commencer le jeu
                 const updatedRoom = await this.getRoom(roomCode);
@@ -1189,7 +1208,9 @@
                 }
 
                 // Calculer les scores
-                updatedRoom.players.forEach(player => {
+                updatedRoom.players.forEach((player, index) => {
+                    console.log(`🧮 Calculating score for player ${index}: ${player.name}`);
+                    
                     // Assurer que player.hands existe
                     if (!player.hands || !Array.isArray(player.hands)) {
                         player.hands = [{ cards: [], score: 0, bet: 10, status: 'waiting' }];
@@ -1200,8 +1221,12 @@
                         hand.cards = [];
                     }
                     hand.score = this.calculateScore(hand.cards);
+                    
+                    console.log(`👤 ${player.name}: ${hand.cards.length} cards, score: ${hand.score}`);
+                    
                     if (this.isBlackjack(hand.cards)) {
                         hand.status = 'blackjack';
+                        console.log(`🎯 ${player.name} has blackjack!`);
                     } else {
                         hand.status = 'playing';
                     }
@@ -1211,6 +1236,7 @@
                 if (updatedRoom.dealerCards && updatedRoom.dealerCards.length >= 2) {
                     const visibleCard = updatedRoom.dealerCards[0];
                     if (visibleCard && visibleCard.value === 'A') {
+                        console.log("🛡️ Dealer shows Ace, offering insurance");
                         updatedRoom.gameState = 'insurance';
                         await this.updateRoom(roomCode, updatedRoom);
                         return;
@@ -1227,23 +1253,34 @@
                         player.isActive = true;
                         hand.isActive = true;
                         activePlayerSet = true;
+                        console.log(`▶️ ${player.name} is now active`);
                         break;
                     }
                 }
 
                 if (!activePlayerSet) {
-                    // Tous ont blackjack, aller au croupier
+                    console.log("🎩 All players have blackjack, going to dealer turn");
                     updatedRoom.gameState = 'dealer_turn';
                 } else {
                     updatedRoom.gameState = 'playing';
                 }
 
                 await this.updateRoom(roomCode, updatedRoom);
+                console.log("✅ Game state updated, ready to play!");
             }
 
             async dealCard(roomCode, target, playerIndex = -1, handIndex = -1, hidden = false) {
                 const room = await this.getRoom(roomCode);
-                if (!room || room.deck.length === 0) return null;
+                if (!room) {
+                    console.error("❌ Room not found in dealCard");
+                    return null;
+                }
+
+                // Vérifier que le deck existe et n'est pas vide
+                if (!room.deck || !Array.isArray(room.deck) || room.deck.length === 0) {
+                    console.error("❌ Deck is empty or undefined:", room.deck);
+                    return null;
+                }
 
                 const card = room.deck.pop();
                 if (hidden) card.hidden = true;
@@ -1257,7 +1294,20 @@
                     if (!hidden) {
                         room.dealerScore = this.calculateScore(room.dealerCards.filter(c => !c.hidden));
                     }
-                } else if (target === 'player' && playerIndex >= 0 && room.players && room.players[playerIndex]) {
+                    console.log("✅ Card dealt to dealer:", card.value + card.suit);
+                } else if (target === 'player' && playerIndex >= 0) {
+                    // Vérifier que room.players existe
+                    if (!room.players || !Array.isArray(room.players)) {
+                        console.error("❌ room.players is undefined");
+                        return null;
+                    }
+
+                    // Vérifier que le joueur existe
+                    if (!room.players[playerIndex]) {
+                        console.error("❌ Player at index", playerIndex, "does not exist");
+                        return null;
+                    }
+
                     const player = room.players[playerIndex];
                     
                     // Assurer que player.hands existe
@@ -1265,7 +1315,20 @@
                         player.hands = [{ cards: [], score: 0, bet: 10, status: 'waiting' }];
                     }
                     
-                    const hand = player.hands[handIndex] || player.hands[player.currentHandIndex] || player.hands[0];
+                    // Déterminer quelle main utiliser
+                    let hand;
+                    if (handIndex >= 0 && handIndex < player.hands.length) {
+                        hand = player.hands[handIndex];
+                    } else if (player.currentHandIndex !== undefined && player.hands[player.currentHandIndex]) {
+                        hand = player.hands[player.currentHandIndex];
+                    } else {
+                        hand = player.hands[0];
+                    }
+
+                    if (!hand) {
+                        console.error("❌ Hand is undefined for player", player.name);
+                        return null;
+                    }
                     
                     // Assurer que hand.cards existe
                     if (!hand.cards || !Array.isArray(hand.cards)) {
@@ -1274,6 +1337,7 @@
                     
                     hand.cards.push(card);
                     hand.score = this.calculateScore(hand.cards);
+                    console.log("✅ Card dealt to player", player.name + ":", card.value + card.suit);
                 }
 
                 await this.updateRoom(roomCode, room);
