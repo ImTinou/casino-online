@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎰 Blackjack Casino Royal 🎰</title>
+    <!-- Firebase SDK -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.2/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.2/firebase-database-compat.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -764,12 +767,45 @@
         let gameUpdateInterval = null;
         let animationQueue = [];
         let isAnimating = false;
+        let database = null;
 
-        // Système de backend simulé amélioré
-        class GameServer {
+        // Configuration Firebase (base de données publique pour le jeu)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBpZmZkNzQ2MjY5MzI0OTQ4NzY4ODk2OQ",
+            authDomain: "blackjack-royal-game.firebaseapp.com",
+            databaseURL: "https://blackjack-royal-game-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "blackjack-royal-game",
+            storageBucket: "blackjack-royal-game.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef123456"
+        };
+
+        // Système de backend en ligne avec Firebase
+        class OnlineGameServer {
             constructor() {
-                this.rooms = JSON.parse(localStorage.getItem('blackjack_royal_rooms') || '{}');
-                this.updateInterval = setInterval(() => this.syncRooms(), 1000);
+                this.initFirebase();
+            }
+
+            async initFirebase() {
+                try {
+                    // Configuration Firebase publique pour GitHub Pages
+                    firebase.initializeApp({
+                        apiKey: "AIzaSyDemoKey123",
+                        authDomain: "blackjack-demo.firebaseapp.com",  
+                        databaseURL: "https://blackjack-demo-default-rtdb.firebaseio.com/",
+                        projectId: "blackjack-demo",
+                        storageBucket: "blackjack-demo.appspot.com",
+                        messagingSenderId: "123456789",
+                        appId: "1:123456789:web:demo123"
+                    });
+                    database = firebase.database();
+                    console.log("🔥 Firebase connecté!");
+                } catch (error) {
+                    console.log("ℹ️ Firebase non disponible, utilisation localStorage");
+                    // Fallback vers localStorage
+                    this.useLocalStorage = true;
+                    database = null;
+                }
             }
 
             generateRoomCode() {
@@ -781,7 +817,7 @@
                 return code;
             }
 
-            createRoom(dealerName) {
+            async createRoom(dealerName) {
                 const code = this.generateRoomCode();
                 const room = {
                     code: code,
@@ -796,36 +832,70 @@
                     lastUpdate: Date.now()
                 };
                 
-                this.rooms[code] = room;
-                this.saveRooms();
-                return code;
+                try {
+                    if (database) {
+                        await database.ref(`rooms/${code}`).set(room);
+                    } else {
+                        localStorage.setItem(`blackjack_room_${code}`, JSON.stringify(room));
+                    }
+                    
+                    // Mettre à jour l'URL avec le code de la room
+                    window.history.pushState({}, '', `?roomid=${code}`);
+                    
+                    return code;
+                } catch (error) {
+                    console.error("Erreur création room:", error);
+                    return null;
+                }
             }
 
-            joinRoom(code, playerName) {
-                const room = this.rooms[code];
-                if (!room) return false;
-                
-                if (room.players.find(p => p.name === playerName)) {
+            async joinRoom(code, playerName) {
+                try {
+                    let room;
+                    
+                    if (database) {
+                        const snapshot = await database.ref(`rooms/${code}`).once('value');
+                        room = snapshot.val();
+                    } else {
+                        room = JSON.parse(localStorage.getItem(`blackjack_room_${code}`) || 'null');
+                    }
+                    
+                    if (!room) return false;
+                    
+                    if (room.players.find(p => p.name === playerName)) {
+                        return false;
+                    }
+                    
+                    if (room.players.length >= 5) {
+                        return false;
+                    }
+
+                    room.players.push({
+                        name: playerName,
+                        cards: [],
+                        score: 0,
+                        status: 'waiting',
+                        isActive: false,
+                        position: room.players.length + 1,
+                        joinedAt: Date.now()
+                    });
+
+                    room.lastUpdate = Date.now();
+                    
+                    if (database) {
+                        await database.ref(`rooms/${code}`).set(room);
+                    } else {
+                        localStorage.setItem(`blackjack_room_${code}`, JSON.stringify(room));
+                    }
+                    
+                    // Mettre à jour l'URL
+                    window.history.pushState({}, '', `?roomid=${code}`);
+                    
+                    return true;
+                } catch (error) {
+                    console.error("Erreur rejoindre room:", error);
                     return false;
                 }
-                
-                if (room.players.length >= 5) {
-                    return false;
-                }
-
-                room.players.push({
-                    name: playerName,
-                    cards: [],
-                    score: 0,
-                    status: 'waiting',
-                    isActive: false,
-                    position: room.players.length + 1,
-                    joinedAt: Date.now()
-                });
-
-                room.lastUpdate = Date.now();
-                this.saveRooms();
-                return true;
             }
 
             createDeck() {
@@ -883,8 +953,24 @@
                 return score;
             }
 
-            dealCard(roomCode, target) {
-                const room = this.rooms[roomCode];
+            async updateRoom(roomCode, room) {
+                try {
+                    room.lastUpdate = Date.now();
+                    
+                    if (database) {
+                        await database.ref(`rooms/${roomCode}`).set(room);
+                    } else {
+                        localStorage.setItem(`blackjack_room_${roomCode}`, JSON.stringify(room));
+                    }
+                    return true;
+                } catch (error) {
+                    console.error("Erreur mise à jour room:", error);
+                    return false;
+                }
+            }
+
+            async dealCard(roomCode, target) {
+                const room = await this.getRoom(roomCode);
                 if (!room || room.deck.length === 0) return null;
 
                 const card = room.deck.pop();
@@ -900,13 +986,12 @@
                     }
                 }
 
-                room.lastUpdate = Date.now();
-                this.saveRooms();
+                await this.updateRoom(roomCode, room);
                 return card;
             }
 
-            startNewHand(roomCode) {
-                const room = this.rooms[roomCode];
+            async startNewHand(roomCode) {
+                const room = await this.getRoom(roomCode);
                 if (!room) return false;
 
                 // Reset complet
@@ -924,8 +1009,7 @@
                 room.currentPlayerIndex = 0;
                 room.gameState = 'dealing';
 
-                room.lastUpdate = Date.now();
-                this.saveRooms();
+                await this.updateRoom(roomCode, room);
 
                 // Simulation de distribution avec délai
                 setTimeout(() => {
@@ -935,30 +1019,29 @@
                 return true;
             }
 
-            distributeCards(roomCode) {
-                const room = this.rooms[roomCode];
+            async distributeCards(roomCode) {
+                const room = await this.getRoom(roomCode);
                 if (!room) return;
 
                 // Distribuer 2 cartes à chaque joueur et au croupier
                 for (let round = 0; round < 2; round++) {
-                    room.players.forEach((player, index) => {
-                        this.dealCard(roomCode, index);
-                    });
-                    this.dealCard(roomCode, 'dealer');
+                    for (let index = 0; index < room.players.length; index++) {
+                        await this.dealCard(roomCode, index);
+                    }
+                    await this.dealCard(roomCode, 'dealer');
                 }
 
                 // Activer le premier joueur
                 if (room.players.length > 0) {
-                    room.players[0].isActive = true;
+                    const updatedRoom = await this.getRoom(roomCode);
+                    updatedRoom.players[0].isActive = true;
+                    updatedRoom.gameState = 'playing';
+                    await this.updateRoom(roomCode, updatedRoom);
                 }
-
-                room.gameState = 'playing';
-                room.lastUpdate = Date.now();
-                this.saveRooms();
             }
 
-            playerAction(roomCode, playerName, action) {
-                const room = this.rooms[roomCode];
+            async playerAction(roomCode, playerName, action) {
+                const room = await this.getRoom(roomCode);
                 if (!room) return false;
 
                 const playerIndex = room.players.findIndex(p => p.name === playerName);
@@ -967,27 +1050,30 @@
                 if (!player || !player.isActive || room.gameState !== 'playing') return false;
 
                 if (action === 'hit') {
-                    this.dealCard(roomCode, playerIndex);
+                    await this.dealCard(roomCode, playerIndex);
+                    const updatedRoom = await this.getRoom(roomCode);
+                    const updatedPlayer = updatedRoom.players[playerIndex];
                     
-                    if (player.score > 21) {
-                        player.status = 'bust';
-                        this.nextPlayer(roomCode);
-                    } else if (player.score === 21) {
-                        player.status = 'stand';
-                        this.nextPlayer(roomCode);
+                    if (updatedPlayer.score > 21) {
+                        updatedPlayer.status = 'bust';
+                        await this.nextPlayer(roomCode);
+                    } else if (updatedPlayer.score === 21) {
+                        updatedPlayer.status = 'stand';
+                        await this.nextPlayer(roomCode);
+                    } else {
+                        await this.updateRoom(roomCode, updatedRoom);
                     }
                 } else if (action === 'stand') {
                     player.status = 'stand';
-                    this.nextPlayer(roomCode);
+                    await this.updateRoom(roomCode, room);
+                    await this.nextPlayer(roomCode);
                 }
 
-                room.lastUpdate = Date.now();
-                this.saveRooms();
                 return true;
             }
 
-            nextPlayer(roomCode) {
-                const room = this.rooms[roomCode];
+            async nextPlayer(roomCode) {
+                const room = await this.getRoom(roomCode);
                 if (!room) return;
 
                 room.players[room.currentPlayerIndex].isActive = false;
@@ -997,41 +1083,39 @@
                     if (room.players[nextIndex].status === 'playing') {
                         room.players[nextIndex].isActive = true;
                         room.currentPlayerIndex = nextIndex;
-                        room.lastUpdate = Date.now();
-                        this.saveRooms();
+                        await this.updateRoom(roomCode, room);
                         return;
                     }
                     nextIndex++;
                 }
 
                 room.gameState = 'dealer_turn';
-                room.lastUpdate = Date.now();
-                this.saveRooms();
+                await this.updateRoom(roomCode, room);
             }
 
-            dealerPlay(roomCode) {
-                const room = this.rooms[roomCode];
+            async dealerPlay(roomCode) {
+                const room = await this.getRoom(roomCode);
                 if (!room) return false;
 
                 room.gameState = 'dealer_playing';
+                await this.updateRoom(roomCode, room);
                 
                 // Simulation du jeu du croupier avec délais
-                const dealerPlayInterval = setInterval(() => {
-                    if (room.dealerScore < 17) {
-                        this.dealCard(roomCode, 'dealer');
+                const dealerPlayInterval = setInterval(async () => {
+                    const currentRoom = await this.getRoom(roomCode);
+                    if (currentRoom.dealerScore < 17) {
+                        await this.dealCard(roomCode, 'dealer');
                     } else {
                         clearInterval(dealerPlayInterval);
-                        this.finishGame(roomCode);
+                        await this.finishGame(roomCode);
                     }
                 }, 1000);
 
-                room.lastUpdate = Date.now();
-                this.saveRooms();
                 return true;
             }
 
-            finishGame(roomCode) {
-                const room = this.rooms[roomCode];
+            async finishGame(roomCode) {
+                const room = await this.getRoom(roomCode);
                 if (!room) return;
 
                 // Déterminer les gagnants
@@ -1050,103 +1134,75 @@
                 });
 
                 room.gameState = 'finished';
-                room.lastUpdate = Date.now();
-                this.saveRooms();
+                await this.updateRoom(roomCode, room);
             }
 
-            getRoom(code) {
-                return this.rooms[code] || null;
-            }
-
-            leaveRoom(code, playerName) {
-                const room = this.rooms[code];
-                if (!room) return false;
-
-                room.players = room.players.filter(p => p.name !== playerName);
-                
-                if (room.players.length === 0) {
-                    delete this.rooms[code];
-                } else {
-                    // Réorganiser les positions
-                    room.players.forEach((player, index) => {
-                        player.position = index + 1;
-                    });
-                }
-
-                this.saveRooms();
-                return true;
-            }
-
-            saveRooms() {
-                localStorage.setItem('blackjack_royal_rooms', JSON.stringify(this.rooms));
-            }
-
-            syncRooms() {
-                const fourHoursAgo = Date.now() - (4 * 60 * 60 * 1000);
-                Object.keys(this.rooms).forEach(code => {
-                    if (this.rooms[code].created < fourHoursAgo) {
-                        delete this.rooms[code];
+            async getRoom(code) {
+                try {
+                    if (database) {
+                        const snapshot = await database.ref(`rooms/${code}`).once('value');
+                        return snapshot.val();
+                    } else {
+                        return JSON.parse(localStorage.getItem(`blackjack_room_${code}`) || 'null');
                     }
-                });
-                this.saveRooms();
+                } catch (error) {
+                    console.error("Erreur récupération room:", error);
+                    return null;
+                }
+            }
+
+            async leaveRoom(code, playerName) {
+                try {
+                    const room = await this.getRoom(code);
+                    if (!room) return false;
+
+                    room.players = room.players.filter(p => p.name !== playerName);
+                    
+                    if (room.players.length === 0) {
+                        if (database) {
+                            await database.ref(`rooms/${code}`).remove();
+                        } else {
+                            localStorage.removeItem(`blackjack_room_${code}`);
+                        }
+                    } else {
+                        // Réorganiser les positions
+                        room.players.forEach((player, index) => {
+                            player.position = index + 1;
+                        });
+                        await this.updateRoom(code, room);
+                    }
+
+                    return true;
+                } catch (error) {
+                    console.error("Erreur quitter room:", error);
+                    return false;
+                }
+            }
+
+            // Listener en temps réel pour les changements
+            setupRoomListener(roomCode, callback) {
+                if (database) {
+                    database.ref(`rooms/${roomCode}`).on('value', (snapshot) => {
+                        const room = snapshot.val();
+                        callback(room);
+                    });
+                } else {
+                    // Fallback avec polling pour localStorage
+                    setInterval(() => {
+                        const room = this.getRoom(roomCode);
+                        callback(room);
+                    }, 1000);
+                }
+            }
+
+            removeRoomListener(roomCode) {
+                if (database) {
+                    database.ref(`rooms/${roomCode}`).off();
+                }
             }
         }
 
         // Fonctions d'animation
-        function createCard(card, startPos, endPos, delay = 0) {
-            return new Promise((resolve) => {
-                setTimeout(() => {
-                    const cardElement = document.createElement('div');
-                    cardElement.className = `card ${card.isRed ? 'red' : 'black'} dealing`;
-                    cardElement.style.left = startPos.x + 'px';
-                    cardElement.style.top = startPos.y + 'px';
-                    cardElement.style.setProperty('--target-x', (endPos.x - startPos.x) + 'px');
-                    cardElement.style.setProperty('--target-y', (endPos.y - startPos.y) + 'px');
-                    
-                    if (card.hidden) {
-                        cardElement.className = 'card hidden dealing';
-                        cardElement.innerHTML = `
-                            <div class="card-value">?</div>
-                            <div class="card-suit">🂠</div>
-                        `;
-                    } else {
-                        cardElement.innerHTML = `
-                            <div class="card-value">${card.value}</div>
-                            <div class="card-suit">${card.suit}</div>
-                        `;
-                    }
-                    
-                    document.querySelector('.casino-table').appendChild(cardElement);
-                    
-                    // Effet sonore visuel
-                    createSparkle(startPos.x, startPos.y);
-                    
-                    setTimeout(() => {
-                        cardElement.classList.remove('dealing');
-                        resolve(cardElement);
-                    }, 1000);
-                }, delay);
-            });
-        }
-
-        function createSparkle(x, y) {
-            const sparkle = document.createElement('div');
-            sparkle.style.position = 'absolute';
-            sparkle.style.left = x + 'px';
-            sparkle.style.top = y + 'px';
-            sparkle.style.width = '4px';
-            sparkle.style.height = '4px';
-            sparkle.style.background = '#FFD700';
-            sparkle.style.borderRadius = '50%';
-            sparkle.style.animation = 'sparkle 0.5s ease-out forwards';
-            sparkle.style.zIndex = '100';
-            
-            document.querySelector('.casino-table').appendChild(sparkle);
-            
-            setTimeout(() => {
-                sparkle.remove();
-            }, 500);
-        }
 
         // Ajouter l'animation sparkle au CSS
         const sparkleCSS = `
@@ -1161,7 +1217,7 @@
         document.head.appendChild(style);
 
         // Fonctions de l'interface
-        function createRoom() {
+        async function createRoom() {
             const nameInput = document.getElementById('playerName');
             if (!nameInput) return;
             
@@ -1176,12 +1232,68 @@
                 return;
             }
 
+            showNotification('🔄 Création de la table...', 'info');
+
             playerName = name;
             isDealer = true;
-            currentRoom = gameServer.createRoom(name);
+            currentRoom = await gameServer.createRoom(name);
             
-            showNotification('🎰 Table ouverte avec succès!', 'success');
-            showGameInterface();
+            if (currentRoom) {
+                showNotification('🎰 Table créée! Partagez ce lien:', 'success');
+                showShareableLink();
+                showGameInterface();
+            } else {
+                showNotification('❌ Erreur lors de la création', 'error');
+            }
+        }
+
+        function showShareableLink() {
+            const url = `${window.location.origin}${window.location.pathname}?roomid=${currentRoom}`;
+            
+            // Créer un popup avec le lien
+            const linkPopup = document.createElement('div');
+            linkPopup.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0, 0, 0, 0.9);
+                color: white;
+                padding: 30px;
+                border-radius: 15px;
+                z-index: 10000;
+                text-align: center;
+                border: 2px solid #FFD700;
+                max-width: 90%;
+            `;
+            
+            linkPopup.innerHTML = `
+                <h3>🎉 Table créée!</h3>
+                <p style="margin: 15px 0; color: #FFD700;">Code: <strong>${currentRoom}</strong></p>
+                <p style="margin: 10px 0;">Partagez ce lien avec vos amis:</p>
+                <input type="text" value="${url}" style="width: 100%; padding: 10px; border: none; border-radius: 5px; margin: 10px 0; font-family: monospace;" readonly onclick="this.select()">
+                <div>
+                    <button onclick="copyToClipboard('${url}'); this.parentElement.parentElement.remove();" style="background: #FFD700; color: black; border: none; padding: 10px 20px; border-radius: 5px; margin: 5px; cursor: pointer;">📋 Copier le lien</button>
+                    <button onclick="this.parentElement.parentElement.remove();" style="background: #666; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin: 5px; cursor: pointer;">Fermer</button>
+                </div>
+            `;
+            
+            document.body.appendChild(linkPopup);
+            
+            // Auto-suppression après 10 secondes
+            setTimeout(() => {
+                if (linkPopup.parentElement) {
+                    linkPopup.remove();
+                }
+            }, 10000);
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification('📋 Lien copié!', 'success');
+            }).catch(() => {
+                showNotification('❌ Erreur copie', 'error');
+            });
         }
 
         function showJoinRoom() {
@@ -1192,7 +1304,7 @@
             document.getElementById('joinRoomCard').style.display = 'none';
         }
 
-        function joinRoom() {
+        async function joinRoom() {
             const nameInput = document.getElementById('playerName');
             const codeInput = document.getElementById('roomCode');
             
@@ -1216,7 +1328,9 @@
                 return;
             }
 
-            const success = gameServer.joinRoom(code, name);
+            showNotification('🔄 Connexion à la table...', 'info');
+
+            const success = await gameServer.joinRoom(code, name);
             
             if (!success) {
                 showNotification('❌ Impossible de rejoindre cette table', 'error');
@@ -1229,6 +1343,29 @@
             
             showNotification('🎉 Bienvenue à la table!', 'success');
             showGameInterface();
+        }
+
+        // Fonction pour rejoindre automatiquement via l'URL
+        async function joinFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomId = urlParams.get('roomid');
+            
+            if (roomId && roomId.length === 6) {
+                // Pré-remplir le code
+                const codeInput = document.getElementById('roomCode');
+                if (codeInput) {
+                    codeInput.value = roomId.toUpperCase();
+                    showJoinRoom();
+                    
+                    // Focus sur le nom si pas déjà rempli
+                    const nameInput = document.getElementById('playerName');
+                    if (nameInput && !nameInput.value.trim()) {
+                        nameInput.focus();
+                    }
+                }
+                
+                showNotification('🎯 Code de table détecté!', 'info');
+            }
         }
 
         function showGameInterface() {
@@ -1364,72 +1501,78 @@
             const dealerPlayBtn = document.getElementById('dealerPlayBtn');
             
             // Cacher tous les contrôles
-            dealerControls.style.display = 'none';
-            playerControls.style.display = 'none';
-            waitingControls.style.display = 'none';
-            dealerPlayBtn.style.display = 'none';
+            if (dealerControls) dealerControls.style.display = 'none';
+            if (playerControls) playerControls.style.display = 'none';
+            if (waitingControls) waitingControls.style.display = 'none';
+            if (dealerPlayBtn) dealerPlayBtn.style.display = 'none';
 
             if (isDealer) {
-                dealerControls.style.display = 'flex';
-                if (room.gameState === 'dealer_turn') {
+                if (dealerControls) dealerControls.style.display = 'flex';
+                if (room.gameState === 'dealer_turn' && dealerPlayBtn) {
                     dealerPlayBtn.style.display = 'inline-block';
                 }
             } else {
                 const player = room.players.find(p => p.name === playerName);
                 if (player && player.isActive && room.gameState === 'playing') {
-                    playerControls.style.display = 'flex';
+                    if (playerControls) playerControls.style.display = 'flex';
                 } else {
-                    waitingControls.style.display = 'flex';
+                    if (waitingControls) waitingControls.style.display = 'flex';
                 }
             }
         }
 
-        function startNewHand() {
+        async function startNewHand() {
             if (!isDealer) return;
             
             // Nettoyer les cartes existantes
-            const existingCards = document.querySelectorAll('.casino-table .card:not(.deck-card)');
-            existingCards.forEach(card => card.remove());
+            const casinoTable = document.querySelector('.casino-table');
+            if (casinoTable) {
+                const existingCards = casinoTable.querySelectorAll('.card:not(.deck-card)');
+                existingCards.forEach(card => card.remove());
+            }
             
-            const success = gameServer.startNewHand(currentRoom);
+            const success = await gameServer.startNewHand(currentRoom);
             if (success) {
                 showNotification('🎴 Nouvelle main en cours...', 'info');
                 
                 // Animation du deck
                 const deckStack = document.getElementById('deckStack');
-                deckStack.style.animation = 'dealerGlow 0.5s ease-in-out';
-                setTimeout(() => {
-                    deckStack.style.animation = '';
-                }, 500);
+                if (deckStack) {
+                    deckStack.style.animation = 'dealerGlow 0.5s ease-in-out';
+                    setTimeout(() => {
+                        deckStack.style.animation = '';
+                    }, 500);
+                }
             }
         }
 
-        function hit() {
-            const success = gameServer.playerAction(currentRoom, playerName, 'hit');
+        async function hit() {
+            const success = await gameServer.playerAction(currentRoom, playerName, 'hit');
             if (success) {
                 showNotification('🃏 Carte tirée!', 'info');
             }
         }
 
-        function stand() {
-            const success = gameServer.playerAction(currentRoom, playerName, 'stand');
+        async function stand() {
+            const success = await gameServer.playerAction(currentRoom, playerName, 'stand');
             if (success) {
                 showNotification('✋ Vous restez', 'info');
             }
         }
 
-        function dealerPlay() {
+        async function dealerPlay() {
             if (!isDealer) return;
             
-            const success = gameServer.dealerPlay(currentRoom);
+            const success = await gameServer.dealerPlay(currentRoom);
             if (success) {
                 showNotification('🎲 Tour du croupier...', 'info');
             }
         }
 
-        function leaveGame() {
+        async function leaveGame() {
             if (currentRoom) {
-                gameServer.leaveRoom(currentRoom, playerName);
+                await gameServer.leaveRoom(currentRoom, playerName);
+                gameServer.removeRoomListener(currentRoom);
             }
             
             if (gameUpdateInterval) {
@@ -1437,17 +1580,89 @@
             }
             
             // Nettoyer les cartes
-            const existingCards = document.querySelectorAll('.casino-table .card:not(.deck-card)');
-            existingCards.forEach(card => card.remove());
+            const casinoTable = document.querySelector('.casino-table');
+            if (casinoTable) {
+                const existingCards = casinoTable.querySelectorAll('.card:not(.deck-card)');
+                existingCards.forEach(card => card.remove());
+            }
             
-            document.getElementById('lobby').style.display = 'flex';
-            document.getElementById('gameInterface').style.display = 'none';
+            const lobby = document.getElementById('lobby');
+            const gameInterface = document.getElementById('gameInterface');
+            
+            if (lobby) lobby.style.display = 'flex';
+            if (gameInterface) gameInterface.style.display = 'none';
+            
+            // Nettoyer l'URL
+            window.history.pushState({}, '', window.location.pathname);
             
             currentRoom = null;
             playerName = '';
             isDealer = false;
             
             showNotification('👋 Vous avez quitté la table', 'info');
+        }
+
+        function createCard(card, startPos, endPos, delay = 0) {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    const cardElement = document.createElement('div');
+                    cardElement.className = `card ${card.isRed ? 'red' : 'black'} dealing`;
+                    cardElement.style.left = startPos.x + 'px';
+                    cardElement.style.top = startPos.y + 'px';
+                    cardElement.style.setProperty('--target-x', (endPos.x - startPos.x) + 'px');
+                    cardElement.style.setProperty('--target-y', (endPos.y - startPos.y) + 'px');
+                    
+                    if (card.hidden) {
+                        cardElement.className = 'card hidden dealing';
+                        cardElement.innerHTML = `
+                            <div class="card-value">?</div>
+                            <div class="card-suit">🂠</div>
+                        `;
+                    } else {
+                        cardElement.innerHTML = `
+                            <div class="card-value">${card.value}</div>
+                            <div class="card-suit">${card.suit}</div>
+                        `;
+                    }
+                    
+                    const casinoTable = document.querySelector('.casino-table');
+                    if (casinoTable) {
+                        casinoTable.appendChild(cardElement);
+                        
+                        // Effet sonore visuel
+                        createSparkle(startPos.x, startPos.y);
+                        
+                        setTimeout(() => {
+                            cardElement.classList.remove('dealing');
+                            resolve(cardElement);
+                        }, 1000);
+                    } else {
+                        resolve(null);
+                    }
+                }, delay);
+            });
+        }
+
+        function createSparkle(x, y) {
+            const sparkle = document.createElement('div');
+            sparkle.style.position = 'absolute';
+            sparkle.style.left = x + 'px';
+            sparkle.style.top = y + 'px';
+            sparkle.style.width = '4px';
+            sparkle.style.height = '4px';
+            sparkle.style.background = '#FFD700';
+            sparkle.style.borderRadius = '50%';
+            sparkle.style.animation = 'sparkle 0.5s ease-out forwards';
+            sparkle.style.zIndex = '100';
+            
+            const casinoTable = document.querySelector('.casino-table');
+            if (casinoTable) {
+                casinoTable.appendChild(sparkle);
+                
+                setTimeout(() => {
+                    sparkle.remove();
+                }, 500);
+            }
         }
 
         function showNotification(message, type = 'info') {
@@ -1473,8 +1688,11 @@
         // Création des particules d'ambiance
         function createParticles() {
             const particlesContainer = document.getElementById('particles');
+            if (!particlesContainer) return;
+            
             setInterval(() => {
-                if (document.querySelectorAll('.particle').length < 20) {
+                const existingParticles = document.querySelectorAll('.particle');
+                if (existingParticles.length < 20) {
                     const particle = document.createElement('div');
                     particle.className = 'particle';
                     particle.style.left = Math.random() * 100 + 'vw';
@@ -1483,39 +1701,71 @@
                     particlesContainer.appendChild(particle);
                     
                     setTimeout(() => {
-                        particle.remove();
+                        if (particle && particle.parentNode) {
+                            particle.remove();
+                        }
                     }, 8000);
                 }
             }, 500);
         }
 
-        // Event listeners
-        document.getElementById('roomCode').addEventListener('input', function(e) {
-            e.target.value = e.target.value.toUpperCase();
-        });
-
-        document.getElementById('playerName').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                createRoom();
+        // Event listeners avec vérifications de sécurité
+        function setupEventListeners() {
+            const roomCodeInput = document.getElementById('roomCode');
+            const playerNameInput = document.getElementById('playerName');
+            
+            if (roomCodeInput) {
+                roomCodeInput.addEventListener('input', function(e) {
+                    e.target.value = e.target.value.toUpperCase();
+                });
+                
+                roomCodeInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        joinRoom();
+                    }
+                });
             }
-        });
 
-        document.getElementById('roomCode').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                joinRoom();
+            if (playerNameInput) {
+                playerNameInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        createRoom();
+                    }
+                });
+                
+                // Auto-focus sur le champ nom
+                playerNameInput.focus();
             }
-        });
 
-        window.addEventListener('beforeunload', function() {
-            if (currentRoom) {
-                gameServer.leaveRoom(currentRoom, playerName);
+            window.addEventListener('beforeunload', function() {
+                if (currentRoom) {
+                    gameServer.leaveRoom(currentRoom, playerName);
+                }
+            });
+        }
+
+        // Initialisation sécurisée
+        async function initializeGame() {
+            // Attendre que le DOM soit complètement chargé
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initializeGame);
+                return;
             }
-        });
+            
+            gameServer = new OnlineGameServer();
+            
+            // Attendre l'initialisation de Firebase
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            createParticles();
+            setupEventListeners();
+            
+            // Vérifier si on arrive avec un roomid dans l'URL
+            joinFromURL();
+        }
 
-        // Initialisation
-        gameServer = new GameServer();
-        createParticles();
-        document.getElementById('playerName').focus();
+        // Démarrer l'initialisation
+        initializeGame();
     </script>
 </body>
 </html>
