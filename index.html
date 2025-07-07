@@ -1580,21 +1580,56 @@
             for (let i = 1; i <= 5; i++) {
                 const spot = document.getElementById(`spot-${i}`);
                 if (!spot) continue;
-                
                 const avatar = spot.querySelector('.player-avatar');
                 const name = spot.querySelector('.player-name');
                 const score = spot.querySelector('.player-score');
                 const status = spot.querySelector('.player-status');
-                
                 if (!avatar || !name || !score || !status) continue;
-                
                 spot.className = `player-spot spot-${i}`;
                 avatar.textContent = '';
                 name.textContent = `Position ${i}`;
                 score.textContent = '--';
                 status.textContent = '';
                 status.className = 'player-status';
-
+                // Réinitialiser les cartes
+                let cardsArea = spot.querySelector('.player-cards-area');
+                if (cardsArea) cardsArea.innerHTML = '';
+                // Réinitialiser la streak
+                const streakEl = spot.querySelector('.player-streak span');
+                if (streakEl) streakEl.textContent = '0';
+            }
+            // Placer les joueurs
+            room.players.forEach((player, idx) => {
+                const position = player.position || (idx + 1);
+                const spot = document.getElementById(`spot-${position}`);
+                if (!spot) return;
+                const avatar = spot.querySelector('.player-avatar');
+                const name = spot.querySelector('.player-name');
+                const score = spot.querySelector('.player-score');
+                const status = spot.querySelector('.player-status');
+                if (!avatar || !name || !score || !status) return;
+                if (player.isActive) {
+                    spot.classList.add('active');
+                }
+                avatar.textContent = player.name.charAt(0).toUpperCase();
+                name.textContent = player.name;
+                score.textContent = player.score || '--';
+                // Status
+                if (player.result) {
+                    status.textContent = player.result === 'win' ? '🎉 Gagne' : 
+                                        player.result === 'lose' ? '💀 Perd' : '🤝 Égalité';
+                    status.className = `player-status ${player.result}`;
+                } else if (player.status === 'bust') {
+                    status.textContent = '💥 Bust';
+                    status.className = 'player-status lose';
+                } else if (player.status === 'stand') {
+                    status.textContent = '✋ Reste';
+                } else if (player.isActive) {
+                    status.textContent = '▶️ Joue';
+                }
+                // Win streak
+                const streakEl = spot.querySelector('.player-streak span');
+                if (streakEl) streakEl.textContent = player.winStreak || 0;
                 // Affichage des cartes du joueur sous l'avatar
                 let cardsArea = spot.querySelector('.player-cards-area');
                 if (!cardsArea) {
@@ -1606,8 +1641,8 @@
                     spot.insertBefore(cardsArea, score); // avant le score
                 }
                 cardsArea.innerHTML = '';
-                if (room.players[i - 1].cards && room.players[i - 1].cards.length > 0) {
-                    room.players[i - 1].cards.forEach(card => {
+                if (player.cards && player.cards.length > 0) {
+                    player.cards.forEach(card => {
                         const el = document.createElement('div');
                         el.className = `card ${card.isRed ? 'red' : 'black'}`;
                         el.style.position = 'static';
@@ -1618,7 +1653,7 @@
                         cardsArea.appendChild(el);
                     });
                 }
-            }
+            });
         }
 
         function updateDealerDisplay(room) {
@@ -1993,6 +2028,62 @@
 
         async function processPendingActionBtn() {
             await gameServer.processPendingAction(currentRoom);
+        }
+
+        // 2. Ajout du chat sous la table (HTML)
+        // Ajoute juste avant </div> de .container :
+        /*
+        <div id="chatBox" style="background:rgba(0,0,0,0.7);border-radius:12px;padding:12px 8px 0 8px;margin:24px auto 0 auto;max-width:600px;">
+          <div id="chatMessages" style="max-height:180px;overflow-y:auto;padding-bottom:8px;"></div>
+          <form id="chatForm" style="display:flex;gap:8px;align-items:center;">
+            <input id="chatInput" type="text" maxlength="120" placeholder="Message..." style="flex:1;padding:8px 12px;border-radius:8px;border:none;outline:none;">
+            <button type="submit" class="btn btn-gold">Envoyer</button>
+          </form>
+        </div>
+        */
+
+        // 3. Ajout de la logique JS du chat
+        // Après initializeGame();
+        function renderChat(room) {
+            const chatMessages = document.getElementById('chatMessages');
+            if (!chatMessages) return;
+            chatMessages.innerHTML = '';
+            if (room.chat && Array.isArray(room.chat)) {
+                room.chat.slice(-50).forEach(msg => {
+                    const div = document.createElement('div');
+                    div.style.marginBottom = '4px';
+                    div.innerHTML = `<span style='color:#FFD700;font-weight:bold;'>${msg.name}</span> <span style='color:#aaa;font-size:11px;'>${new Date(msg.time).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span> : <span style='color:#fff;'>${msg.text}</span>`;
+                    chatMessages.appendChild(div);
+                });
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        }
+
+        // Hook dans updateGameDisplay
+        // ...
+        updateDealerDisplay(room);
+        renderChat(room);
+        updateControls(room);
+        // ...
+
+        // Gestion de l'envoi de message
+        const chatForm = document.getElementById('chatForm');
+        if (chatForm) {
+            chatForm.onsubmit = async function(e) {
+                e.preventDefault();
+                const input = document.getElementById('chatInput');
+                if (!input || !input.value.trim()) return;
+                const text = input.value.trim();
+                input.value = '';
+                // Ajout du message dans la room
+                const room = await gameServer.getRoom(currentRoom);
+                if (!room) return;
+                if (!room.chat) room.chat = [];
+                room.chat.push({ name: playerName, text, time: Date.now() });
+                // Limiter à 50 messages
+                if (room.chat.length > 50) room.chat = room.chat.slice(-50);
+                await gameServer.updateRoom(currentRoom, room);
+            };
         }
     </script>
 </body>
