@@ -1,24 +1,14 @@
-// ========== FIREBASE MANAGER ========== //
+// ========== FIREBASE MANAGER V9+ ========== //
 class FirebaseManager {
     constructor() {
         this.useLocalStorage = true;
         this.database = null;
         this.pollInterval = null;
+        this.listeners = new Map();
         this.initFirebase();
     }
 
     async initFirebase() {
-        // Configuration Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyBlF0Rv-vaLHlopMYNbs7JnLyiqi-HUnn4",
-            authDomain: "blackjack-casino-royal.firebaseapp.com",
-            databaseURL: "https://blackjack-casino-royal-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "blackjack-casino-royal",
-            storageBucket: "blackjack-casino-royal.firebasestorage.app",
-            messagingSenderId: "554706185893",
-            appId: "1:554706185893:web:847eefcd131c6a929f674c"
-        };
-
         // Détecter l'environnement Claude.ai
         const isClaudeArtifact = window.location.hostname.includes('claudeusercontent.com') || 
                                 window.location.hostname.includes('claude.ai');
@@ -32,11 +22,12 @@ class FirebaseManager {
         }
 
         try {
-            // Utiliser Firebase seulement sur un hébergement propre
-            if (typeof firebase !== 'undefined') {
-                firebase.initializeApp(firebaseConfig);
-                this.database = firebase.database();
-                console.log("🔥 SIO Casino - Firebase connecté!");
+            // Attendre que Firebase soit disponible
+            await this.waitForFirebase();
+            
+            if (window.firebaseDatabase) {
+                this.database = window.firebaseDatabase;
+                console.log("🔥 SIO Casino - Firebase v9+ connecté!");
                 this.useLocalStorage = false;
             } else {
                 throw new Error("Firebase non disponible");
@@ -46,6 +37,17 @@ class FirebaseManager {
             this.useLocalStorage = true;
             this.database = null;
         }
+    }
+
+    async waitForFirebase() {
+        // Attendre que Firebase soit chargé
+        for (let i = 0; i < 50; i++) {
+            if (window.firebaseDatabase) {
+                return true;
+            }
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        throw new Error("Timeout Firebase");
     }
 
     generateRoomCode() {
@@ -132,12 +134,25 @@ class FirebaseManager {
             });
 
             room.lastUpdate = Date.now();
-            await this.updateRoom(code, room);
+            
+            const updateSuccess = await this.updateRoom(code, room);
+            if (!updateSuccess) {
+                console.log(`❌ Erreur mise à jour room ${code}`);
+                return false;
+            }
             
             console.log(`✅ ${playerName} a rejoint SIO Room ${code}`);
             return true;
         } catch (error) {
             console.error("❌ Erreur rejoindre SIO room:", error);
+            
+            // Si erreur de permission, informer l'utilisateur
+            if (error.code === 'PERMISSION_DENIED' || error.message.includes('permission')) {
+                if (window.uiManager) {
+                    window.uiManager.showNotification('⚠️ Erreur Firebase - Consultez FIREBASE_SETUP.md', 'error');
+                }
+            }
+            
             return false;
         }
     }
@@ -203,13 +218,31 @@ class FirebaseManager {
             room.lastUpdate = Date.now();
             
             if (this.database && !this.useLocalStorage) {
-                await this.database.ref(`sio_rooms/${roomCode}`).set(room);
+                const roomRef = window.firebaseRef(this.database, `sio_rooms/${roomCode}`);
+                await window.firebaseSet(roomRef, room);
             } else {
                 localStorage.setItem(`sio_blackjack_room_${roomCode}`, JSON.stringify(room));
             }
             return true;
         } catch (error) {
             console.error("❌ Erreur mise à jour SIO room:", error);
+            
+            // Si erreur Firebase, basculer vers localStorage
+            if (error.code === 'PERMISSION_DENIED' || error.message.includes('permission')) {
+                console.log("🔄 Basculement vers localStorage pour mise à jour");
+                this.useLocalStorage = true;
+                this.database = null;
+                
+                try {
+                    localStorage.setItem(`sio_blackjack_room_${roomCode}`, JSON.stringify(room));
+                    console.log("✅ Room mise à jour dans localStorage (fallback)");
+                    return true;
+                } catch (localError) {
+                    console.error("❌ Erreur localStorage:", localError);
+                    return false;
+                }
+            }
+            
             return false;
         }
     }
@@ -217,8 +250,9 @@ class FirebaseManager {
     async getRoom(code) {
         try {
             if (this.database && !this.useLocalStorage) {
-                const snapshot = await this.database.ref(`sio_rooms/${code}`).once('value');
-                return snapshot.val();
+                const roomRef = window.firebaseRef(this.database, `sio_rooms/${code}`);
+                const snapshot = await window.firebaseGet(roomRef);
+                return snapshot.exists() ? snapshot.val() : null;
             } else {
                 return JSON.parse(localStorage.getItem(`sio_blackjack_room_${code}`) || 'null');
             }
@@ -238,7 +272,8 @@ class FirebaseManager {
             // Supprimer la room si vide
             if (room.players.length === 0) {
                 if (this.database && !this.useLocalStorage) {
-                    await this.database.ref(`sio_rooms/${code}`).remove();
+                    const roomRef = window.firebaseRef(this.database, `sio_rooms/${code}`);
+                    await window.firebaseRemove(roomRef);
                 } else {
                     localStorage.removeItem(`sio_blackjack_room_${code}`);
                 }
@@ -257,13 +292,17 @@ class FirebaseManager {
         }
     }
 
-    // Listener temps réel optimisé
+    // Listener temps réel optimisé pour Firebase v9+
     setupRoomListener(roomCode, callback) {
         if (this.database && !this.useLocalStorage) {
-            this.database.ref(`sio_rooms/${roomCode}`).on('value', (snapshot) => {
-                const room = snapshot.val();
+            const roomRef = window.firebaseRef(this.database, `sio_rooms/${roomCode}`);
+            const unsubscribe = window.firebaseOnValue(roomRef, (snapshot) => {
+                const room = snapshot.exists() ? snapshot.val() : null;
                 callback(room);
             });
+            
+            // Stocker la fonction de désinscription
+            this.listeners.set(roomCode, unsubscribe);
         } else {
             // Polling optimisé pour localStorage
             this.pollInterval = setInterval(async () => {
@@ -275,7 +314,11 @@ class FirebaseManager {
 
     removeRoomListener(roomCode) {
         if (this.database && !this.useLocalStorage) {
-            this.database.ref(`sio_rooms/${roomCode}`).off();
+            const unsubscribe = this.listeners.get(roomCode);
+            if (unsubscribe) {
+                unsubscribe();
+                this.listeners.delete(roomCode);
+            }
         } else if (this.pollInterval) {
             clearInterval(this.pollInterval);
             this.pollInterval = null;

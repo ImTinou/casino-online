@@ -4,9 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎰 SIO Casino - Blackjack Royal 🎰</title>
-    <!-- Firebase SDK v9 Compat -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.2/firebase-app-compat.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.2/firebase-database-compat.min.js"></script>
+    <!-- Firebase SDK v9+ -->
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js';
+        import { getDatabase, ref, set, get, onValue, remove } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js';
+        
+        // Your Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBlF0Rv-vaLHlopMYNbs7JnLyiqi-HUnn4",
+            authDomain: "blackjack-casino-royal.firebaseapp.com",
+            databaseURL: "https://blackjack-casino-royal-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "blackjack-casino-royal",
+            storageBucket: "blackjack-casino-royal.firebasestorage.app",
+            messagingSenderId: "554706185893",
+            appId: "1:554706185893:web:847eefcd131c6a929f674c",
+            measurementId: "G-8XTRFPR9VQ"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        
+        // Make Firebase available globally
+        window.firebaseApp = app;
+        window.firebaseDatabase = database;
+        window.firebaseRef = ref;
+        window.firebaseSet = set;
+        window.firebaseGet = get;
+        window.firebaseOnValue = onValue;
+        window.firebaseRemove = remove;
+    </script>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
