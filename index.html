@@ -1125,7 +1125,14 @@
 
             async startNewHand(roomCode) {
                 const room = await this.getRoom(roomCode);
-                if (!room || room.players.length === 0) return false;
+                if (!room) return false;
+
+                // Assurer que room.players existe
+                if (!room.players || !Array.isArray(room.players)) {
+                    room.players = [];
+                }
+
+                if (room.players.length === 0) return false;
 
                 // Reset pour nouvelle manche
                 room.gameState = 'dealing';
@@ -1165,6 +1172,13 @@
                 const room = await this.getRoom(roomCode);
                 if (!room) return;
 
+                // Assurer que room.players existe
+                if (!room.players || !Array.isArray(room.players)) {
+                    room.players = [];
+                }
+
+                if (room.players.length === 0) return;
+
                 // Distribuer 2 cartes à chaque joueur, puis 2 au croupier
                 for (let round = 0; round < 2; round++) {
                     // Cartes aux joueurs
@@ -1182,11 +1196,21 @@
                 // Vérifier les blackjacks et commencer le jeu
                 const updatedRoom = await this.getRoom(roomCode);
                 
+                // Assurer que updatedRoom.players existe
+                if (!updatedRoom.players || !Array.isArray(updatedRoom.players)) {
+                    updatedRoom.players = [];
+                }
+
                 // Calculer les scores
                 updatedRoom.players.forEach(player => {
+                    // Assurer que player.hands existe
+                    if (!player.hands || !Array.isArray(player.hands)) {
+                        player.hands = [{ cards: [], score: 0, bet: 10, status: 'waiting' }];
+                    }
+
                     const hand = player.hands[0];
-                    hand.score = this.calculateScore(hand.cards);
-                    if (this.isBlackjack(hand.cards)) {
+                    hand.score = this.calculateScore(hand.cards || []);
+                    if (this.isBlackjack(hand.cards || [])) {
                         hand.status = 'blackjack';
                     } else {
                         hand.status = 'playing';
@@ -1194,9 +1218,9 @@
                 });
 
                 // Vérifier si le croupier a un As visible (assurance)
-                if (updatedRoom.dealerCards.length >= 2) {
+                if (updatedRoom.dealerCards && updatedRoom.dealerCards.length >= 2) {
                     const visibleCard = updatedRoom.dealerCards[0];
-                    if (visibleCard.value === 'A') {
+                    if (visibleCard && visibleCard.value === 'A') {
                         updatedRoom.gameState = 'insurance';
                         await this.updateRoom(roomCode, updatedRoom);
                         return;
@@ -1254,21 +1278,34 @@
                 const room = await this.getRoom(roomCode);
                 if (!room || room.gameState !== 'playing') return { success: false };
 
+                // Assurer que room.players existe
+                if (!room.players || !Array.isArray(room.players)) {
+                    room.players = [];
+                }
+
                 const player = room.players.find(p => p.name === playerName);
                 if (!player || !player.isActive) return { success: false };
 
-                const hand = player.hands[player.currentHandIndex];
+                // Assurer que player.hands existe
+                if (!player.hands || !Array.isArray(player.hands)) {
+                    player.hands = [{ cards: [], score: 0, bet: 10, status: 'waiting' }];
+                }
+
+                const hand = player.hands[player.currentHandIndex] || player.hands[0];
                 if (!hand || hand.status !== 'playing') return { success: false };
 
                 switch (action) {
                     case 'hit':
                         await this.dealCard(roomCode, 'player', room.players.indexOf(player), player.currentHandIndex);
                         const updatedRoom = await this.getRoom(roomCode);
-                        const updatedHand = updatedRoom.players.find(p => p.name === playerName).hands[player.currentHandIndex];
-                        
-                        if (updatedHand.score > 21) {
-                            updatedHand.status = 'bust';
-                            await this.nextTurn(roomCode);
+                        const updatedPlayer = updatedRoom.players.find(p => p.name === playerName);
+                        if (updatedPlayer && updatedPlayer.hands && updatedPlayer.hands[player.currentHandIndex]) {
+                            const updatedHand = updatedPlayer.hands[player.currentHandIndex];
+                            
+                            if (updatedHand.score > 21) {
+                                updatedHand.status = 'bust';
+                                await this.nextTurn(roomCode);
+                            }
                         }
                         break;
 
@@ -1285,15 +1322,18 @@
                             await this.dealCard(roomCode, 'player', room.players.indexOf(player), player.currentHandIndex);
                             
                             const updatedRoom2 = await this.getRoom(roomCode);
-                            const updatedHand2 = updatedRoom2.players.find(p => p.name === playerName).hands[player.currentHandIndex];
-                            updatedHand2.status = updatedHand2.score > 21 ? 'bust' : 'stand';
-                            await this.updateRoom(roomCode, updatedRoom2);
-                            await this.nextTurn(roomCode);
+                            const updatedPlayer2 = updatedRoom2.players.find(p => p.name === playerName);
+                            if (updatedPlayer2 && updatedPlayer2.hands && updatedPlayer2.hands[player.currentHandIndex]) {
+                                const updatedHand2 = updatedPlayer2.hands[player.currentHandIndex];
+                                updatedHand2.status = updatedHand2.score > 21 ? 'bust' : 'stand';
+                                await this.updateRoom(roomCode, updatedRoom2);
+                                await this.nextTurn(roomCode);
+                            }
                         }
                         break;
 
                     case 'split':
-                        if (this.canSplit(hand.cards) && player.balance >= hand.bet) {
+                        if (this.canSplit(hand.cards || []) && player.balance >= hand.bet) {
                             player.balance -= hand.bet;
                             
                             // Séparer les cartes en deux mains
@@ -1341,8 +1381,22 @@
                 const room = await this.getRoom(roomCode);
                 if (!room) return;
 
+                // Assurer que room.players existe
+                if (!room.players || !Array.isArray(room.players)) {
+                    room.players = [];
+                    return;
+                }
+
+                if (room.currentPlayerIndex >= room.players.length) return;
+
                 const currentPlayer = room.players[room.currentPlayerIndex];
-                
+                if (!currentPlayer) return;
+
+                // Assurer que currentPlayer.hands existe
+                if (!currentPlayer.hands || !Array.isArray(currentPlayer.hands)) {
+                    currentPlayer.hands = [{ cards: [], score: 0, bet: 10, status: 'waiting' }];
+                }
+
                 // Vérifier si le joueur actuel a d'autres mains à jouer
                 if (currentPlayer.currentHandIndex < currentPlayer.hands.length - 1) {
                     // Passer à la main suivante du même joueur
@@ -1364,7 +1418,17 @@
 
                 while (nextIndex < room.players.length) {
                     const nextPlayer = room.players[nextIndex];
-                    const hasPlayingHand = nextPlayer.hands.some(h => h.status === 'playing');
+                    if (!nextPlayer) {
+                        nextIndex++;
+                        continue;
+                    }
+
+                    // Assurer que nextPlayer.hands existe
+                    if (!nextPlayer.hands || !Array.isArray(nextPlayer.hands)) {
+                        nextPlayer.hands = [{ cards: [], score: 0, bet: 10, status: 'waiting' }];
+                    }
+
+                    const hasPlayingHand = nextPlayer.hands.some(h => h && h.status === 'playing');
                     
                     if (hasPlayingHand) {
                         nextPlayer.isActive = true;
@@ -1415,43 +1479,55 @@
                 const room = await this.getRoom(roomCode);
                 if (!room) return;
 
-                const dealerScore = room.dealerScore;
+                // Assurer que room.players existe
+                if (!room.players || !Array.isArray(room.players)) {
+                    room.players = [];
+                }
+
+                const dealerScore = room.dealerScore || 0;
                 const dealerBust = dealerScore > 21;
-                const dealerBlackjack = room.dealerHasBlackjack;
+                const dealerBlackjack = room.dealerHasBlackjack || false;
 
                 room.players.forEach(player => {
+                    // Assurer que player.hands existe
+                    if (!player.hands || !Array.isArray(player.hands)) {
+                        player.hands = [{ cards: [], score: 0, bet: 10, status: 'waiting' }];
+                    }
+
                     player.hands.forEach(hand => {
-                        const playerScore = hand.score;
+                        if (!hand) return;
+
+                        const playerScore = hand.score || 0;
                         const playerBust = playerScore > 21;
-                        const playerBlackjack = this.isBlackjack(hand.cards);
+                        const playerBlackjack = this.isBlackjack(hand.cards || []);
 
                         if (playerBust) {
                             hand.result = 'lose';
-                            player.losses++;
+                            player.losses = (player.losses || 0) + 1;
                         } else if (playerBlackjack && !dealerBlackjack && !hand.isSplit) {
                             hand.result = 'blackjack';
-                            player.balance += hand.bet * 2.5; // Blackjack paie 3:2
-                            player.wins++;
+                            player.balance = (player.balance || 0) + (hand.bet || 0) * 2.5; // Blackjack paie 3:2
+                            player.wins = (player.wins || 0) + 1;
                         } else if (dealerBust) {
                             hand.result = 'win';
-                            player.balance += hand.bet * 2;
-                            player.wins++;
+                            player.balance = (player.balance || 0) + (hand.bet || 0) * 2;
+                            player.wins = (player.wins || 0) + 1;
                         } else if (playerScore > dealerScore) {
                             hand.result = 'win';
-                            player.balance += hand.bet * 2;
-                            player.wins++;
+                            player.balance = (player.balance || 0) + (hand.bet || 0) * 2;
+                            player.wins = (player.wins || 0) + 1;
                         } else if (playerScore === dealerScore) {
                             hand.result = 'tie';
-                            player.balance += hand.bet; // Rembourser
+                            player.balance = (player.balance || 0) + (hand.bet || 0); // Rembourser
                         } else {
                             hand.result = 'lose';
-                            player.losses++;
+                            player.losses = (player.losses || 0) + 1;
                         }
 
                         // Assurance
                         if (player.hasInsurance) {
                             if (dealerBlackjack) {
-                                player.balance += hand.bet; // Assurance paie 2:1
+                                player.balance = (player.balance || 0) + (hand.bet || 0); // Assurance paie 2:1
                             }
                         }
                     });
@@ -1508,6 +1584,11 @@
                 try {
                     const room = await this.getRoom(code);
                     if (!room) return false;
+
+                    // Assurer que room.players existe
+                    if (!room.players) {
+                        room.players = [];
+                    }
 
                     room.players = room.players.filter(p => p.name !== playerName);
                     
@@ -1656,6 +1737,11 @@
         function updateGameDisplay(room) {
             if (!room) return;
 
+            // Assurer que room.players existe
+            if (!room.players) {
+                room.players = [];
+            }
+
             updatePlayerCount(room);
             updateGameStats(room);
             updatePlayerPositions(room);
@@ -1667,7 +1753,7 @@
         function updatePlayerCount(room) {
             const playerCountElement = document.getElementById('playerCount');
             if (playerCountElement) {
-                playerCountElement.textContent = room.players.length;
+                playerCountElement.textContent = (room.players || []).length;
             }
         }
 
@@ -1708,6 +1794,11 @@
                 spot.querySelector('.player-hands').innerHTML = '';
             }
 
+            // Assurer que room.players existe
+            if (!room.players || !Array.isArray(room.players)) {
+                return;
+            }
+
             // Placer les joueurs
             room.players.forEach((player, idx) => {
                 const position = player.position || (idx + 1);
@@ -1721,8 +1812,13 @@
                 spot.querySelector('.player-avatar').textContent = player.name.charAt(0).toUpperCase();
                 spot.querySelector('.player-name').textContent = player.name;
                 
+                // Assurer que player.hands existe
+                if (!player.hands || !Array.isArray(player.hands)) {
+                    player.hands = [{ cards: [], score: 0, bet: 0, status: 'waiting' }];
+                }
+
                 // Afficher le score et la mise totale
-                const totalBet = player.hands.reduce((sum, h) => sum + h.bet, 0);
+                const totalBet = player.hands.reduce((sum, h) => sum + (h.bet || 0), 0);
                 spot.querySelector('.player-bet').textContent = `Mise: ${totalBet}`;
 
                 // Status global du joueur
@@ -1765,10 +1861,12 @@
                     const cardsDiv = document.createElement('div');
                     cardsDiv.className = 'hand-cards';
                     
-                    hand.cards.forEach(card => {
-                        const cardEl = createCardElement(card);
-                        cardsDiv.appendChild(cardEl);
-                    });
+                    if (hand.cards && Array.isArray(hand.cards)) {
+                        hand.cards.forEach(card => {
+                            const cardEl = createCardElement(card);
+                            cardsDiv.appendChild(cardEl);
+                        });
+                    }
                     
                     const scoreDiv = document.createElement('div');
                     scoreDiv.className = 'hand-score';
@@ -1839,6 +1937,11 @@
             if (playerControls) playerControls.style.display = 'none';
             if (waitingControls) waitingControls.style.display = 'none';
 
+            // Assurer que room.players existe
+            if (!room.players) {
+                room.players = [];
+            }
+
             if (isDealer) {
                 if (dealerControls) dealerControls.style.display = 'flex';
                 
@@ -1861,7 +1964,12 @@
                 if (player && player.isActive && room.gameState === 'playing') {
                     if (playerControls) playerControls.style.display = 'flex';
                     
-                    const currentHand = player.hands[player.currentHandIndex];
+                    // Assurer que player.hands existe
+                    if (!player.hands || !Array.isArray(player.hands)) {
+                        player.hands = [{ cards: [], score: 0, bet: 0, status: 'waiting' }];
+                    }
+
+                    const currentHand = player.hands[player.currentHandIndex] || player.hands[0];
                     
                     // Boutons de base
                     const hitBtn = document.getElementById('hitBtn');
@@ -1877,7 +1985,7 @@
                     
                     // Split
                     const splitBtn = document.getElementById('splitBtn');
-                    if (splitBtn) {
+                    if (splitBtn && currentHand.cards) {
                         splitBtn.style.display = (gameServer.canSplit(currentHand.cards) && player.balance >= currentHand.bet && player.hands.length < 2) ? 'inline-block' : 'none';
                     }
                     
