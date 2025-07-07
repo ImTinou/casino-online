@@ -956,6 +956,11 @@
                         return { success: false, error: "Table introuvable" };
                     }
                     
+                    // Assurer que room.players existe
+                    if (!room.players || !Array.isArray(room.players)) {
+                        room.players = [];
+                    }
+                    
                     if (room.players.find(p => p.name === playerName)) {
                         return { success: false, error: "Nom déjà pris" };
                     }
