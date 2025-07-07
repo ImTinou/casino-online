@@ -893,33 +893,20 @@
             appId: "1:554706185893:web:847eefcd131c6a929f674c"
         };
 
-        // Serveur de jeu Blackjack avec logique corrigée
+        // Serveur de jeu Blackjack avec Firebase uniquement
         class SIOCasinoGameServer {
             constructor() {
-                this.useLocalStorage = true;
                 this.initFirebase();
             }
 
             async initFirebase() {
-                const isClaudeArtifact = window.location.hostname.includes('claudeusercontent.com') || 
-                                        window.location.hostname.includes('claude.ai');
-                
-                if (isClaudeArtifact) {
-                    console.log("🎮 Mode DEMO activé (localStorage)");
-                    this.useLocalStorage = true;
-                    database = null;
-                    return;
-                }
-
                 try {
                     firebase.initializeApp(firebaseConfig);
                     database = firebase.database();
                     console.log("🔥 Firebase connecté avec succès!");
-                    this.useLocalStorage = false;
                 } catch (error) {
-                    console.log("🔄 Fallback vers localStorage");
-                    this.useLocalStorage = true;
-                    database = null;
+                    console.error("❌ Erreur Firebase:", error);
+                    throw new Error("Impossible de se connecter à Firebase");
                 }
             }
 
@@ -952,12 +939,8 @@
                 };
                 
                 try {
-                    if (database) {
-                        await database.ref(`rooms/${code}`).set(room);
-                    } else {
-                        window.gameRooms = window.gameRooms || {};
-                        window.gameRooms[code] = room;
-                    }
+                    await database.ref(`rooms/${code}`).set(room);
+                    window.history.pushState({}, '', `?roomid=${code}`);
                     return code;
                 } catch (error) {
                     console.error("❌ Erreur création room:", error);
@@ -1007,6 +990,7 @@
                     room.lastUpdate = Date.now();
                     
                     await this.updateRoom(code, room);
+                    window.history.pushState({}, '', `?roomid=${code}`);
                     return { success: true };
                 } catch (error) {
                     console.error("❌ Erreur rejoindre room:", error);
@@ -1094,13 +1078,7 @@
             async updateRoom(roomCode, room) {
                 try {
                     room.lastUpdate = Date.now();
-                    
-                    if (database) {
-                        await database.ref(`rooms/${roomCode}`).set(room);
-                    } else {
-                        window.gameRooms = window.gameRooms || {};
-                        window.gameRooms[roomCode] = room;
-                    }
+                    await database.ref(`rooms/${roomCode}`).set(room);
                     return true;
                 } catch (error) {
                     console.error("❌ Erreur mise à jour room:", error);
@@ -1110,13 +1088,8 @@
 
             async getRoom(code) {
                 try {
-                    if (database) {
-                        const snapshot = await database.ref(`rooms/${code}`).once('value');
-                        return snapshot.val();
-                    } else {
-                        window.gameRooms = window.gameRooms || {};
-                        return window.gameRooms[code] || null;
-                    }
+                    const snapshot = await database.ref(`rooms/${code}`).once('value');
+                    return snapshot.val();
                 } catch (error) {
                     console.error("❌ Erreur récupération room:", error);
                     return null;
@@ -1538,27 +1511,14 @@
             }
 
             setupRoomListener(roomCode, callback) {
-                if (database && !this.useLocalStorage) {
-                    database.ref(`rooms/${roomCode}`).on('value', (snapshot) => {
-                        const room = snapshot.val();
-                        callback(room);
-                    });
-                } else {
-                    // Polling pour localStorage/demo
-                    const pollInterval = setInterval(async () => {
-                        const room = await this.getRoom(roomCode);
-                        callback(room);
-                    }, 500);
-                    this.pollInterval = pollInterval;
-                }
+                database.ref(`rooms/${roomCode}`).on('value', (snapshot) => {
+                    const room = snapshot.val();
+                    callback(room);
+                });
             }
 
             removeRoomListener(roomCode) {
-                if (database && !this.useLocalStorage) {
-                    database.ref(`rooms/${roomCode}`).off();
-                } else if (this.pollInterval) {
-                    clearInterval(this.pollInterval);
-                }
+                database.ref(`rooms/${roomCode}`).off();
             }
 
             async addChatMessage(roomCode, playerName, message) {
@@ -1593,11 +1553,7 @@
                     room.players = room.players.filter(p => p.name !== playerName);
                     
                     if (room.players.length === 0) {
-                        if (database) {
-                            await database.ref(`rooms/${code}`).remove();
-                        } else {
-                            delete window.gameRooms[code];
-                        }
+                        await database.ref(`rooms/${code}`).remove();
                     } else {
                         room.players.forEach((player, index) => {
                             player.position = index + 1;
@@ -1637,11 +1593,63 @@
             
             if (currentRoom) {
                 showNotification('🎰 Table créée!', 'success');
+                showShareableLink();
                 showGameInterface();
                 setupRoomListener();
             } else {
                 showNotification('❌ Erreur lors de la création', 'error');
             }
+        }
+
+        function showShareableLink() {
+            const url = `${window.location.origin}${window.location.pathname}?roomid=${currentRoom}`;
+            
+            const linkPopup = document.createElement('div');
+            linkPopup.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0, 0, 0, 0.95);
+                color: white;
+                padding: 30px;
+                border-radius: 15px;
+                z-index: 10000;
+                text-align: center;
+                border: 2px solid #FFD700;
+                max-width: 500px;
+                max-height: 80vh;
+                overflow-y: auto;
+            `;
+            
+            linkPopup.innerHTML = `
+                <h3>🎉 Table SIO Casino créée!</h3>
+                <p style="margin: 15px 0; color: #FFD700;">Code: <strong>${currentRoom}</strong></p>
+                
+                <p style="margin: 10px 0;">Lien de la table :</p>
+                <input type="text" value="${url}" style="width: 100%; padding: 10px; border: none; border-radius: 5px; margin: 10px 0; font-family: monospace; font-size: 12px; color: black;" readonly onclick="this.select()">
+                
+                <div style="margin-top: 20px;">
+                    <button onclick="copyToClipboard('${url}'); this.parentElement.parentElement.remove();" style="background: #FFD700; color: black; border: none; padding: 10px 20px; border-radius: 5px; margin: 5px; cursor: pointer;">📋 Copier le lien</button>
+                    <button onclick="this.parentElement.parentElement.remove();" style="background: #666; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin: 5px; cursor: pointer;">Fermer</button>
+                </div>
+            `;
+            
+            document.body.appendChild(linkPopup);
+            
+            setTimeout(() => {
+                if (linkPopup.parentElement) {
+                    linkPopup.remove();
+                }
+            }, 15000);
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification('📋 Lien copié!', 'success');
+            }).catch(() => {
+                showNotification('❌ Erreur copie', 'error');
+            });
         }
 
         function showJoinRoom() {
@@ -2102,6 +2110,8 @@
             document.getElementById('lobby').style.display = 'flex';
             document.getElementById('gameInterface').style.display = 'none';
             
+            window.history.pushState({}, '', window.location.pathname);
+            
             currentRoom = null;
             playerName = '';
             isDealer = false;
@@ -2233,22 +2243,22 @@
             
             console.log("🎮 Initialisation du SIO Casino...");
             
-            gameServer = new SIOCasinoGameServer();
-            
-            // Attendre l'initialisation
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            createParticles();
-            setupEventListeners();
-            setupChat();
-            joinFromURL();
-            
-            if (gameServer.useLocalStorage) {
-                console.log("✅ SIO Casino initialisé en mode DEMO");
-                showNotification('🎮 Mode DEMO - Multijoueur local', 'info');
-            } else {
+            try {
+                gameServer = new SIOCasinoGameServer();
+                
+                // Attendre l'initialisation Firebase
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                createParticles();
+                setupEventListeners();
+                setupChat();
+                joinFromURL();
+                
                 console.log("✅ SIO Casino initialisé avec Firebase");
                 showNotification('🔥 Multijoueur en ligne activé!', 'success');
+            } catch (error) {
+                console.error("❌ Erreur d'initialisation:", error);
+                showNotification('❌ Erreur de connexion Firebase', 'error');
             }
         }
 
