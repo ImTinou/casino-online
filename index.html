@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎰 SIO Casino 🎰</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎰</text></svg>">
+    <title>🎰 Blackjack Casino Royal 🎰</title>
+    <!-- Firebase SDK v9 Compat -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.2/firebase-app-compat.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.2/firebase-database-compat.min.js"></script>
     <style>
@@ -120,8 +120,8 @@
         .casino-table {
             width: 95%;
             max-width: 1200px;
-            height: 650px;
-            margin: 30px auto;
+            height: 600px;
+            margin: 50px auto;
             background: 
                 radial-gradient(ellipse at center, #1B5E20, #2E7D32, #1B5E20),
                 linear-gradient(45deg, #0D4F11 0%, #1B5E20 25%, #2E7D32 50%, #1B5E20 75%, #0D4F11 100%);
@@ -153,15 +153,14 @@
             border-radius: inherit;
         }
 
-        /* ========== DEALER AREA ========== */
-        .dealer-area {
+        /* ========== POSITIONS SUR LA TABLE ========== */
+        .dealer-position {
             position: absolute;
-            top: 30px;
+            top: 20px;
             left: 50%;
             transform: translateX(-50%);
             text-align: center;
             z-index: 20;
-            width: 400px;
         }
 
         .dealer-avatar {
@@ -186,33 +185,48 @@
             50% { box-shadow: 0 0 50px rgba(255, 215, 0, 0.8), inset 0 0 20px rgba(0, 0, 0, 0.2); }
         }
 
-        .dealer-name {
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #FFD700;
+        .deck-position {
+            position: absolute;
+            top: 50%;
+            left: 30px;
+            transform: translateY(-50%);
+            z-index: 15;
         }
 
-        .dealer-score {
+        .deck-stack {
+            width: 60px;
+            height: 90px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .deck-stack:hover {
+            transform: scale(1.1);
+        }
+
+        .deck-card {
+            position: absolute;
+            width: 60px;
+            height: 90px;
+            background: linear-gradient(135deg, #1a237e, #3949ab);
+            border-radius: 8px;
+            border: 2px solid #FFD700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #FFD700;
             font-size: 20px;
             font-weight: bold;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 8px 16px;
-            border-radius: 15px;
-            border: 2px solid #FFD700;
-            margin-bottom: 15px;
-            display: inline-block;
         }
 
-        .dealer-cards {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            min-height: 120px;
-            flex-wrap: wrap;
-        }
+        .deck-card:nth-child(1) { transform: rotate(-2deg) translate(2px, 2px); }
+        .deck-card:nth-child(2) { transform: rotate(-1deg) translate(1px, 1px); }
+        .deck-card:nth-child(3) { transform: rotate(0deg); }
+        .deck-card:nth-child(4) { transform: rotate(1deg) translate(-1px, -1px); }
+        .deck-card:nth-child(5) { transform: rotate(2deg) translate(-2px, -2px); }
 
-        /* ========== PLAYER POSITIONS ========== */
+        /* Positions des joueurs autour de la table */
         .player-positions {
             position: absolute;
             width: 100%;
@@ -222,22 +236,23 @@
         .player-spot {
             position: absolute;
             width: 180px;
-            height: 250px;
+            min-height: 200px;
             display: flex;
             flex-direction: column;
             align-items: center;
             z-index: 20;
+            padding: 10px;
         }
 
-        .player-spot.spot-1 { bottom: 40px; left: 8%; }
-        .player-spot.spot-2 { bottom: 40px; left: 25%; }
-        .player-spot.spot-3 { bottom: 40px; left: 50%; transform: translateX(-50%); }
-        .player-spot.spot-4 { bottom: 40px; right: 25%; }
-        .player-spot.spot-5 { bottom: 40px; right: 8%; }
+        .player-spot.spot-1 { bottom: 20px; left: 10%; }
+        .player-spot.spot-2 { bottom: 20px; left: 27%; }
+        .player-spot.spot-3 { bottom: 20px; left: 50%; transform: translateX(-50%); }
+        .player-spot.spot-4 { bottom: 20px; right: 27%; }
+        .player-spot.spot-5 { bottom: 20px; right: 10%; }
 
         .player-avatar {
-            width: 65px;
-            height: 65px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             background: linear-gradient(135deg, #667eea, #764ba2);
             display: flex;
@@ -247,7 +262,7 @@
             font-weight: bold;
             border: 3px solid transparent;
             transition: all 0.3s ease;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
 
@@ -269,168 +284,142 @@
             font-weight: bold;
             text-align: center;
             margin-bottom: 5px;
-            color: #FFD700;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
         }
 
-        .player-score {
-            font-size: 16px;
-            font-weight: bold;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 4px 10px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            margin-bottom: 5px;
-            min-width: 40px;
-            text-align: center;
-        }
-
-        .player-bet {
-            font-size: 12px;
-            background: rgba(255, 215, 0, 0.2);
-            padding: 2px 8px;
-            border-radius: 8px;
-            margin-bottom: 5px;
-            color: #FFD700;
-        }
-
-        .player-status {
-            font-size: 11px;
-            padding: 2px 6px;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: bold;
-        }
-
-        .player-status.win { background: rgba(0, 255, 0, 0.3); color: #00ff00; }
-        .player-status.lose { background: rgba(255, 0, 0, 0.3); color: #ff4444; }
-        .player-status.tie { background: rgba(255, 255, 0, 0.3); color: #ffff00; }
-        .player-status.blackjack { background: rgba(255, 215, 0, 0.5); color: #FFD700; }
-        .player-status.bust { background: rgba(255, 0, 0, 0.5); color: #ff6666; }
-
-        .player-hands {
+        .player-cards-area {
             display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: 10px;
-            width: 100%;
-        }
-
-        .player-hand {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 8px;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            min-height: 80px;
-        }
-
-        .player-hand.active {
-            background: rgba(0, 255, 136, 0.2);
-            border: 1px solid #00ff88;
-        }
-
-        .player-hand.split {
-            background: rgba(255, 215, 0, 0.1);
-            border: 1px solid #FFD700;
-        }
-
-        .hand-label {
-            font-size: 10px;
-            color: #FFD700;
-            margin-bottom: 3px;
-            font-weight: bold;
-        }
-
-        .hand-cards {
-            display: flex;
+            gap: 5px;
             justify-content: center;
-            gap: 4px;
-            margin-bottom: 5px;
+            margin: 10px 0;
+            min-height: 48px;
             flex-wrap: wrap;
         }
 
-        .hand-score {
-            font-size: 12px;
+        .player-score {
+            font-size: 18px;
             font-weight: bold;
-            color: #fff;
             background: rgba(0, 0, 0, 0.6);
-            padding: 2px 6px;
-            border-radius: 6px;
+            padding: 5px 12px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 5px;
         }
 
-        /* ========== CARTES ========== */
+        .player-status {
+            font-size: 12px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .player-status.win { background: rgba(0, 255, 0, 0.3); color: #4ff44f; }
+        .player-status.lose { background: rgba(255, 0, 0, 0.3); color: #ff4f4f; }
+        .player-status.tie { background: rgba(255, 255, 0, 0.3); color: #ffff4f; }
+        .player-status.bust { background: rgba(255, 0, 0, 0.5); color: #ff6f6f; }
+        .player-status.blackjack { background: rgba(255, 215, 0, 0.5); color: #FFD700; }
+
+        /* ========== CARTES ET ANIMATIONS ========== */
         .card {
-            width: 50px;
-            height: 75px;
+            width: 45px;
+            height: 65px;
             border-radius: 6px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: space-between;
-            padding: 4px 3px;
+            justify-content: center;
+            padding: 4px;
             font-weight: bold;
-            font-size: 10px;
+            font-size: 11px;
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+            cursor: pointer;
+            transform-style: preserve-3d;
             transition: all 0.3s ease;
-            z-index: 10;
             position: relative;
         }
 
         .card:hover {
-            transform: translateY(-3px) scale(1.05);
+            transform: translateY(-3px) scale(1.1);
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
         }
 
         .card.red {
             background: linear-gradient(135deg, #ffffff, #f8f8f8);
             color: #d32f2f;
-            border: 2px solid #ffcdd2;
+            border: 1.5px solid #ffcdd2;
         }
 
         .card.black {
             background: linear-gradient(135deg, #ffffff, #f8f8f8);
             color: #1a1a1a;
-            border: 2px solid #e0e0e0;
+            border: 1.5px solid #e0e0e0;
         }
 
         .card.hidden {
             background: linear-gradient(135deg, #1a237e, #3949ab);
             color: #FFD700;
-            font-size: 14px;
-            border: 2px solid #FFD700;
+            border: 1.5px solid #FFD700;
         }
 
         .card-value {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: bold;
         }
 
         .card-suit {
-            font-size: 14px;
-        }
-
-        /* Cartes plus grandes pour le dealer */
-        .dealer-cards .card {
-            width: 60px;
-            height: 90px;
-            font-size: 12px;
-        }
-
-        .dealer-cards .card .card-value {
-            font-size: 14px;
-        }
-
-        .dealer-cards .card .card-suit {
             font-size: 16px;
+            margin-top: 2px;
         }
 
-        /* ========== GAME HEADER ========== */
+        /* Cards dans la zone dealer */
+        #dealerCards {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            margin-top: 10px;
+            min-height: 65px;
+        }
+
+        /* Animation de distribution des cartes */
+        @keyframes dealCard {
+            0% {
+                transform: translate(0, 0) rotate(0deg) scale(0);
+                opacity: 0;
+            }
+            20% {
+                opacity: 1;
+                transform: scale(0.5) rotate(180deg);
+            }
+            80% {
+                transform: scale(1.1) rotate(340deg);
+            }
+            100% {
+                transform: translate(0, 0) rotate(360deg) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .card.dealing {
+            animation: dealCard 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+
+        /* Animation de retournement */
+        @keyframes flipCard {
+            0% { transform: rotateY(0deg); }
+            50% { transform: rotateY(90deg); }
+            100% { transform: rotateY(0deg); }
+        }
+
+        .card.flipping {
+            animation: flipCard 0.6s ease-in-out;
+        }
+
+        /* ========== INTERFACE DE CONTRÔLE ========== */
         .game-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(15px);
             padding: 20px 30px;
             border-radius: 20px;
@@ -457,59 +446,54 @@
             border-radius: 10px;
         }
 
-        .game-stats {
+        .connection-status {
             display: flex;
-            gap: 20px;
-            font-size: 14px;
-        }
-
-        .stat-item {
-            display: flex;
-            flex-direction: column;
             align-items: center;
-            padding: 8px 12px;
+            gap: 10px;
+            padding: 10px 15px;
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
+            border-radius: 15px;
         }
 
-        .stat-label {
-            font-size: 11px;
-            opacity: 0.8;
-            margin-bottom: 2px;
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
         }
 
-        .stat-value {
-            font-weight: bold;
-            color: #FFD700;
+        .status-dot.connected { background: #00ff88; }
+        .status-dot.waiting { background: #ffaa00; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.2); }
         }
 
-        /* ========== CONTRÔLES DE JEU ========== */
+        /* ========== BOUTONS ET CONTRÔLES ========== */
         .game-controls {
             position: fixed;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 12px;
+            gap: 15px;
             z-index: 50;
-            flex-wrap: wrap;
-            justify-content: center;
         }
 
         .btn {
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: 20px;
+            padding: 15px 30px;
+            border-radius: 25px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 600;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             position: relative;
             overflow: hidden;
-            min-width: 80px;
         }
 
         .btn::before {
@@ -531,8 +515,8 @@
         }
 
         .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
         }
 
         .btn:disabled {
@@ -546,7 +530,6 @@
         .btn-danger { background: linear-gradient(135deg, #ff416c, #ff4b2b); }
         .btn-warning { background: linear-gradient(135deg, #f093fb, #f5576c); }
         .btn-gold { background: linear-gradient(135deg, #FFD700, #FFA500); color: #000; }
-        .btn-purple { background: linear-gradient(135deg, #667eea, #764ba2); }
 
         /* ========== INPUTS ========== */
         .input-group {
@@ -583,13 +566,89 @@
             color: rgba(255, 255, 255, 0.6);
         }
 
+        /* ========== CHAT ========== */
+        #chatBox {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 15px;
+            margin: 20px auto;
+            max-width: 600px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+
+        #chatMessages {
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            margin-bottom: 10px;
+            scrollbar-width: thin;
+            scrollbar-color: #FFD700 transparent;
+        }
+
+        #chatMessages::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #chatMessages::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+        }
+
+        #chatMessages::-webkit-scrollbar-thumb {
+            background: #FFD700;
+            border-radius: 4px;
+        }
+
+        .chat-message {
+            margin-bottom: 8px;
+            padding: 5px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.05);
+            word-wrap: break-word;
+        }
+
+        .chat-author {
+            color: #FFD700;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        .chat-time {
+            color: #888;
+            font-size: 11px;
+            margin-right: 5px;
+        }
+
+        #chatForm {
+            display: flex;
+            gap: 10px;
+        }
+
+        #chatInput {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        #chatInput:focus {
+            border-color: #FFD700;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+        }
+
         /* ========== NOTIFICATIONS ========== */
         .notification {
             position: fixed;
             top: 20px;
             right: 20px;
-            padding: 16px 20px;
-            border-radius: 12px;
+            padding: 20px 25px;
+            border-radius: 15px;
             color: white;
             font-weight: bold;
             z-index: 1000;
@@ -597,7 +656,6 @@
             transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
             border: 1px solid rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(15px);
-            max-width: 300px;
         }
 
         .notification.show {
@@ -608,85 +666,37 @@
         .notification.error { background: linear-gradient(135deg, #ff416c, #ff4b2b); }
         .notification.info { background: linear-gradient(135deg, #667eea, #764ba2); }
 
-        /* ========== CHAT ========== */
-        .chat-container {
-            background: rgba(0, 0, 0, 0.8);
-            border-radius: 15px;
-            padding: 15px;
-            margin: 20px auto 0;
-            max-width: 600px;
-            border: 1px solid rgba(255, 215, 0, 0.3);
-        }
-
-        .chat-messages {
-            max-height: 150px;
-            overflow-y: auto;
-            margin-bottom: 10px;
-            padding: 5px;
-        }
-
-        .chat-message {
-            margin-bottom: 5px;
-            font-size: 13px;
-        }
-
-        .chat-name {
-            color: #FFD700;
-            font-weight: bold;
-        }
-
-        .chat-time {
-            color: #aaa;
-            font-size: 11px;
-        }
-
-        .chat-text {
-            color: #fff;
-        }
-
-        .chat-form {
-            display: flex;
-            gap: 10px;
-        }
-
-        .chat-input {
-            flex: 1;
-            padding: 8px 12px;
-            border: 1px solid rgba(255, 215, 0, 0.3);
-            border-radius: 10px;
-            background: rgba(0, 0, 0, 0.5);
-            color: white;
-            font-size: 14px;
-        }
-
-        .chat-input:focus {
-            outline: none;
-            border-color: #FFD700;
-        }
-
         /* ========== RESPONSIVE ========== */
         @media (max-width: 768px) {
             .casino-table {
                 width: 98%;
-                height: 500px;
-                margin: 15px auto;
+                height: 450px;
+                margin: 20px auto;
             }
             
             .player-spot {
-                width: 140px;
-                height: 200px;
+                width: 120px;
+                min-height: 160px;
             }
             
             .player-avatar {
-                width: 50px;
-                height: 50px;
+                width: 45px;
+                height: 45px;
                 font-size: 1.1em;
             }
             
             .card {
-                width: 40px;
-                height: 60px;
+                width: 35px;
+                height: 50px;
                 font-size: 9px;
+            }
+
+            .card-value {
+                font-size: 11px;
+            }
+
+            .card-suit {
+                font-size: 13px;
             }
             
             .dealer-avatar {
@@ -697,13 +707,8 @@
             
             .game-controls {
                 bottom: 10px;
-                gap: 8px;
-            }
-            
-            .btn {
-                padding: 10px 16px;
-                font-size: 13px;
-                min-width: 70px;
+                flex-wrap: wrap;
+                justify-content: center;
             }
             
             .casino-logo {
@@ -714,20 +719,9 @@
                 padding: 30px 20px;
                 margin: 10px;
             }
-
-            .game-header {
-                flex-direction: column;
-                gap: 15px;
-                padding: 15px;
-            }
-
-            .room-info {
-                flex-direction: column;
-                gap: 15px;
-            }
         }
 
-        /* ========== ANIMATIONS ========== */
+        /* ========== LOADING ========== */
         .loading {
             display: inline-block;
             width: 20px;
@@ -742,6 +736,7 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Effets de brillance sur la table */
         .table-shine {
             position: absolute;
             top: 0;
@@ -757,6 +752,26 @@
             50% { left: 100%; }
             100% { left: 100%; }
         }
+
+        /* Animation sparkle */
+        @keyframes sparkle {
+            0% { transform: scale(0) rotate(0deg); opacity: 1; }
+            50% { transform: scale(2) rotate(180deg); opacity: 0.8; }
+            100% { transform: scale(0) rotate(360deg); opacity: 0; }
+        }
+
+        /* Split indicator */
+        .split-indicator {
+            position: absolute;
+            top: -20px;
+            right: -10px;
+            background: #FFD700;
+            color: #000;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -765,10 +780,10 @@
 
     <!-- Lobby Screen -->
     <div id="lobby" class="lobby">
-        <div class="casino-logo">🎰 SIO CASINO 🎰</div>
+        <div class="casino-logo">🎰 CASINO ROYAL 🎰</div>
         <div class="lobby-card">
-            <h2>🃏 Table de Blackjack SIO Casino</h2>
-            <p style="margin: 20px 0; opacity: 0.9;">Rejoignez la plus prestigieuse table de blackjack du SIO Casino. Règles officielles de casino.</p>
+            <h2>🃏 Table de Blackjack Exclusive</h2>
+            <p style="margin: 20px 0; opacity: 0.9;">Rejoignez la plus prestigieuse table de blackjack en ligne. Maximum 5 joueurs par partie.</p>
             
             <div class="input-group">
                 <label for="playerName">👤 Votre nom de joueur :</label>
@@ -801,20 +816,13 @@
         <div class="container">
             <div class="game-header">
                 <div class="room-info">
+                    <div class="connection-status">
+                        <div class="status-dot connected" id="connectionDot"></div>
+                        <span id="connectionStatus">Connecté</span>
+                    </div>
                     <div class="room-code-display" id="gameRoomCode">ABC123</div>
-                    <div class="game-stats">
-                        <div class="stat-item">
-                            <div class="stat-label">Joueurs</div>
-                            <div class="stat-value"><span id="playerCount">1</span>/5</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">Manche</div>
-                            <div class="stat-value" id="handNumber">1</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">État</div>
-                            <div class="stat-value" id="gameStatus">En attente</div>
-                        </div>
+                    <div style="color: #FFD700;">
+                        <span id="playerCount">1</span>/5 joueurs
                     </div>
                 </div>
                 <div>
@@ -827,12 +835,23 @@
                 <div class="table-felt"></div>
                 <div class="table-shine"></div>
                 
-                <!-- Zone du croupier -->
-                <div class="dealer-area">
+                <!-- Position du croupier -->
+                <div class="dealer-position">
                     <div class="dealer-avatar">🎩</div>
-                    <div class="dealer-name">Croupier</div>
-                    <div class="dealer-score" id="dealerScore">--</div>
-                    <div class="dealer-cards" id="dealerCards"></div>
+                    <div class="player-name">Croupier</div>
+                    <div id="dealerCards"></div>
+                    <div class="player-score" id="dealerScore">--</div>
+                </div>
+
+                <!-- Paquet de cartes -->
+                <div class="deck-position">
+                    <div class="deck-stack" id="deckStack">
+                        <div class="deck-card">🂠</div>
+                        <div class="deck-card">🂠</div>
+                        <div class="deck-card">🂠</div>
+                        <div class="deck-card">🂠</div>
+                        <div class="deck-card">🂠</div>
+                    </div>
                 </div>
 
                 <!-- Positions des joueurs -->
@@ -841,34 +860,33 @@
                 </div>
             </div>
 
-            <!-- Chat -->
-            <div class="chat-container">
-                <div class="chat-messages" id="chatMessages"></div>
-                <form class="chat-form" id="chatForm">
-                    <input type="text" class="chat-input" id="chatInput" placeholder="Tapez votre message..." maxlength="120">
-                    <button type="submit" class="btn btn-gold">Envoyer</button>
+            <!-- Chat Box -->
+            <div id="chatBox">
+                <div id="chatMessages"></div>
+                <form id="chatForm">
+                    <input id="chatInput" type="text" maxlength="120" placeholder="Tapez votre message..." autocomplete="off">
+                    <button type="submit" class="btn btn-gold">📤</button>
                 </form>
             </div>
 
             <!-- Contrôles de jeu -->
             <div class="game-controls">
                 <div id="dealerControls" style="display: none;">
-                    <button class="btn btn-gold" onclick="startNewHand()" id="dealBtn">🎴 Nouvelle Manche</button>
-                    <button class="btn btn-warning" onclick="dealerTurn()" id="dealerTurnBtn" style="display: none;">🎲 Tour Croupier</button>
+                    <button class="btn btn-gold" onclick="startNewHand()" id="startHandBtn">🎴 Distribuer</button>
+                    <button class="btn btn-warning" onclick="dealerPlayTurn()" id="dealerPlayBtn" style="display: none;">🎲 Tour croupier</button>
                 </div>
                 
                 <div id="playerControls" style="display: none;">
                     <button class="btn btn-success" onclick="hit()" id="hitBtn">⬆️ Carte</button>
                     <button class="btn btn-danger" onclick="stand()" id="standBtn">✋ Rester</button>
-                    <button class="btn btn-warning" id="doubleBtn" onclick="doubleDown()" style="display:none;">💰 Doubler</button>
-                    <button class="btn btn-purple" id="splitBtn" onclick="split()" style="display:none;">🃏 Séparer</button>
-                    <button class="btn btn-gold" id="insuranceBtn" onclick="insurance()" style="display:none;">🛡️ Assurance</button>
+                    <button class="btn btn-warning" id="playerDoubleBtn" onclick="doubleDown()" style="display:none;">💰 Doubler</button>
+                    <button class="btn btn-gold" id="playerSplitBtn" onclick="splitHand()" style="display:none;">🃏 Split</button>
                 </div>
                 
                 <div id="waitingControls" style="display: none;">
                     <div style="text-align: center; color: #FFD700;">
                         <div class="loading"></div>
-                        <p style="margin-top: 10px;" id="waitingText">En attente...</p>
+                        <p style="margin-top: 10px;">En attente...</p>
                     </div>
                 </div>
             </div>
@@ -876,13 +894,6 @@
     </div>
 
     <script>
-        // Variables globales
-        let gameServer;
-        let currentRoom = null;
-        let playerName = '';
-        let isDealer = false;
-        let database = null;
-
         // Configuration Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyBlF0Rv-vaLHlopMYNbs7JnLyiqi-HUnn4",
@@ -894,20 +905,28 @@
             appId: "1:554706185893:web:847eefcd131c6a929f674c"
         };
 
-        // Serveur de jeu Blackjack avec Firebase uniquement
-        class SIOCasinoGameServer {
+        // Variables globales
+        let currentRoom = null;
+        let playerName = '';
+        let isDealer = false;
+        let database = null;
+        let roomListener = null;
+        let cardsInDOM = new Map(); // Garde trace des cartes dans le DOM
+
+        // Classe du serveur de jeu
+        class GameServer {
             constructor() {
                 this.initFirebase();
             }
 
-            async initFirebase() {
+            initFirebase() {
                 try {
                     firebase.initializeApp(firebaseConfig);
                     database = firebase.database();
-                    console.log("🔥 Firebase connecté avec succès!");
+                    console.log("🔥 Firebase connecté!");
                 } catch (error) {
                     console.error("❌ Erreur Firebase:", error);
-                    throw new Error("Impossible de se connecter à Firebase");
+                    showNotification('Erreur de connexion à Firebase', 'error');
                 }
             }
 
@@ -920,97 +939,13 @@
                 return code;
             }
 
-            async createRoom(dealerName) {
-                const code = this.generateRoomCode();
-                const room = {
-                    code: code,
-                    dealer: dealerName,
-                    players: [],
-                    gameState: 'waiting', // waiting, dealing, playing, dealer_turn, finished
-                    deck: this.createDeck(),
-                    dealerCards: [],
-                    dealerScore: 0,
-                    dealerHasBlackjack: false,
-                    currentPlayerIndex: 0,
-                    currentHandIndex: 0,
-                    handNumber: 1,
-                    chat: [],
-                    created: Date.now(),
-                    lastUpdate: Date.now()
-                };
-                
-                try {
-                    await database.ref(`rooms/${code}`).set(room);
-                    window.history.pushState({}, '', `?roomid=${code}`);
-                    return code;
-                } catch (error) {
-                    console.error("❌ Erreur création room:", error);
-                    return null;
-                }
-            }
-
-            async joinRoom(code, playerName) {
-                try {
-                    let room = await this.getRoom(code);
-                    
-                    if (!room) {
-                        return { success: false, error: "Table introuvable" };
-                    }
-                    
-                    // Assurer que room.players existe
-                    if (!room.players || !Array.isArray(room.players)) {
-                        room.players = [];
-                    }
-                    
-                    if (room.players.find(p => p.name === playerName)) {
-                        return { success: false, error: "Nom déjà pris" };
-                    }
-                    
-                    if (room.players.length >= 5) {
-                        return { success: false, error: "Table pleine" };
-                    }
-
-                    const newPlayer = {
-                        name: playerName,
-                        hands: [{ 
-                            cards: [], 
-                            score: 0, 
-                            bet: 10, 
-                            status: 'waiting', // waiting, playing, stand, bust, blackjack, done
-                            isActive: false,
-                            isSplit: false,
-                            result: null
-                        }],
-                        currentHandIndex: 0,
-                        totalBet: 10,
-                        balance: 1000,
-                        isActive: false,
-                        hasInsurance: false,
-                        position: room.players.length + 1,
-                        joinedAt: Date.now(),
-                        wins: 0,
-                        losses: 0
-                    };
-
-                    room.players.push(newPlayer);
-                    room.lastUpdate = Date.now();
-                    
-                    await this.updateRoom(code, room);
-                    window.history.pushState({}, '', `?roomid=${code}`);
-                    return { success: true };
-                } catch (error) {
-                    console.error("❌ Erreur rejoindre room:", error);
-                    return { success: false, error: "Erreur serveur" };
-                }
-            }
-
             createDeck() {
                 const suits = ['♠', '♥', '♦', '♣'];
                 const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
                 const deck = [];
 
-                // Utiliser 6 jeux de cartes pour éviter le comptage
-                for (let deckNum = 0; deckNum < 6; deckNum++) {
+                // Créer 6 paquets pour un shoe de blackjack
+                for (let d = 0; d < 6; d++) {
                     for (let suit of suits) {
                         for (let value of values) {
                             deck.push({
@@ -1018,7 +953,7 @@
                                 value: value,
                                 numValue: this.getCardValue(value),
                                 isRed: suit === '♥' || suit === '♦',
-                                id: `${suit}-${value}-${deckNum}-${Math.random()}`
+                                id: `${suit}-${value}-${d}-${Date.now()}-${Math.random()}`
                             });
                         }
                     }
@@ -1036,7 +971,7 @@
             }
 
             getCardValue(value) {
-                if (value === 'A') return 11; // As compte 11 par défaut
+                if (value === 'A') return 11; // On gère le 1 ou 11 dans calculateScore
                 if (['J', 'Q', 'K'].includes(value)) return 10;
                 return parseInt(value);
             }
@@ -1050,11 +985,11 @@
                         aces++;
                         score += 11;
                     } else {
-                        score += card.numValue;
+                        score += this.getCardValue(card.value);
                     }
                 }
 
-                // Ajuster les As si nécessaire
+                // Ajuster pour les As
                 while (score > 21 && aces > 0) {
                     score -= 10;
                     aces--;
@@ -1067,686 +1002,552 @@
                 return cards.length === 2 && this.calculateScore(cards) === 21;
             }
 
-            isSoft17(cards) {
-                if (this.calculateScore(cards) !== 17) return false;
-                return cards.some(card => card.value === 'A' && this.calculateScore(cards.filter(c => c !== card)) + 1 === 6);
-            }
-
             canSplit(cards) {
-                return cards.length === 2 && 
-                       this.getCardValue(cards[0].value) === this.getCardValue(cards[1].value);
+                return cards.length === 2 && cards[0].value === cards[1].value;
             }
 
-            canDouble(hand) {
-                return hand.cards.length === 2;
-            }
+            async createRoom(dealerName) {
+                const code = this.generateRoomCode();
+                const room = {
+                    code: code,
+                    dealer: dealerName,
+                    players: [],
+                    gameState: 'waiting',
+                    deck: this.createDeck(),
+                    dealerCards: [],
+                    dealerScore: 0,
+                    currentPlayerIndex: -1,
+                    created: Date.now(),
+                    lastUpdate: Date.now(),
+                    chat: []
+                };
 
-            async updateRoom(roomCode, room) {
                 try {
-                    room.lastUpdate = Date.now();
-                    await database.ref(`rooms/${roomCode}`).set(room);
-                    return true;
+                    await database.ref(`rooms/${code}`).set(room);
+                    return code;
                 } catch (error) {
-                    console.error("❌ Erreur mise à jour room:", error);
-                    return false;
+                    console.error("Erreur création room:", error);
+                    return null;
                 }
             }
 
-            async getRoom(code) {
+            async joinRoom(code, playerName) {
                 try {
                     const snapshot = await database.ref(`rooms/${code}`).once('value');
-                    return snapshot.val();
-                } catch (error) {
-                    console.error("❌ Erreur récupération room:", error);
-                    return null;
-                }
-            }
+                    const room = snapshot.val();
 
-            async startNewHand(roomCode) {
-                const room = await this.getRoom(roomCode);
-                if (!room) return false;
+                    if (!room) return { success: false, error: 'Table inexistante' };
+                    if (room.players.find(p => p.name === playerName)) {
+                        return { success: false, error: 'Nom déjà pris' };
+                    }
+                    if (room.players.length >= 5) {
+                        return { success: false, error: 'Table pleine' };
+                    }
 
-                // Assurer que room.players existe
-                if (!room.players || !Array.isArray(room.players)) {
-                    room.players = [];
-                }
-
-                if (room.players.length === 0) return false;
-
-                // Reset pour nouvelle manche
-                room.gameState = 'dealing';
-                room.handNumber = (room.handNumber || 0) + 1;
-                room.dealerCards = [];
-                room.dealerScore = 0;
-                room.dealerHasBlackjack = false;
-                room.currentPlayerIndex = 0;
-                room.currentHandIndex = 0;
-
-                // Reset des joueurs - garder une seule main par défaut
-                room.players.forEach(player => {
-                    player.hands = [{ 
-                        cards: [], 
-                        score: 0, 
-                        bet: 10, 
+                    const newPlayer = {
+                        name: playerName,
+                        cards: [],
+                        score: 0,
                         status: 'waiting',
                         isActive: false,
+                        position: room.players.length + 1,
                         isSplit: false,
-                        result: null
-                    }];
-                    player.currentHandIndex = 0;
-                    player.isActive = false;
-                    player.hasInsurance = false;
-                });
+                        splitFrom: null
+                    };
 
-                room.deck = this.createDeck();
+                    room.players.push(newPlayer);
+                    room.lastUpdate = Date.now();
 
-                await this.updateRoom(roomCode, room);
-
-                // Distribution automatique
-                setTimeout(() => this.dealInitialCards(roomCode), 500);
-                return true;
+                    await database.ref(`rooms/${code}`).set(room);
+                    return { success: true };
+                } catch (error) {
+                    console.error("Erreur join room:", error);
+                    return { success: false, error: 'Erreur de connexion' };
+                }
             }
 
-            async dealInitialCards(roomCode) {
-                console.log("🎴 Starting initial card distribution for room:", roomCode);
-                const room = await this.getRoom(roomCode);
-                if (!room) {
-                    console.error("❌ Room not found in dealInitialCards");
-                    return;
-                }
-
-                // Assurer que room.players existe
-                if (!room.players || !Array.isArray(room.players)) {
-                    console.error("❌ room.players is undefined or not array");
-                    room.players = [];
-                }
-
-                if (room.players.length === 0) {
-                    console.error("❌ No players in room");
-                    return;
-                }
-
-                console.log("👥 Players found:", room.players.length);
-
-                // Assurer que room.deck et room.dealerCards existent
-                if (!room.deck || !Array.isArray(room.deck)) {
-                    console.log("🔄 Creating new deck");
-                    room.deck = this.createDeck();
-                }
-                if (!room.dealerCards || !Array.isArray(room.dealerCards)) {
-                    room.dealerCards = [];
-                }
-
-                console.log("🃏 Deck size:", room.deck.length);
-
-                // Distribuer 2 cartes à chaque joueur, puis 2 au croupier
-                for (let round = 0; round < 2; round++) {
-                    console.log(`🔄 Distribution round ${round + 1}`);
-                    
-                    // Cartes aux joueurs
-                    for (let playerIndex = 0; playerIndex < room.players.length; playerIndex++) {
-                        console.log(`📤 Dealing to player ${playerIndex} (${room.players[playerIndex].name})`);
-                        await this.dealCard(roomCode, 'player', playerIndex, 0);
-                        await new Promise(resolve => setTimeout(resolve, 300));
-                    }
-                    
-                    // Carte au croupier (2ème cachée)
-                    const hidden = round === 1;
-                    console.log(`📤 Dealing to dealer (hidden: ${hidden})`);
-                    await this.dealCard(roomCode, 'dealer', -1, -1, hidden);
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                }
-
-                console.log("✅ Initial distribution complete, calculating scores...");
-
-                // Vérifier les blackjacks et commencer le jeu
-                const updatedRoom = await this.getRoom(roomCode);
+            async dealCard(roomCode, target, faceDown = false) {
+                const snapshot = await database.ref(`rooms/${roomCode}`).once('value');
+                const room = snapshot.val();
                 
-                // Assurer que updatedRoom.players existe
-                if (!updatedRoom.players || !Array.isArray(updatedRoom.players)) {
-                    updatedRoom.players = [];
-                }
-
-                // Calculer les scores
-                updatedRoom.players.forEach((player, index) => {
-                    console.log(`🧮 Calculating score for player ${index}: ${player.name}`);
-                    
-                    // Assurer que player.hands existe
-                    if (!player.hands || !Array.isArray(player.hands)) {
-                        player.hands = [{ cards: [], score: 0, bet: 10, status: 'waiting' }];
-                    }
-
-                    const hand = player.hands[0];
-                    if (!hand.cards || !Array.isArray(hand.cards)) {
-                        hand.cards = [];
-                    }
-                    hand.score = this.calculateScore(hand.cards);
-                    
-                    console.log(`👤 ${player.name}: ${hand.cards.length} cards, score: ${hand.score}`);
-                    
-                    if (this.isBlackjack(hand.cards)) {
-                        hand.status = 'blackjack';
-                        console.log(`🎯 ${player.name} has blackjack!`);
-                    } else {
-                        hand.status = 'playing';
-                    }
-                });
-
-                // Vérifier si le croupier a un As visible (assurance)
-                if (updatedRoom.dealerCards && updatedRoom.dealerCards.length >= 2) {
-                    const visibleCard = updatedRoom.dealerCards[0];
-                    if (visibleCard && visibleCard.value === 'A') {
-                        console.log("🛡️ Dealer shows Ace, offering insurance");
-                        updatedRoom.gameState = 'insurance';
-                        await this.updateRoom(roomCode, updatedRoom);
-                        return;
-                    }
-                }
-
-                // Activer le premier joueur qui n'a pas blackjack
-                let activePlayerSet = false;
-                for (let i = 0; i < updatedRoom.players.length; i++) {
-                    const player = updatedRoom.players[i];
-                    const hand = player.hands[0];
-                    
-                    if (hand && hand.status === 'playing' && !activePlayerSet) {
-                        player.isActive = true;
-                        hand.isActive = true;
-                        activePlayerSet = true;
-                        console.log(`▶️ ${player.name} is now active`);
-                        break;
-                    }
-                }
-
-                if (!activePlayerSet) {
-                    console.log("🎩 All players have blackjack, going to dealer turn");
-                    updatedRoom.gameState = 'dealer_turn';
-                } else {
-                    updatedRoom.gameState = 'playing';
-                }
-
-                await this.updateRoom(roomCode, updatedRoom);
-                console.log("✅ Game state updated, ready to play!");
-            }
-
-            async dealCard(roomCode, target, playerIndex = -1, handIndex = -1, hidden = false) {
-                const room = await this.getRoom(roomCode);
-                if (!room) {
-                    console.error("❌ Room not found in dealCard");
-                    return null;
-                }
-
-                // Vérifier que le deck existe et n'est pas vide
-                if (!room.deck || !Array.isArray(room.deck) || room.deck.length === 0) {
-                    console.error("❌ Deck is empty or undefined:", room.deck);
-                    return null;
-                }
+                if (!room || room.deck.length === 0) return null;
 
                 const card = room.deck.pop();
-                if (hidden) card.hidden = true;
+                if (faceDown) card.faceDown = true;
 
                 if (target === 'dealer') {
-                    // Assurer que room.dealerCards existe
-                    if (!room.dealerCards || !Array.isArray(room.dealerCards)) {
-                        room.dealerCards = [];
-                    }
                     room.dealerCards.push(card);
-                    if (!hidden) {
-                        room.dealerScore = this.calculateScore(room.dealerCards.filter(c => !c.hidden));
+                    if (!faceDown) {
+                        room.dealerScore = this.calculateScore(room.dealerCards.filter(c => !c.faceDown));
                     }
-                    console.log("✅ Card dealt to dealer:", card.value + card.suit);
-                } else if (target === 'player' && playerIndex >= 0) {
-                    // Vérifier que room.players existe
-                    if (!room.players || !Array.isArray(room.players)) {
-                        console.error("❌ room.players is undefined");
-                        return null;
+                } else {
+                    const player = room.players[target];
+                    if (player) {
+                        player.cards.push(card);
+                        player.score = this.calculateScore(player.cards);
                     }
-
-                    // Vérifier que le joueur existe
-                    if (!room.players[playerIndex]) {
-                        console.error("❌ Player at index", playerIndex, "does not exist");
-                        return null;
-                    }
-
-                    const player = room.players[playerIndex];
-                    
-                    // Assurer que player.hands existe
-                    if (!player.hands || !Array.isArray(player.hands)) {
-                        player.hands = [{ cards: [], score: 0, bet: 10, status: 'waiting' }];
-                    }
-                    
-                    // Déterminer quelle main utiliser
-                    let hand;
-                    if (handIndex >= 0 && handIndex < player.hands.length) {
-                        hand = player.hands[handIndex];
-                    } else if (player.currentHandIndex !== undefined && player.hands[player.currentHandIndex]) {
-                        hand = player.hands[player.currentHandIndex];
-                    } else {
-                        hand = player.hands[0];
-                    }
-
-                    if (!hand) {
-                        console.error("❌ Hand is undefined for player", player.name);
-                        return null;
-                    }
-                    
-                    // Assurer que hand.cards existe
-                    if (!hand.cards || !Array.isArray(hand.cards)) {
-                        hand.cards = [];
-                    }
-                    
-                    hand.cards.push(card);
-                    hand.score = this.calculateScore(hand.cards);
-                    console.log("✅ Card dealt to player", player.name + ":", card.value + card.suit);
                 }
 
-                await this.updateRoom(roomCode, room);
+                room.lastUpdate = Date.now();
+                await database.ref(`rooms/${roomCode}`).set(room);
                 return card;
             }
 
-            async playerAction(roomCode, playerName, action, data = {}) {
-                const room = await this.getRoom(roomCode);
-                if (!room || room.gameState !== 'playing') return { success: false };
+            async startNewHand(roomCode) {
+                const snapshot = await database.ref(`rooms/${roomCode}`).once('value');
+                const room = snapshot.val();
+                
+                if (!room) return false;
 
-                // Assurer que room.players existe
-                if (!room.players || !Array.isArray(room.players)) {
-                    room.players = [];
+                // Réinitialiser l'état
+                room.players = room.players.filter(p => !p.isSplit); // Retirer les mains splittées
+                room.players.forEach(player => {
+                    player.cards = [];
+                    player.score = 0;
+                    player.status = 'playing';
+                    player.isActive = false;
+                    player.result = null;
+                });
+
+                room.dealerCards = [];
+                room.dealerScore = 0;
+                room.currentPlayerIndex = -1;
+                room.gameState = 'dealing';
+
+                // Vérifier si on doit mélanger
+                if (room.deck.length < 100) {
+                    room.deck = this.createDeck();
+                    await this.sendChatMessage(roomCode, 'Croupier', '🔄 Nouveau sabot mélangé!');
                 }
 
-                const player = room.players.find(p => p.name === playerName);
-                if (!player || !player.isActive) return { success: false };
+                room.lastUpdate = Date.now();
+                await database.ref(`rooms/${roomCode}`).set(room);
 
-                // Assurer que player.hands existe
-                if (!player.hands || !Array.isArray(player.hands)) {
-                    player.hands = [{ cards: [], score: 0, bet: 10, status: 'waiting' }];
-                }
-
-                const hand = player.hands[player.currentHandIndex] || player.hands[0];
-                if (!hand || hand.status !== 'playing') return { success: false };
-
-                switch (action) {
-                    case 'hit':
-                        await this.dealCard(roomCode, 'player', room.players.indexOf(player), player.currentHandIndex);
-                        const updatedRoom = await this.getRoom(roomCode);
-                        const updatedPlayer = updatedRoom.players.find(p => p.name === playerName);
-                        if (updatedPlayer && updatedPlayer.hands && updatedPlayer.hands[player.currentHandIndex]) {
-                            const updatedHand = updatedPlayer.hands[player.currentHandIndex];
-                            
-                            if (updatedHand.score > 21) {
-                                updatedHand.status = 'bust';
-                                await this.nextTurn(roomCode);
-                            }
-                        }
-                        break;
-
-                    case 'stand':
-                        hand.status = 'stand';
-                        await this.updateRoom(roomCode, room);
-                        await this.nextTurn(roomCode);
-                        break;
-
-                    case 'double':
-                        if (this.canDouble(hand) && player.balance >= hand.bet) {
-                            player.balance -= hand.bet;
-                            hand.bet *= 2;
-                            await this.dealCard(roomCode, 'player', room.players.indexOf(player), player.currentHandIndex);
-                            
-                            const updatedRoom2 = await this.getRoom(roomCode);
-                            const updatedPlayer2 = updatedRoom2.players.find(p => p.name === playerName);
-                            if (updatedPlayer2 && updatedPlayer2.hands && updatedPlayer2.hands[player.currentHandIndex]) {
-                                const updatedHand2 = updatedPlayer2.hands[player.currentHandIndex];
-                                updatedHand2.status = updatedHand2.score > 21 ? 'bust' : 'stand';
-                                await this.updateRoom(roomCode, updatedRoom2);
-                                await this.nextTurn(roomCode);
-                            }
-                        }
-                        break;
-
-                    case 'split':
-                        if (this.canSplit(hand.cards || []) && player.balance >= hand.bet) {
-                            player.balance -= hand.bet;
-                            
-                            // Séparer les cartes en deux mains
-                            const firstCard = hand.cards[0];
-                            const secondCard = hand.cards[1];
-                            
-                            // Main 1 (actuelle)
-                            hand.cards = [firstCard];
-                            hand.score = this.calculateScore(hand.cards);
-                            hand.isSplit = true;
-                            
-                            // Main 2 (nouvelle)
-                            const newHand = {
-                                cards: [secondCard],
-                                score: this.calculateScore([secondCard]),
-                                bet: hand.bet,
-                                status: 'playing',
-                                isActive: false,
-                                isSplit: true,
-                                result: null
-                            };
-                            
-                            player.hands.push(newHand);
-                            
-                            // Distribuer une carte à chaque main
-                            await this.dealCard(roomCode, 'player', room.players.indexOf(player), 0);
-                            await this.dealCard(roomCode, 'player', room.players.indexOf(player), 1);
-                        }
-                        break;
-
-                    case 'insurance':
-                        if (hand.bet * 0.5 <= player.balance) {
-                            player.balance -= hand.bet * 0.5;
-                            player.hasInsurance = true;
-                            await this.updateRoom(roomCode, room);
-                        }
-                        break;
-                }
-
-                await this.updateRoom(roomCode, room);
-                return { success: true };
-            }
-
-            async nextTurn(roomCode) {
-                const room = await this.getRoom(roomCode);
-                if (!room) return;
-
-                // Assurer que room.players existe
-                if (!room.players || !Array.isArray(room.players)) {
-                    room.players = [];
-                    return;
-                }
-
-                if (room.currentPlayerIndex >= room.players.length) return;
-
-                const currentPlayer = room.players[room.currentPlayerIndex];
-                if (!currentPlayer) return;
-
-                // Assurer que currentPlayer.hands existe
-                if (!currentPlayer.hands || !Array.isArray(currentPlayer.hands)) {
-                    currentPlayer.hands = [{ cards: [], score: 0, bet: 10, status: 'waiting' }];
-                }
-
-                // Vérifier si le joueur actuel a d'autres mains à jouer
-                if (currentPlayer.currentHandIndex < currentPlayer.hands.length - 1) {
-                    // Passer à la main suivante du même joueur
-                    currentPlayer.hands[currentPlayer.currentHandIndex].isActive = false;
-                    currentPlayer.currentHandIndex++;
-                    currentPlayer.hands[currentPlayer.currentHandIndex].isActive = true;
-                    await this.updateRoom(roomCode, room);
-                    return;
-                }
-
-                // Toutes les mains du joueur actuel sont terminées
-                currentPlayer.isActive = false;
-                currentPlayer.hands.forEach(h => h.isActive = false);
-                currentPlayer.currentHandIndex = 0;
-
-                // Passer au joueur suivant
-                let nextIndex = room.currentPlayerIndex + 1;
-                let foundActivePlayer = false;
-
-                while (nextIndex < room.players.length) {
-                    const nextPlayer = room.players[nextIndex];
-                    if (!nextPlayer) {
-                        nextIndex++;
-                        continue;
-                    }
-
-                    // Assurer que nextPlayer.hands existe
-                    if (!nextPlayer.hands || !Array.isArray(nextPlayer.hands)) {
-                        nextPlayer.hands = [{ cards: [], score: 0, bet: 10, status: 'waiting' }];
-                    }
-
-                    const hasPlayingHand = nextPlayer.hands.some(h => h && h.status === 'playing');
-                    
-                    if (hasPlayingHand) {
-                        nextPlayer.isActive = true;
-                        nextPlayer.hands[0].isActive = true;
-                        room.currentPlayerIndex = nextIndex;
-                        foundActivePlayer = true;
-                        break;
-                    }
-                    nextIndex++;
-                }
-
-                if (!foundActivePlayer) {
-                    // Tous les joueurs ont terminé, tour du croupier
-                    room.gameState = 'dealer_turn';
-                }
-
-                await this.updateRoom(roomCode, room);
-            }
-
-            async dealerTurn(roomCode) {
-                const room = await this.getRoom(roomCode);
-                if (!room || room.gameState !== 'dealer_turn') return false;
-
-                // Révéler la carte cachée
-                if (room.dealerCards.length > 1 && room.dealerCards[1].hidden) {
-                    room.dealerCards[1].hidden = false;
-                }
-                room.dealerScore = this.calculateScore(room.dealerCards);
-                room.dealerHasBlackjack = this.isBlackjack(room.dealerCards);
-
-                await this.updateRoom(roomCode, room);
-
-                // Le croupier tire jusqu'à 17 (tire sur soft 17)
-                while (room.dealerScore < 17 || this.isSoft17(room.dealerCards)) {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    await this.dealCard(roomCode, 'dealer');
-                    const updatedRoom = await this.getRoom(roomCode);
-                    room.dealerScore = updatedRoom.dealerScore;
-                    room.dealerCards = updatedRoom.dealerCards;
-                }
-
-                // Déterminer les résultats
-                await this.determineWinners(roomCode);
+                // Distribuer les cartes
+                setTimeout(() => this.distributeInitialCards(roomCode), 500);
+                
                 return true;
             }
 
-            async determineWinners(roomCode) {
-                const room = await this.getRoom(roomCode);
-                if (!room) return;
+            async distributeInitialCards(roomCode) {
+                const snapshot = await database.ref(`rooms/${roomCode}`).once('value');
+                const room = snapshot.val();
+                if (!room || room.gameState !== 'dealing') return;
 
-                // Assurer que room.players existe
-                if (!room.players || !Array.isArray(room.players)) {
-                    room.players = [];
+                // Première carte pour chaque joueur
+                for (let i = 0; i < room.players.length; i++) {
+                    await this.dealCard(roomCode, i);
+                    await new Promise(resolve => setTimeout(resolve, 500));
                 }
 
-                const dealerScore = room.dealerScore || 0;
+                // Première carte du croupier (visible)
+                await this.dealCard(roomCode, 'dealer');
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Deuxième carte pour chaque joueur
+                for (let i = 0; i < room.players.length; i++) {
+                    await this.dealCard(roomCode, i);
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+
+                // Deuxième carte du croupier (cachée)
+                await this.dealCard(roomCode, 'dealer', true);
+
+                // Vérifier les blackjacks et commencer le jeu
+                const updatedSnapshot = await database.ref(`rooms/${roomCode}`).once('value');
+                const updatedRoom = updatedSnapshot.val();
+                
+                let allBlackjack = true;
+                updatedRoom.players.forEach((player, index) => {
+                    if (this.isBlackjack(player.cards)) {
+                        player.status = 'blackjack';
+                        this.sendChatMessage(roomCode, 'Croupier', `🎉 ${player.name} a un Blackjack!`);
+                    } else {
+                        allBlackjack = false;
+                    }
+                });
+
+                // Si tous ont blackjack ou le croupier a blackjack visible
+                const dealerVisibleCard = updatedRoom.dealerCards[0];
+                if (allBlackjack || (dealerVisibleCard && ['A', 'K', 'Q', 'J', '10'].includes(dealerVisibleCard.value))) {
+                    // Révéler immédiatement si le croupier a blackjack
+                    updatedRoom.gameState = 'checking_dealer';
+                    setTimeout(() => this.checkDealerBlackjack(roomCode), 1000);
+                } else {
+                    // Commencer avec le premier joueur
+                    updatedRoom.gameState = 'playing';
+                    updatedRoom.currentPlayerIndex = 0;
+                    updatedRoom.players[0].isActive = true;
+                }
+
+                updatedRoom.lastUpdate = Date.now();
+                await database.ref(`rooms/${roomCode}`).set(updatedRoom);
+            }
+
+            async checkDealerBlackjack(roomCode) {
+                const snapshot = await database.ref(`rooms/${roomCode}`).once('value');
+                const room = snapshot.val();
+                if (!room) return;
+
+                // Révéler la carte cachée
+                room.dealerCards.forEach(card => {
+                    if (card.faceDown) delete card.faceDown;
+                });
+                room.dealerScore = this.calculateScore(room.dealerCards);
+
+                if (this.isBlackjack(room.dealerCards)) {
+                    await this.sendChatMessage(roomCode, 'Croupier', '🎰 Le croupier a un Blackjack!');
+                    room.gameState = 'finished';
+                    await this.finishGame(roomCode);
+                } else {
+                    // Continuer le jeu normalement
+                    room.gameState = 'playing';
+                    const firstActivePlayer = room.players.findIndex(p => p.status === 'playing');
+                    if (firstActivePlayer !== -1) {
+                        room.currentPlayerIndex = firstActivePlayer;
+                        room.players[firstActivePlayer].isActive = true;
+                    } else {
+                        // Tous les joueurs ont blackjack
+                        room.gameState = 'dealer_turn';
+                        setTimeout(() => this.dealerPlay(roomCode), 1000);
+                    }
+                }
+
+                room.lastUpdate = Date.now();
+                await database.ref(`rooms/${roomCode}`).set(room);
+            }
+
+            async hit(roomCode, playerName) {
+                const snapshot = await database.ref(`rooms/${roomCode}`).once('value');
+                const room = snapshot.val();
+                
+                const playerIndex = room.players.findIndex(p => p.name === playerName && p.isActive);
+                if (playerIndex === -1) return false;
+
+                await this.dealCard(roomCode, playerIndex);
+
+                const updatedSnapshot = await database.ref(`rooms/${roomCode}`).once('value');
+                const updatedRoom = updatedSnapshot.val();
+                const player = updatedRoom.players[playerIndex];
+
+                if (player.score > 21) {
+                    player.status = 'bust';
+                    await this.sendChatMessage(roomCode, 'Croupier', `💥 ${player.name} a dépassé 21!`);
+                    await this.nextPlayer(roomCode);
+                } else if (player.score === 21) {
+                    player.status = 'stand';
+                    await this.nextPlayer(roomCode);
+                }
+
+                return true;
+            }
+
+            async stand(roomCode, playerName) {
+                const snapshot = await database.ref(`rooms/${roomCode}`).once('value');
+                const room = snapshot.val();
+                
+                const playerIndex = room.players.findIndex(p => p.name === playerName && p.isActive);
+                if (playerIndex === -1) return false;
+
+                room.players[playerIndex].status = 'stand';
+                room.lastUpdate = Date.now();
+                await database.ref(`rooms/${roomCode}`).set(room);
+                await this.nextPlayer(roomCode);
+                return true;
+            }
+
+            async doubleDown(roomCode, playerName) {
+                const snapshot = await database.ref(`rooms/${roomCode}`).once('value');
+                const room = snapshot.val();
+                
+                const playerIndex = room.players.findIndex(p => p.name === playerName && p.isActive);
+                if (playerIndex === -1) return false;
+
+                const player = room.players[playerIndex];
+                if (player.cards.length !== 2) return false;
+
+                await this.dealCard(roomCode, playerIndex);
+                
+                const updatedSnapshot = await database.ref(`rooms/${roomCode}`).once('value');
+                const updatedRoom = updatedSnapshot.val();
+                const updatedPlayer = updatedRoom.players[playerIndex];
+                
+                updatedPlayer.status = 'stand';
+                updatedPlayer.doubled = true;
+                updatedRoom.lastUpdate = Date.now();
+                
+                await database.ref(`rooms/${roomCode}`).set(updatedRoom);
+                await this.sendChatMessage(roomCode, 'Croupier', `💰 ${playerName} double sa mise!`);
+                
+                if (updatedPlayer.score > 21) {
+                    updatedPlayer.status = 'bust';
+                    await this.sendChatMessage(roomCode, 'Croupier', `💥 ${playerName} a dépassé 21!`);
+                }
+                
+                await this.nextPlayer(roomCode);
+                return true;
+            }
+
+            async split(roomCode, playerName) {
+                const snapshot = await database.ref(`rooms/${roomCode}`).once('value');
+                const room = snapshot.val();
+                
+                const playerIndex = room.players.findIndex(p => p.name === playerName && p.isActive);
+                if (playerIndex === -1) return false;
+
+                const player = room.players[playerIndex];
+                if (!this.canSplit(player.cards)) return false;
+
+                // Créer la main splittée
+                const splitHand = {
+                    name: `${playerName} (Split)`,
+                    cards: [player.cards.pop()],
+                    score: this.getCardValue(player.cards[0].value),
+                    status: 'playing',
+                    isActive: false,
+                    position: player.position,
+                    isSplit: true,
+                    splitFrom: playerName
+                };
+
+                // Mettre à jour la main originale
+                player.score = this.getCardValue(player.cards[0].value);
+
+                // Insérer la main splittée après la main actuelle
+                room.players.splice(playerIndex + 1, 0, splitHand);
+
+                // Distribuer une carte à chaque main
+                await this.dealCard(roomCode, playerIndex);
+                await this.dealCard(roomCode, playerIndex + 1);
+
+                room.lastUpdate = Date.now();
+                await database.ref(`rooms/${roomCode}`).set(room);
+                await this.sendChatMessage(roomCode, 'Croupier', `🃏 ${playerName} fait un split!`);
+
+                return true;
+            }
+
+            async nextPlayer(roomCode) {
+                const snapshot = await database.ref(`rooms/${roomCode}`).once('value');
+                const room = snapshot.val();
+                
+                if (!room) return;
+
+                // Désactiver le joueur actuel
+                if (room.currentPlayerIndex >= 0 && room.currentPlayerIndex < room.players.length) {
+                    room.players[room.currentPlayerIndex].isActive = false;
+                }
+
+                // Trouver le prochain joueur actif
+                let nextIndex = room.currentPlayerIndex + 1;
+                while (nextIndex < room.players.length && 
+                       (room.players[nextIndex].status !== 'playing')) {
+                    nextIndex++;
+                }
+
+                if (nextIndex < room.players.length) {
+                    // Activer le prochain joueur
+                    room.currentPlayerIndex = nextIndex;
+                    room.players[nextIndex].isActive = true;
+                    room.lastUpdate = Date.now();
+                    await database.ref(`rooms/${roomCode}`).set(room);
+                } else {
+                    // Tous les joueurs ont fini, tour du croupier
+                    room.gameState = 'dealer_turn';
+                    room.currentPlayerIndex = -1;
+                    room.lastUpdate = Date.now();
+                    await database.ref(`rooms/${roomCode}`).set(room);
+                    
+                    // Commencer le tour du croupier après un délai
+                    setTimeout(() => this.dealerPlay(roomCode), 1000);
+                }
+            }
+
+            async dealerPlay(roomCode) {
+                const snapshot = await database.ref(`rooms/${roomCode}`).once('value');
+                const room = snapshot.val();
+                
+                if (!room || room.gameState !== 'dealer_turn') return;
+
+                // Révéler la carte cachée
+                room.dealerCards.forEach(card => {
+                    if (card.faceDown) delete card.faceDown;
+                });
+                room.dealerScore = this.calculateScore(room.dealerCards);
+                room.gameState = 'dealer_playing';
+                room.lastUpdate = Date.now();
+                await database.ref(`rooms/${roomCode}`).set(room);
+
+                // Le croupier tire jusqu'à 17
+                while (room.dealerScore < 17) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    await this.dealCard(roomCode, 'dealer');
+                    
+                    const updatedSnapshot = await database.ref(`rooms/${roomCode}`).once('value');
+                    room = updatedSnapshot.val();
+                    room.dealerScore = this.calculateScore(room.dealerCards);
+                }
+
+                if (room.dealerScore > 21) {
+                    await this.sendChatMessage(roomCode, 'Croupier', '💥 Le croupier a dépassé 21!');
+                }
+
+                await this.finishGame(roomCode);
+            }
+
+            async finishGame(roomCode) {
+                const snapshot = await database.ref(`rooms/${roomCode}`).once('value');
+                const room = snapshot.val();
+                
+                if (!room) return;
+
+                const dealerScore = room.dealerScore;
                 const dealerBust = dealerScore > 21;
-                const dealerBlackjack = room.dealerHasBlackjack || false;
+                const dealerBlackjack = this.isBlackjack(room.dealerCards);
 
                 room.players.forEach(player => {
-                    // Assurer que player.hands existe
-                    if (!player.hands || !Array.isArray(player.hands)) {
-                        player.hands = [{ cards: [], score: 0, bet: 10, status: 'waiting' }];
-                    }
-
-                    player.hands.forEach(hand => {
-                        if (!hand) return;
-
-                        const playerScore = hand.score || 0;
-                        const playerBust = playerScore > 21;
-                        const playerBlackjack = this.isBlackjack(hand.cards || []);
-
-                        if (playerBust) {
-                            hand.result = 'lose';
-                            player.losses = (player.losses || 0) + 1;
-                        } else if (playerBlackjack && !dealerBlackjack && !hand.isSplit) {
-                            hand.result = 'blackjack';
-                            player.balance = (player.balance || 0) + (hand.bet || 0) * 2.5; // Blackjack paie 3:2
-                            player.wins = (player.wins || 0) + 1;
-                        } else if (dealerBust) {
-                            hand.result = 'win';
-                            player.balance = (player.balance || 0) + (hand.bet || 0) * 2;
-                            player.wins = (player.wins || 0) + 1;
-                        } else if (playerScore > dealerScore) {
-                            hand.result = 'win';
-                            player.balance = (player.balance || 0) + (hand.bet || 0) * 2;
-                            player.wins = (player.wins || 0) + 1;
-                        } else if (playerScore === dealerScore) {
-                            hand.result = 'tie';
-                            player.balance = (player.balance || 0) + (hand.bet || 0); // Rembourser
+                    if (player.status === 'bust') {
+                        player.result = 'lose';
+                    } else if (player.status === 'blackjack') {
+                        if (dealerBlackjack) {
+                            player.result = 'push';
                         } else {
-                            hand.result = 'lose';
-                            player.losses = (player.losses || 0) + 1;
+                            player.result = 'blackjack_win';
                         }
-
-                        // Assurance
-                        if (player.hasInsurance) {
-                            if (dealerBlackjack) {
-                                player.balance = (player.balance || 0) + (hand.bet || 0); // Assurance paie 2:1
-                            }
-                        }
-                    });
+                    } else if (dealerBust) {
+                        player.result = 'win';
+                    } else if (player.score > dealerScore) {
+                        player.result = 'win';
+                    } else if (player.score === dealerScore) {
+                        player.result = 'push';
+                    } else {
+                        player.result = 'lose';
+                    }
                 });
 
                 room.gameState = 'finished';
-                await this.updateRoom(roomCode, room);
-            }
+                room.lastUpdate = Date.now();
+                await database.ref(`rooms/${roomCode}`).set(room);
 
-            setupRoomListener(roomCode, callback) {
-                database.ref(`rooms/${roomCode}`).on('value', (snapshot) => {
-                    const room = snapshot.val();
-                    callback(room);
+                // Annoncer les résultats
+                let message = '🏁 Résultats: ';
+                room.players.forEach(player => {
+                    const emoji = player.result === 'win' || player.result === 'blackjack_win' ? '🎉' : 
+                                 player.result === 'push' ? '🤝' : '💀';
+                    message += `${player.name}: ${emoji} `;
                 });
+                await this.sendChatMessage(roomCode, 'Croupier', message);
             }
 
-            removeRoomListener(roomCode) {
-                database.ref(`rooms/${roomCode}`).off();
-            }
+            async sendChatMessage(roomCode, author, text) {
+                const snapshot = await database.ref(`rooms/${roomCode}`).once('value');
+                const room = snapshot.val();
+                
+                if (!room) return;
 
-            async addChatMessage(roomCode, playerName, message) {
-                const room = await this.getRoom(roomCode);
-                if (!room) return false;
-
-                room.chat = room.chat || [];
+                if (!room.chat) room.chat = [];
+                
                 room.chat.push({
-                    name: playerName,
-                    text: message,
+                    author: author,
+                    text: text,
                     time: Date.now()
                 });
 
+                // Limiter à 50 messages
                 if (room.chat.length > 50) {
                     room.chat = room.chat.slice(-50);
                 }
 
-                await this.updateRoom(roomCode, room);
-                return true;
+                room.lastUpdate = Date.now();
+                await database.ref(`rooms/${roomCode}`).set(room);
             }
 
-            async leaveRoom(code, playerName) {
-                try {
-                    const room = await this.getRoom(code);
-                    if (!room) return false;
+            async leaveRoom(roomCode, playerName) {
+                const snapshot = await database.ref(`rooms/${roomCode}`).once('value');
+                const room = snapshot.val();
+                
+                if (!room) return;
 
-                    // Assurer que room.players existe
-                    if (!room.players) {
-                        room.players = [];
-                    }
-
-                    room.players = room.players.filter(p => p.name !== playerName);
+                room.players = room.players.filter(p => p.name !== playerName && p.splitFrom !== playerName);
+                
+                if (room.players.length === 0) {
+                    // Supprimer la room si vide
+                    await database.ref(`rooms/${roomCode}`).remove();
+                } else {
+                    // Réorganiser les positions
+                    room.players.forEach((player, index) => {
+                        if (!player.isSplit) {
+                            player.position = room.players.filter((p, i) => i <= index && !p.isSplit).length;
+                        }
+                    });
                     
-                    if (room.players.length === 0) {
-                        await database.ref(`rooms/${code}`).remove();
-                    } else {
-                        room.players.forEach((player, index) => {
-                            player.position = index + 1;
-                        });
-                        await this.updateRoom(code, room);
-                    }
-
-                    return true;
-                } catch (error) {
-                    console.error("❌ Erreur quitter room:", error);
-                    return false;
+                    room.lastUpdate = Date.now();
+                    await database.ref(`rooms/${roomCode}`).set(room);
+                    await this.sendChatMessage(roomCode, 'Croupier', `👋 ${playerName} a quitté la table`);
                 }
             }
         }
 
-        // Fonctions de l'interface
+        // Instance du serveur
+        const gameServer = new GameServer();
+
+        // Fonctions UI
+        function showNotification(message, type = 'info') {
+            const existing = document.querySelector('.notification');
+            if (existing) existing.remove();
+
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => notification.classList.add('show'), 100);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 400);
+            }, 3000);
+        }
+
         async function createRoom() {
-            const nameInput = document.getElementById('playerName');
-            if (!nameInput) return;
+            const name = document.getElementById('playerName').value.trim();
             
-            const name = nameInput.value.trim();
             if (!name) {
-                showNotification('Veuillez entrer votre nom', 'error');
+                showNotification('Entrez votre nom', 'error');
                 return;
             }
-
-            if (name.length > 12) {
-                showNotification('Le nom ne peut pas dépasser 12 caractères', 'error');
-                return;
-            }
-
-            showNotification('🔄 Création de la table...', 'info');
 
             playerName = name;
             isDealer = true;
             currentRoom = await gameServer.createRoom(name);
             
             if (currentRoom) {
-                showNotification('🎰 Table créée!', 'success');
-                showShareableLink();
+                showNotification('Table créée!', 'success');
                 showGameInterface();
                 setupRoomListener();
-            } else {
-                showNotification('❌ Erreur lors de la création', 'error');
             }
         }
 
-        function showShareableLink() {
-            const url = `${window.location.origin}${window.location.pathname}?roomid=${currentRoom}`;
+        async function joinRoom() {
+            const name = document.getElementById('playerName').value.trim();
+            const code = document.getElementById('roomCode').value.trim().toUpperCase();
             
-            const linkPopup = document.createElement('div');
-            linkPopup.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: rgba(0, 0, 0, 0.95);
-                color: white;
-                padding: 30px;
-                border-radius: 15px;
-                z-index: 10000;
-                text-align: center;
-                border: 2px solid #FFD700;
-                max-width: 500px;
-                max-height: 80vh;
-                overflow-y: auto;
-            `;
-            
-            linkPopup.innerHTML = `
-                <h3>🎉 Table SIO Casino créée!</h3>
-                <p style="margin: 15px 0; color: #FFD700;">Code: <strong>${currentRoom}</strong></p>
-                
-                <p style="margin: 10px 0;">Lien de la table :</p>
-                <input type="text" value="${url}" style="width: 100%; padding: 10px; border: none; border-radius: 5px; margin: 10px 0; font-family: monospace; font-size: 12px; color: black;" readonly onclick="this.select()">
-                
-                <div style="margin-top: 20px;">
-                    <button onclick="copyToClipboard('${url}'); this.parentElement.parentElement.remove();" style="background: #FFD700; color: black; border: none; padding: 10px 20px; border-radius: 5px; margin: 5px; cursor: pointer;">📋 Copier le lien</button>
-                    <button onclick="this.parentElement.parentElement.remove();" style="background: #666; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin: 5px; cursor: pointer;">Fermer</button>
-                </div>
-            `;
-            
-            document.body.appendChild(linkPopup);
-            
-            setTimeout(() => {
-                if (linkPopup.parentElement) {
-                    linkPopup.remove();
-                }
-            }, 15000);
-        }
+            if (!name || !code) {
+                showNotification('Remplissez tous les champs', 'error');
+                return;
+            }
 
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                showNotification('📋 Lien copié!', 'success');
-            }).catch(() => {
-                showNotification('❌ Erreur copie', 'error');
-            });
+            const result = await gameServer.joinRoom(code, name);
+            
+            if (result.success) {
+                playerName = name;
+                isDealer = false;
+                currentRoom = code;
+                showNotification('Bienvenue à la table!', 'success');
+                showGameInterface();
+                setupRoomListener();
+            } else {
+                showNotification(result.error, 'error');
+            }
         }
 
         function showJoinRoom() {
@@ -1757,70 +1558,20 @@
             document.getElementById('joinRoomCard').style.display = 'none';
         }
 
-        async function joinRoom() {
-            const nameInput = document.getElementById('playerName');
-            const codeInput = document.getElementById('roomCode');
-            
-            if (!nameInput || !codeInput) return;
-            
-            const name = nameInput.value.trim();
-            const code = codeInput.value.trim().toUpperCase();
-            
-            if (!name || !code) {
-                showNotification('Veuillez remplir tous les champs', 'error');
-                return;
-            }
-
-            if (name.length > 12) {
-                showNotification('Le nom ne peut pas dépasser 12 caractères', 'error');
-                return;
-            }
-
-            if (code.length !== 6) {
-                showNotification('Le code doit faire 6 caractères', 'error');
-                return;
-            }
-
-            showNotification('🔄 Connexion à la table...', 'info');
-
-            const result = await gameServer.joinRoom(code, name);
-            
-            if (!result.success) {
-                showNotification('❌ ' + result.error, 'error');
-                return;
-            }
-
-            playerName = name;
-            isDealer = false;
-            currentRoom = code;
-            
-            showNotification('🎉 Bienvenue à la table!', 'success');
-            showGameInterface();
-            setupRoomListener();
-        }
-
-        function setupRoomListener() {
-            if (currentRoom) {
-                gameServer.setupRoomListener(currentRoom, (room) => {
-                    if (room) {
-                        updateGameDisplay(room);
-                    }
-                });
-            }
-        }
-
         function showGameInterface() {
             document.getElementById('lobby').style.display = 'none';
             document.getElementById('gameInterface').style.display = 'block';
             document.getElementById('gameRoomCode').textContent = currentRoom;
             
+            if (isDealer) {
+                document.getElementById('dealerControls').style.display = 'flex';
+            }
+
             setupPlayerPositions();
         }
 
         function setupPlayerPositions() {
             const container = document.getElementById('playerPositions');
-            if (!container) return;
-            
             container.innerHTML = '';
             
             for (let i = 1; i <= 5; i++) {
@@ -1828,184 +1579,188 @@
                 spot.className = `player-spot spot-${i}`;
                 spot.id = `spot-${i}`;
                 spot.innerHTML = `
-                    <div class="player-avatar"></div>
+                    <div class="player-avatar">
+                        <span class="split-indicator" style="display: none;">SPLIT</span>
+                    </div>
                     <div class="player-name">Position ${i}</div>
+                    <div class="player-cards-area"></div>
                     <div class="player-score">--</div>
-                    <div class="player-bet">Mise: 0</div>
                     <div class="player-status"></div>
-                    <div class="player-hands"></div>
                 `;
                 container.appendChild(spot);
             }
         }
 
+        function setupRoomListener() {
+            if (roomListener) {
+                roomListener.off();
+            }
+
+            roomListener = database.ref(`rooms/${currentRoom}`);
+            roomListener.on('value', (snapshot) => {
+                const room = snapshot.val();
+                if (room) {
+                    updateGameDisplay(room);
+                } else {
+                    // La room a été supprimée
+                    showNotification('La table a été fermée', 'info');
+                    leaveGame();
+                }
+            });
+        }
+
         function updateGameDisplay(room) {
-            if (!room) return;
+            // Mettre à jour le nombre de joueurs
+            const actualPlayers = room.players.filter(p => !p.isSplit).length;
+            document.getElementById('playerCount').textContent = actualPlayers;
 
-            // Assurer que room.players existe
-            if (!room.players) {
-                room.players = [];
-            }
-
-            updatePlayerCount(room);
-            updateGameStats(room);
+            // Mettre à jour les positions des joueurs
             updatePlayerPositions(room);
+
+            // Mettre à jour le croupier
             updateDealerDisplay(room);
-            updateControls(room);
+
+            // Mettre à jour le chat
             updateChat(room);
-        }
 
-        function updatePlayerCount(room) {
-            const playerCountElement = document.getElementById('playerCount');
-            if (playerCountElement) {
-                playerCountElement.textContent = (room.players || []).length;
-            }
-        }
-
-        function updateGameStats(room) {
-            const handNumber = document.getElementById('handNumber');
-            const gameStatus = document.getElementById('gameStatus');
-            
-            if (handNumber) {
-                handNumber.textContent = room.handNumber || 1;
-            }
-            
-            if (gameStatus) {
-                const statusText = {
-                    'waiting': 'En attente',
-                    'dealing': 'Distribution',
-                    'playing': 'En jeu',
-                    'insurance': 'Assurance',
-                    'dealer_turn': 'Tour croupier',
-                    'finished': 'Terminé'
-                };
-                gameStatus.textContent = statusText[room.gameState] || room.gameState;
-            }
+            // Mettre à jour les contrôles
+            updateControls(room);
         }
 
         function updatePlayerPositions(room) {
-            // Réinitialiser toutes les positions
+            // D'abord, cacher tous les emplacements
             for (let i = 1; i <= 5; i++) {
                 const spot = document.getElementById(`spot-${i}`);
                 if (!spot) continue;
                 
-                spot.className = `player-spot spot-${i}`;
-                spot.querySelector('.player-avatar').textContent = '';
-                spot.querySelector('.player-name').textContent = `Position ${i}`;
-                spot.querySelector('.player-score').textContent = '--';
-                spot.querySelector('.player-bet').textContent = 'Mise: 0';
-                spot.querySelector('.player-status').textContent = '';
-                spot.querySelector('.player-status').className = 'player-status';
-                spot.querySelector('.player-hands').innerHTML = '';
+                spot.classList.remove('active');
+                const avatar = spot.querySelector('.player-avatar');
+                const splitIndicator = spot.querySelector('.split-indicator');
+                
+                if (splitIndicator) splitIndicator.style.display = 'none';
+                
+                if (!room.players.some(p => p.position === i || (p.isSplit && p.splitFrom === room.players.find(pl => pl.position === i)?.name))) {
+                    avatar.textContent = '';
+                    spot.querySelector('.player-name').textContent = `Position ${i}`;
+                    spot.querySelector('.player-score').textContent = '--';
+                    spot.querySelector('.player-status').textContent = '';
+                    spot.querySelector('.player-status').className = 'player-status';
+                    spot.querySelector('.player-cards-area').innerHTML = '';
+                }
             }
 
-            // Assurer que room.players existe
-            if (!room.players || !Array.isArray(room.players)) {
-                return;
-            }
-
-            // Placer les joueurs
-            room.players.forEach((player, idx) => {
-                const position = player.position || (idx + 1);
+            // Afficher les joueurs
+            room.players.forEach((player, index) => {
+                const position = player.position || (index + 1);
                 const spot = document.getElementById(`spot-${position}`);
                 if (!spot) return;
+
+                const avatar = spot.querySelector('.player-avatar');
+                const nameEl = spot.querySelector('.player-name');
+                const scoreEl = spot.querySelector('.player-score');
+                const statusEl = spot.querySelector('.player-status');
+                const cardsArea = spot.querySelector('.player-cards-area');
+                const splitIndicator = spot.querySelector('.split-indicator');
 
                 if (player.isActive) {
                     spot.classList.add('active');
                 }
 
-                spot.querySelector('.player-avatar').textContent = player.name.charAt(0).toUpperCase();
-                spot.querySelector('.player-name').textContent = player.name;
+                avatar.textContent = player.name.charAt(0).toUpperCase();
+                nameEl.textContent = player.name;
+                scoreEl.textContent = player.score || '--';
                 
-                // Assurer que player.hands existe
-                if (!player.hands || !Array.isArray(player.hands)) {
-                    player.hands = [{ cards: [], score: 0, bet: 0, status: 'waiting' }];
+                if (player.isSplit && splitIndicator) {
+                    splitIndicator.style.display = 'block';
                 }
 
-                // Afficher le score et la mise totale
-                const totalBet = player.hands.reduce((sum, h) => sum + (h.bet || 0), 0);
-                spot.querySelector('.player-bet').textContent = `Mise: ${totalBet}`;
-
-                // Status global du joueur
-                const statusEl = spot.querySelector('.player-status');
-                if (player.isActive) {
+                // Status
+                if (player.result) {
+                    if (player.result === 'win') {
+                        statusEl.textContent = '🎉 Gagné!';
+                        statusEl.className = 'player-status win';
+                    } else if (player.result === 'blackjack_win') {
+                        statusEl.textContent = '🎰 Blackjack!';
+                        statusEl.className = 'player-status blackjack';
+                    } else if (player.result === 'lose') {
+                        statusEl.textContent = '💀 Perdu';
+                        statusEl.className = 'player-status lose';
+                    } else if (player.result === 'push') {
+                        statusEl.textContent = '🤝 Égalité';
+                        statusEl.className = 'player-status tie';
+                    }
+                } else if (player.status === 'bust') {
+                    statusEl.textContent = '💥 Bust!';
+                    statusEl.className = 'player-status bust';
+                } else if (player.status === 'blackjack') {
+                    statusEl.textContent = '🎰 Blackjack!';
+                    statusEl.className = 'player-status blackjack';
+                } else if (player.status === 'stand') {
+                    statusEl.textContent = '✋ Reste';
+                    statusEl.className = 'player-status';
+                } else if (player.isActive) {
                     statusEl.textContent = '▶️ Joue';
                     statusEl.className = 'player-status';
-                } else if (room.gameState === 'finished') {
-                    const results = player.hands.map(h => h.result).filter(r => r);
-                    if (results.includes('blackjack')) {
-                        statusEl.textContent = '🎯 Blackjack!';
-                        statusEl.className = 'player-status blackjack';
-                    } else if (results.includes('win')) {
-                        statusEl.textContent = '🎉 Gagne';
-                        statusEl.className = 'player-status win';
-                    } else if (results.every(r => r === 'lose')) {
-                        statusEl.textContent = '💀 Perd';
-                        statusEl.className = 'player-status lose';
-                    } else {
-                        statusEl.textContent = '🤝 Mixte';
-                        statusEl.className = 'player-status';
-                    }
+                } else {
+                    statusEl.textContent = '';
+                    statusEl.className = 'player-status';
                 }
 
-                // Afficher les mains
-                const handsEl = spot.querySelector('.player-hands');
-                handsEl.innerHTML = '';
-                
-                player.hands.forEach((hand, handIndex) => {
-                    const handDiv = document.createElement('div');
-                    handDiv.className = `player-hand ${hand.isActive ? 'active' : ''} ${hand.isSplit ? 'split' : ''}`;
-                    
-                    if (player.hands.length > 1) {
-                        const labelDiv = document.createElement('div');
-                        labelDiv.className = 'hand-label';
-                        labelDiv.textContent = `Main ${handIndex + 1}`;
-                        handDiv.appendChild(labelDiv);
-                    }
-                    
-                    const cardsDiv = document.createElement('div');
-                    cardsDiv.className = 'hand-cards';
-                    
-                    if (hand.cards && Array.isArray(hand.cards)) {
-                        hand.cards.forEach(card => {
-                            const cardEl = createCardElement(card);
-                            cardsDiv.appendChild(cardEl);
-                        });
-                    }
-                    
-                    const scoreDiv = document.createElement('div');
-                    scoreDiv.className = 'hand-score';
-                    scoreDiv.textContent = hand.score || '--';
-                    
-                    handDiv.appendChild(cardsDiv);
-                    handDiv.appendChild(scoreDiv);
-                    handsEl.appendChild(handDiv);
-                });
+                // Cartes - Mise à jour seulement si nécessaire
+                if (cardsArea && player.cards) {
+                    updatePlayerCards(cardsArea, player.cards, `player-${player.name}`);
+                }
+            });
+        }
 
-                // Afficher le score de la main active si il n'y a qu'une main
-                if (player.hands.length === 1) {
-                    spot.querySelector('.player-score').textContent = player.hands[0].score || '--';
-                } else {
-                    spot.querySelector('.player-score').textContent = `${player.hands.length} mains`;
+        function updatePlayerCards(container, cards, playerId) {
+            const existingCards = Array.from(container.children);
+            
+            // Ajouter les nouvelles cartes
+            cards.forEach((card, index) => {
+                const cardId = `${playerId}-card-${index}`;
+                
+                if (!cardsInDOM.has(cardId)) {
+                    const cardEl = createCardElement(card);
+                    cardEl.dataset.cardId = cardId;
+                    container.appendChild(cardEl);
+                    cardsInDOM.set(cardId, cardEl);
+                    
+                    // Animation d'apparition
+                    cardEl.classList.add('dealing');
+                    setTimeout(() => cardEl.classList.remove('dealing'), 800);
+                }
+            });
+            
+            // Supprimer les cartes qui ne sont plus là
+            existingCards.forEach(cardEl => {
+                const cardId = cardEl.dataset.cardId;
+                const cardIndex = parseInt(cardId.split('-').pop());
+                
+                if (!cards[cardIndex]) {
+                    cardsInDOM.delete(cardId);
+                    cardEl.remove();
                 }
             });
         }
 
         function createCardElement(card) {
             const cardEl = document.createElement('div');
-            if (card.hidden) {
+            cardEl.className = `card ${card.isRed ? 'red' : 'black'}`;
+            
+            if (card.faceDown) {
                 cardEl.className = 'card hidden';
                 cardEl.innerHTML = `
                     <div class="card-value">?</div>
                     <div class="card-suit">🂠</div>
                 `;
             } else {
-                cardEl.className = `card ${card.isRed ? 'red' : 'black'}`;
                 cardEl.innerHTML = `
                     <div class="card-value">${card.value}</div>
                     <div class="card-suit">${card.suit}</div>
                 `;
             }
+            
             return cardEl;
         }
 
@@ -2014,21 +1769,46 @@
             const scoreEl = document.getElementById('dealerScore');
             
             if (!container || !scoreEl) return;
+
+            updatePlayerCards(container, room.dealerCards || [], 'dealer');
             
-            container.innerHTML = '';
-            
-            if (room.dealerCards && room.dealerCards.length > 0) {
-                room.dealerCards.forEach(card => {
-                    const cardEl = createCardElement(card);
-                    container.appendChild(cardEl);
-                });
-            }
-            
-            // Afficher le score
-            if (room.gameState === 'playing' && room.dealerCards.some(c => c.hidden)) {
-                scoreEl.textContent = '?';
+            // Score du croupier
+            if (room.gameState === 'playing' || room.gameState === 'checking_dealer') {
+                // Pendant le jeu, ne montrer que le score de la carte visible
+                const visibleCards = room.dealerCards.filter(c => !c.faceDown);
+                scoreEl.textContent = visibleCards.length > 0 ? 
+                    gameServer.calculateScore(visibleCards) : '--';
             } else {
                 scoreEl.textContent = room.dealerScore || '--';
+            }
+        }
+
+        function updateChat(room) {
+            const chatMessages = document.getElementById('chatMessages');
+            if (!chatMessages) return;
+
+            chatMessages.innerHTML = '';
+            
+            if (room.chat && room.chat.length > 0) {
+                room.chat.slice(-50).forEach(msg => {
+                    const msgEl = document.createElement('div');
+                    msgEl.className = 'chat-message';
+                    
+                    const time = new Date(msg.time).toLocaleTimeString('fr-FR', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    
+                    msgEl.innerHTML = `
+                        <span class="chat-time">${time}</span>
+                        <span class="chat-author">${msg.author}:</span>
+                        <span>${msg.text}</span>
+                    `;
+                    
+                    chatMessages.appendChild(msgEl);
+                });
+                
+                chatMessages.scrollTop = chatMessages.scrollHeight;
             }
         }
 
@@ -2037,330 +1817,178 @@
             const playerControls = document.getElementById('playerControls');
             const waitingControls = document.getElementById('waitingControls');
             
-            // Cacher tous les contrôles
+            // Cacher tous les contrôles par défaut
             if (dealerControls) dealerControls.style.display = 'none';
             if (playerControls) playerControls.style.display = 'none';
             if (waitingControls) waitingControls.style.display = 'none';
 
-            // Assurer que room.players existe
-            if (!room.players) {
-                room.players = [];
-            }
-
             if (isDealer) {
-                if (dealerControls) dealerControls.style.display = 'flex';
-                
-                const dealBtn = document.getElementById('dealBtn');
-                const dealerTurnBtn = document.getElementById('dealerTurnBtn');
-                
-                if (room.gameState === 'waiting' || room.gameState === 'finished') {
-                    if (dealBtn) dealBtn.style.display = 'inline-block';
-                    if (dealerTurnBtn) dealerTurnBtn.style.display = 'none';
-                } else if (room.gameState === 'dealer_turn') {
-                    if (dealBtn) dealBtn.style.display = 'none';
-                    if (dealerTurnBtn) dealerTurnBtn.style.display = 'inline-block';
-                } else {
-                    if (dealBtn) dealBtn.style.display = 'none';
-                    if (dealerTurnBtn) dealerTurnBtn.style.display = 'none';
+                if (dealerControls) {
+                    dealerControls.style.display = 'flex';
+                    const startBtn = document.getElementById('startHandBtn');
+                    const dealerBtn = document.getElementById('dealerPlayBtn');
+                    
+                    if (room.gameState === 'waiting' || room.gameState === 'finished') {
+                        startBtn.style.display = 'inline-block';
+                        dealerBtn.style.display = 'none';
+                    } else if (room.gameState === 'dealer_turn') {
+                        startBtn.style.display = 'none';
+                        dealerBtn.style.display = 'inline-block';
+                    } else {
+                        startBtn.style.display = 'none';
+                        dealerBtn.style.display = 'none';
+                    }
                 }
             } else {
                 const player = room.players.find(p => p.name === playerName);
                 
                 if (player && player.isActive && room.gameState === 'playing') {
-                    if (playerControls) playerControls.style.display = 'flex';
-                    
-                    // Assurer que player.hands existe
-                    if (!player.hands || !Array.isArray(player.hands)) {
-                        player.hands = [{ cards: [], score: 0, bet: 0, status: 'waiting' }];
-                    }
-
-                    const currentHand = player.hands[player.currentHandIndex] || player.hands[0];
-                    
-                    // Boutons de base
-                    const hitBtn = document.getElementById('hitBtn');
-                    const standBtn = document.getElementById('standBtn');
-                    if (hitBtn) hitBtn.style.display = 'inline-block';
-                    if (standBtn) standBtn.style.display = 'inline-block';
-                    
-                    // Double
-                    const doubleBtn = document.getElementById('doubleBtn');
-                    if (doubleBtn) {
-                        doubleBtn.style.display = (gameServer.canDouble(currentHand) && player.balance >= currentHand.bet) ? 'inline-block' : 'none';
-                    }
-                    
-                    // Split
-                    const splitBtn = document.getElementById('splitBtn');
-                    if (splitBtn && currentHand.cards) {
-                        splitBtn.style.display = (gameServer.canSplit(currentHand.cards) && player.balance >= currentHand.bet && player.hands.length < 2) ? 'inline-block' : 'none';
-                    }
-                    
-                    // Assurance
-                    const insuranceBtn = document.getElementById('insuranceBtn');
-                    if (insuranceBtn) {
-                        insuranceBtn.style.display = (room.gameState === 'insurance' && !player.hasInsurance) ? 'inline-block' : 'none';
+                    if (playerControls) {
+                        playerControls.style.display = 'flex';
+                        
+                        // Boutons spéciaux
+                        const doubleBtn = document.getElementById('playerDoubleBtn');
+                        const splitBtn = document.getElementById('playerSplitBtn');
+                        
+                        if (doubleBtn) {
+                            doubleBtn.style.display = player.cards.length === 2 ? 'inline-block' : 'none';
+                        }
+                        
+                        if (splitBtn) {
+                            splitBtn.style.display = gameServer.canSplit(player.cards) ? 'inline-block' : 'none';
+                        }
                     }
                 } else {
                     if (waitingControls) waitingControls.style.display = 'flex';
-                    
-                    const waitingText = document.getElementById('waitingText');
-                    if (waitingText) {
-                        if (room.gameState === 'waiting') {
-                            waitingText.textContent = 'En attente du croupier...';
-                        } else if (room.gameState === 'dealing') {
-                            waitingText.textContent = 'Distribution en cours...';
-                        } else if (room.gameState === 'dealer_turn') {
-                            waitingText.textContent = 'Tour du croupier...';
-                        } else {
-                            waitingText.textContent = 'En attente...';
-                        }
-                    }
                 }
             }
         }
 
-        function updateChat(room) {
-            const chatMessages = document.getElementById('chatMessages');
-            if (!chatMessages || !room.chat) return;
-            
-            chatMessages.innerHTML = '';
-            
-            room.chat.slice(-20).forEach(msg => {
-                const msgEl = document.createElement('div');
-                msgEl.className = 'chat-message';
-                msgEl.innerHTML = `
-                    <span class="chat-name">${msg.name}</span> 
-                    <span class="chat-time">${new Date(msg.time).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</span>: 
-                    <span class="chat-text">${msg.text}</span>
-                `;
-                chatMessages.appendChild(msgEl);
-            });
-            
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        // Actions de jeu
+        // Actions du jeu
         async function startNewHand() {
             if (!isDealer) return;
             
-            const room = await gameServer.getRoom(currentRoom);
-            if (!room || room.players.length === 0) {
-                showNotification('❌ Aucun joueur à la table', 'error');
-                return;
-            }
+            // Nettoyer les cartes du DOM
+            cardsInDOM.clear();
             
             const success = await gameServer.startNewHand(currentRoom);
             if (success) {
-                showNotification('🎴 Nouvelle manche commencée!', 'success');
+                showNotification('Nouvelle main distribuée!', 'info');
             }
         }
 
         async function hit() {
-            const result = await gameServer.playerAction(currentRoom, playerName, 'hit');
-            if (result.success) {
-                showNotification('🃏 Carte tirée!', 'info');
+            const success = await gameServer.hit(currentRoom, playerName);
+            if (!success) {
+                showNotification('Action impossible', 'error');
             }
         }
 
         async function stand() {
-            const result = await gameServer.playerAction(currentRoom, playerName, 'stand');
-            if (result.success) {
-                showNotification('✋ Vous restez', 'info');
+            const success = await gameServer.stand(currentRoom, playerName);
+            if (!success) {
+                showNotification('Action impossible', 'error');
             }
         }
 
         async function doubleDown() {
-            const result = await gameServer.playerAction(currentRoom, playerName, 'double');
-            if (result.success) {
-                showNotification('💰 Mise doublée!', 'info');
+            const success = await gameServer.doubleDown(currentRoom, playerName);
+            if (!success) {
+                showNotification('Double impossible', 'error');
             }
         }
 
-        async function split() {
-            const result = await gameServer.playerAction(currentRoom, playerName, 'split');
-            if (result.success) {
-                showNotification('🃏 Mains séparées!', 'info');
+        async function splitHand() {
+            const success = await gameServer.split(currentRoom, playerName);
+            if (!success) {
+                showNotification('Split impossible', 'error');
             }
         }
 
-        async function insurance() {
-            const result = await gameServer.playerAction(currentRoom, playerName, 'insurance');
-            if (result.success) {
-                showNotification('🛡️ Assurance prise!', 'info');
-            }
-        }
-
-        async function dealerTurn() {
+        async function dealerPlayTurn() {
             if (!isDealer) return;
-            
-            const success = await gameServer.dealerTurn(currentRoom);
-            if (success) {
-                showNotification('🎲 Tour du croupier en cours...', 'info');
-            }
+            await gameServer.dealerPlay(currentRoom);
         }
 
         async function leaveGame() {
-            if (currentRoom) {
+            if (currentRoom && playerName) {
                 await gameServer.leaveRoom(currentRoom, playerName);
-                gameServer.removeRoomListener(currentRoom);
             }
             
-            document.getElementById('lobby').style.display = 'flex';
-            document.getElementById('gameInterface').style.display = 'none';
+            if (roomListener) {
+                roomListener.off();
+                roomListener = null;
+            }
             
-            window.history.pushState({}, '', window.location.pathname);
-            
+            // Nettoyer
+            cardsInDOM.clear();
             currentRoom = null;
             playerName = '';
             isDealer = false;
             
-            showNotification('👋 Vous avez quitté la table', 'info');
-        }
-
-        function showNotification(message, type = 'info') {
-            const existing = document.querySelector('.notification');
-            if (existing) {
-                existing.remove();
-            }
-
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.textContent = message;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => notification.classList.add('show'), 100);
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => notification.remove(), 400);
-            }, 3000);
+            document.getElementById('lobby').style.display = 'flex';
+            document.getElementById('gameInterface').style.display = 'none';
         }
 
         // Chat
-        function setupChat() {
-            const chatForm = document.getElementById('chatForm');
-            if (chatForm) {
-                chatForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const input = document.getElementById('chatInput');
-                    if (!input || !input.value.trim()) return;
-                    
-                    const message = input.value.trim();
-                    input.value = '';
-                    
-                    await gameServer.addChatMessage(currentRoom, playerName, message);
-                });
+        document.getElementById('chatForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (message && currentRoom && playerName) {
+                await gameServer.sendChatMessage(currentRoom, playerName, message);
+                input.value = '';
             }
-        }
+        });
 
-        // Création des particules d'ambiance
+        // Particules d'ambiance
         function createParticles() {
-            const particlesContainer = document.getElementById('particles');
-            if (!particlesContainer) return;
+            const container = document.getElementById('particles');
             
             setInterval(() => {
-                const existingParticles = document.querySelectorAll('.particle');
-                if (existingParticles.length < 15) {
+                if (document.querySelectorAll('.particle').length < 20) {
                     const particle = document.createElement('div');
                     particle.className = 'particle';
                     particle.style.left = Math.random() * 100 + 'vw';
                     particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
                     particle.style.animationDelay = Math.random() * 2 + 's';
-                    particlesContainer.appendChild(particle);
+                    container.appendChild(particle);
                     
-                    setTimeout(() => {
-                        if (particle && particle.parentNode) {
-                            particle.remove();
-                        }
-                    }, 8000);
+                    setTimeout(() => particle.remove(), 8000);
                 }
-            }, 800);
-        }
-
-        function setupEventListeners() {
-            const roomCodeInput = document.getElementById('roomCode');
-            const playerNameInput = document.getElementById('playerName');
-            
-            if (roomCodeInput) {
-                roomCodeInput.addEventListener('input', function(e) {
-                    e.target.value = e.target.value.toUpperCase();
-                });
-                
-                roomCodeInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        joinRoom();
-                    }
-                });
-            }
-
-            if (playerNameInput) {
-                playerNameInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        createRoom();
-                    }
-                });
-                
-                playerNameInput.focus();
-            }
-
-            window.addEventListener('beforeunload', function() {
-                if (currentRoom) {
-                    gameServer.leaveRoom(currentRoom, playerName);
-                }
-            });
-        }
-
-        // URL joining
-        function joinFromURL() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const roomId = urlParams.get('roomid');
-            
-            if (roomId && roomId.length === 6) {
-                const codeInput = document.getElementById('roomCode');
-                if (codeInput) {
-                    codeInput.value = roomId.toUpperCase();
-                    showJoinRoom();
-                    
-                    const nameInput = document.getElementById('playerName');
-                    if (nameInput && !nameInput.value.trim()) {
-                        nameInput.focus();
-                    }
-                }
-                
-                showNotification('🎯 Code de table détecté dans l\'URL!', 'info');
-            }
+            }, 500);
         }
 
         // Initialisation
-        async function initializeGame() {
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initializeGame);
-                return;
+        window.addEventListener('DOMContentLoaded', () => {
+            createParticles();
+            
+            // Vérifier l'URL pour un code de room
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomCode = urlParams.get('room');
+            
+            if (roomCode) {
+                document.getElementById('roomCode').value = roomCode;
+                showJoinRoom();
             }
             
-            console.log("🎮 Initialisation du SIO Casino...");
+            // Event listeners
+            document.getElementById('playerName').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') createRoom();
+            });
             
-            try {
-                gameServer = new SIOCasinoGameServer();
-                
-                // Attendre l'initialisation Firebase
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                createParticles();
-                setupEventListeners();
-                setupChat();
-                joinFromURL();
-                
-                console.log("✅ SIO Casino initialisé avec Firebase");
-                showNotification('🔥 Multijoueur en ligne activé!', 'success');
-            } catch (error) {
-                console.error("❌ Erreur d'initialisation:", error);
-                showNotification('❌ Erreur de connexion Firebase', 'error');
-            }
-        }
-
-        // Démarrer l'initialisation
-        initializeGame();
+            document.getElementById('roomCode').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') joinRoom();
+            });
+            
+            // Nettoyage en quittant
+            window.addEventListener('beforeunload', () => {
+                if (currentRoom && playerName) {
+                    gameServer.leaveRoom(currentRoom, playerName);
+                }
+            });
+        });
     </script>
 </body>
 </html>
