@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎰 SIO Casino 🎰</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎰</text></svg>">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.2/firebase-app-compat.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.2/firebase-database-compat.min.js"></script>
     <style>
@@ -1157,6 +1158,14 @@
 
                 if (room.players.length === 0) return;
 
+                // Assurer que room.deck et room.dealerCards existent
+                if (!room.deck || !Array.isArray(room.deck)) {
+                    room.deck = this.createDeck();
+                }
+                if (!room.dealerCards || !Array.isArray(room.dealerCards)) {
+                    room.dealerCards = [];
+                }
+
                 // Distribuer 2 cartes à chaque joueur, puis 2 au croupier
                 for (let round = 0; round < 2; round++) {
                     // Cartes aux joueurs
@@ -1187,8 +1196,11 @@
                     }
 
                     const hand = player.hands[0];
-                    hand.score = this.calculateScore(hand.cards || []);
-                    if (this.isBlackjack(hand.cards || [])) {
+                    if (!hand.cards || !Array.isArray(hand.cards)) {
+                        hand.cards = [];
+                    }
+                    hand.score = this.calculateScore(hand.cards);
+                    if (this.isBlackjack(hand.cards)) {
                         hand.status = 'blackjack';
                     } else {
                         hand.status = 'playing';
@@ -1211,7 +1223,7 @@
                     const player = updatedRoom.players[i];
                     const hand = player.hands[0];
                     
-                    if (hand.status === 'playing' && !activePlayerSet) {
+                    if (hand && hand.status === 'playing' && !activePlayerSet) {
                         player.isActive = true;
                         hand.isActive = true;
                         activePlayerSet = true;
@@ -1237,13 +1249,29 @@
                 if (hidden) card.hidden = true;
 
                 if (target === 'dealer') {
+                    // Assurer que room.dealerCards existe
+                    if (!room.dealerCards || !Array.isArray(room.dealerCards)) {
+                        room.dealerCards = [];
+                    }
                     room.dealerCards.push(card);
                     if (!hidden) {
                         room.dealerScore = this.calculateScore(room.dealerCards.filter(c => !c.hidden));
                     }
-                } else if (target === 'player' && playerIndex >= 0 && room.players[playerIndex]) {
+                } else if (target === 'player' && playerIndex >= 0 && room.players && room.players[playerIndex]) {
                     const player = room.players[playerIndex];
-                    const hand = player.hands[handIndex] || player.hands[player.currentHandIndex];
+                    
+                    // Assurer que player.hands existe
+                    if (!player.hands || !Array.isArray(player.hands)) {
+                        player.hands = [{ cards: [], score: 0, bet: 10, status: 'waiting' }];
+                    }
+                    
+                    const hand = player.hands[handIndex] || player.hands[player.currentHandIndex] || player.hands[0];
+                    
+                    // Assurer que hand.cards existe
+                    if (!hand.cards || !Array.isArray(hand.cards)) {
+                        hand.cards = [];
+                    }
+                    
                     hand.cards.push(card);
                     hand.score = this.calculateScore(hand.cards);
                 }
