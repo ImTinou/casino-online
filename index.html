@@ -900,7 +900,8 @@
                         status: 'waiting',
                         isActive: false,
                         position: room.players.length + 1,
-                        joinedAt: Date.now()
+                        joinedAt: Date.now(),
+                        winStreak: 0
                     });
 
                     room.lastUpdate = Date.now();
@@ -1143,7 +1144,11 @@
                 // Simulation du jeu du croupier avec délais
                 const dealerPlayInterval = setInterval(async () => {
                     const currentRoom = await this.getRoom(roomCode);
-                    if (currentRoom.dealerScore < 17) {
+                    // Soft 17 : s'arrêter si 17 et contient un As compté comme 11
+                    const hasSoft17 = currentRoom.dealerScore === 17 &&
+                        currentRoom.dealerCards.some(card => card.value === 'A') &&
+                        this.calculateScore(currentRoom.dealerCards) === 17;
+                    if (currentRoom.dealerScore < 17 || hasSoft17) {
                         await this.dealCard(roomCode, 'dealer');
                     } else {
                         clearInterval(dealerPlayInterval);
@@ -1164,8 +1169,17 @@
                 }
 
                 // Déterminer les gagnants
+                room.players.forEach(p => {
+                    p.hasBlackjack = (p.cards.length === 2 && p.score === 21);
+                });
+                room.dealerHasBlackjack = (room.dealerCards.length === 2 && room.dealerScore === 21);
+
                 room.players.forEach(player => {
-                    if (player.status === 'bust') {
+                    if (player.hasBlackjack && !room.dealerHasBlackjack) {
+                        player.result = 'blackjack';
+                    } else if (player.status === 'bust') {
+                        player.result = 'lose';
+                    } else if (room.dealerHasBlackjack && !player.hasBlackjack) {
                         player.result = 'lose';
                     } else if (room.dealerScore > 21) {
                         player.result = 'win';
@@ -1175,6 +1189,12 @@
                         player.result = 'tie';
                     } else {
                         player.result = 'lose';
+                    }
+                    // Win streak
+                    if (player.result === 'win' || player.result === 'blackjack') {
+                        player.winStreak = (player.winStreak || 0) + 1;
+                    } else {
+                        player.winStreak = 0;
                     }
                 });
 
@@ -1475,6 +1495,7 @@
                     <div class="player-avatar"></div>
                     <div class="player-name">Position ${i}</div>
                     <div class="player-score">--</div>
+                    <div class="player-streak">🏆 Streak: <span>0</span></div>
                     <div class="player-status"></div>
                 `;
                 container.appendChild(spot);
@@ -1557,18 +1578,24 @@
                 } else if (player.isActive) {
                     status.textContent = '▶️ Joue';
                 }
+
+                // Win streak
+                const streakEl = spot.querySelector('.player-streak span');
+                if (streakEl) streakEl.textContent = player.winStreak || 0;
             });
         }
 
         function updateDealerDisplay(room) {
-            const scoreElement = document.getElementById('dealerScore');
-            if (!scoreElement) return;
-            
-            if (room.gameState === 'playing' && room.dealerCards.length > 0) {
-                scoreElement.textContent = '?';
-            } else {
-                scoreElement.textContent = room.dealerScore || '--';
-            }
+            const container = document.getElementById('dealerCards');
+            if (!container) return;
+            container.innerHTML = '';
+            room.dealerCards.forEach(card => {
+                const el = document.createElement('div');
+                el.className = `card ${card.isRed ? 'red' : 'black'}`;
+                el.innerHTML = `<div class="card-value">${card.value}</div><div class="card-suit">${card.suit}</div>`;
+                container.appendChild(el);
+            });
+            document.getElementById('dealerScore').textContent = room.dealerScore || '--';
         }
 
         function updateControls(room) {
@@ -1590,8 +1617,10 @@
 
             if (isDealer) {
                 if (dealerControls) dealerControls.style.display = 'flex';
-                if (room.gameState === 'dealer_turn' && dealerPlayBtn) {
+                if (dealerPlayBtn) {
                     dealerPlayBtn.style.display = 'inline-block';
+                    dealerPlayBtn.textContent = '▶️ Distribuer une carte';
+                    dealerPlayBtn.onclick = dealerDealOne;
                 }
             } else {
                 const player = room.players.find(p => p.name === playerName);
@@ -1853,6 +1882,17 @@
 
         // Démarrer l'initialisation
         initializeGame();
+
+        let nextDealTarget = 0; // 0 = joueur1, …, N-1 = joueurN, N = dealer
+        async function dealerDealOne() {
+            if (!isDealer || !currentRoom) return;
+            const room = await gameServer.getRoom(currentRoom);
+            const targets = room.players.map((_, i) => i).concat('dealer');
+            const target = targets[nextDealTarget];
+            await gameServer.dealCard(currentRoom, target);
+            showNotification(`Carte distribuée à ${target === 'dealer' ? 'Croupier' : room.players[target].name}`, 'info');
+            nextDealTarget = (nextDealTarget + 1) % targets.length;
+        }
     </script>
 </body>
 </html>
