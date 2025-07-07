@@ -895,12 +895,14 @@
 
                     room.players.push({
                         name: playerName,
-                        cards: [],
-                        score: 0,
-                        status: 'waiting',
+                        hands: [
+                            { cards: [], score: 0, status: 'playing', doubled: false, result: null }
+                        ],
+                        currentHandIndex: 0,
                         isActive: false,
                         position: room.players.length + 1,
-                        joinedAt: Date.now()
+                        joinedAt: Date.now(),
+                        winstreak: 0
                     });
 
                     room.lastUpdate = Date.now();
@@ -958,7 +960,6 @@
             calculateScore(cards) {
                 let score = 0;
                 let aces = 0;
-
                 for (let card of cards) {
                     if (card.value === 'A') {
                         aces++;
@@ -967,13 +968,15 @@
                         score += card.numValue;
                     }
                 }
-
                 while (score > 21 && aces > 0) {
                     score -= 10;
                     aces--;
                 }
-
                 return score;
+            }
+
+            hasBlackjack(cards) {
+                return cards.length === 2 && this.calculateScore(cards) === 21;
             }
 
             async updateRoom(roomCode, room) {
@@ -1010,9 +1013,9 @@
                 } else {
                     const player = room.players[target];
                     if (player) {
-                        player.cards = player.cards || [];
-                        player.cards.push(card);
-                        player.score = this.calculateScore(player.cards);
+                        player.hands[player.currentHandIndex].cards = player.hands[player.currentHandIndex].cards || [];
+                        player.hands[player.currentHandIndex].cards.push(card);
+                        player.hands[player.currentHandIndex].score = this.calculateScore(player.hands[player.currentHandIndex].cards);
                     }
                 }
 
@@ -1023,112 +1026,114 @@
             async startNewHand(roomCode) {
                 const room = await this.getRoom(roomCode);
                 if (!room) return false;
-
-                // Vérifier et initialiser players si nécessaire
                 if (!room.players || !Array.isArray(room.players)) {
                     room.players = [];
                 }
-
-                // Reset complet
                 room.players.forEach(player => {
-                    player.cards = [];
-                    player.score = 0;
-                    player.status = 'playing';
+                    player.hands.forEach(hand => {
+                        hand.cards = [];
+                        hand.score = 0;
+                        hand.status = 'playing';
+                        hand.doubled = false;
+                        hand.result = null;
+                    });
+                    player.currentHandIndex = 0;
                     player.isActive = false;
+                    player.hasBlackjack = false;
                     delete player.result;
                 });
-
                 room.dealerCards = [];
                 room.dealerScore = 0;
+                room.dealerHasBlackjack = false;
                 room.deck = this.createDeck();
                 room.currentPlayerIndex = 0;
                 room.gameState = 'dealing';
-
                 await this.updateRoom(roomCode, room);
-
-                // Simulation de distribution avec délai
                 setTimeout(() => {
                     this.distributeCards(roomCode);
                 }, 500);
-
                 return true;
             }
 
             async distributeCards(roomCode) {
                 const room = await this.getRoom(roomCode);
                 if (!room) return;
-
-                // Distribuer 2 cartes à chaque joueur et au croupier
                 for (let round = 0; round < 2; round++) {
                     for (let index = 0; index < room.players.length; index++) {
                         await this.dealCard(roomCode, index);
                     }
                     await this.dealCard(roomCode, 'dealer');
                 }
-
-                // Activer le premier joueur
-                if (room.players.length > 0) {
+                // Vérifier blackjack naturel
+                room.players.forEach(player => {
+                    player.hands.forEach(hand => {
+                        hand.hasBlackjack = this.hasBlackjack(hand.cards);
+                        if (hand.hasBlackjack) {
+                            hand.status = 'blackjack';
+                        }
+                    });
+                });
+                room.dealerHasBlackjack = this.hasBlackjack(room.dealerCards);
+                if (room.dealerHasBlackjack) {
+                    room.gameState = 'dealer_turn';
+                } else if (room.players.length > 0) {
                     const updatedRoom = await this.getRoom(roomCode);
-                    updatedRoom.players[0].isActive = true;
+                    updatedRoom.players[0].hands[0].isActive = true;
                     updatedRoom.gameState = 'playing';
                     await this.updateRoom(roomCode, updatedRoom);
                 }
+                await this.updateRoom(roomCode, room);
             }
 
             async playerAction(roomCode, playerName, action) {
                 const room = await this.getRoom(roomCode);
                 if (!room) return false;
-
-                // Vérifier et initialiser players si nécessaire
                 if (!room.players || !Array.isArray(room.players)) {
                     room.players = [];
                 }
-
                 const playerIndex = room.players.findIndex(p => p.name === playerName);
                 const player = room.players[playerIndex];
-                
                 if (!player || !player.isActive || room.gameState !== 'playing') return false;
-
                 if (action === 'hit') {
                     await this.dealCard(roomCode, playerIndex);
                     const updatedRoom = await this.getRoom(roomCode);
                     const updatedPlayer = updatedRoom.players[playerIndex];
-                    
-                    if (updatedPlayer.score > 21) {
-                        updatedPlayer.status = 'bust';
+                    updatedPlayer.hands[updatedPlayer.currentHandIndex].score = this.calculateScore(updatedPlayer.hands[updatedPlayer.currentHandIndex].cards);
+                    if (updatedPlayer.hands[updatedPlayer.currentHandIndex].score > 21) {
+                        updatedPlayer.hands[updatedPlayer.currentHandIndex].status = 'bust';
                         await this.nextPlayer(roomCode);
-                    } else if (updatedPlayer.score === 21) {
-                        updatedPlayer.status = 'stand';
+                    } else if (updatedPlayer.hands[updatedPlayer.currentHandIndex].score === 21) {
+                        updatedPlayer.hands[updatedPlayer.currentHandIndex].status = 'stand';
                         await this.nextPlayer(roomCode);
                     } else {
                         await this.updateRoom(roomCode, updatedRoom);
                     }
                 } else if (action === 'stand') {
-                    player.status = 'stand';
+                    player.hands[player.currentHandIndex].status = 'stand';
                     await this.updateRoom(roomCode, room);
                     await this.nextPlayer(roomCode);
                 }
-
                 return true;
             }
 
             async nextPlayer(roomCode) {
                 const room = await this.getRoom(roomCode);
                 if (!room) return;
-
                 room.players[room.currentPlayerIndex].isActive = false;
-
                 let nextIndex = room.currentPlayerIndex + 1;
                 while (nextIndex < room.players.length) {
-                    if (room.players[nextIndex].status === 'playing') {
-                        room.players[nextIndex].isActive = true;
-                        room.currentPlayerIndex = nextIndex;
-                        await this.updateRoom(roomCode, room);
-                        return;
+                    if (room.players[nextIndex].hands.some(hand => hand.status === 'playing')) {
+                        room.players[nextIndex].hands.forEach(hand => {
+                            if (hand.status === 'playing') {
+                                hand.isActive = true;
+                                room.currentPlayerIndex = nextIndex;
+                                await this.updateRoom(roomCode, room);
+                                return;
+                            }
+                        });
                     }
                     nextIndex++;
                 }
-
                 room.gameState = 'dealer_turn';
                 await this.updateRoom(roomCode, room);
             }
@@ -1136,11 +1141,8 @@
             async dealerPlay(roomCode) {
                 const room = await this.getRoom(roomCode);
                 if (!room) return false;
-
                 room.gameState = 'dealer_playing';
                 await this.updateRoom(roomCode, room);
-                
-                // Simulation du jeu du croupier avec délais
                 const dealerPlayInterval = setInterval(async () => {
                     const currentRoom = await this.getRoom(roomCode);
                     if (currentRoom.dealerScore < 17) {
@@ -1150,34 +1152,43 @@
                         await this.finishGame(roomCode);
                     }
                 }, 1000);
-
                 return true;
             }
 
             async finishGame(roomCode) {
                 const room = await this.getRoom(roomCode);
                 if (!room) return;
-
-                // Vérifier et initialiser players si nécessaire
                 if (!room.players || !Array.isArray(room.players)) {
                     room.players = [];
                 }
-
+                // Révéler la deuxième carte du croupier
+                room.dealerScore = this.calculateScore(room.dealerCards);
+                room.dealerHasBlackjack = this.hasBlackjack(room.dealerCards);
                 // Déterminer les gagnants
                 room.players.forEach(player => {
-                    if (player.status === 'bust') {
-                        player.result = 'lose';
-                    } else if (room.dealerScore > 21) {
-                        player.result = 'win';
-                    } else if (player.score > room.dealerScore) {
-                        player.result = 'win';
-                    } else if (player.score === room.dealerScore) {
-                        player.result = 'tie';
-                    } else {
-                        player.result = 'lose';
-                    }
+                    player.hands.forEach(hand => {
+                        hand.score = this.calculateScore(hand.cards);
+                        if (hand.status === 'bust') {
+                            hand.result = 'lose';
+                        } else if (hand.hasBlackjack && room.dealerHasBlackjack) {
+                            hand.result = 'tie';
+                        } else if (hand.hasBlackjack) {
+                            hand.result = 'win';
+                        } else if (room.dealerHasBlackjack) {
+                            hand.result = 'lose';
+                        } else if (room.dealerScore > 21) {
+                            hand.result = 'win';
+                        } else if (hand.score > 21) {
+                            hand.result = 'lose';
+                        } else if (hand.score > room.dealerScore) {
+                            hand.result = 'win';
+                        } else if (hand.score === room.dealerScore) {
+                            hand.result = 'tie';
+                        } else {
+                            hand.result = 'lose';
+                        }
+                    });
                 });
-
                 room.gameState = 'finished';
                 await this.updateRoom(roomCode, room);
             }
@@ -1536,25 +1547,25 @@
                 
                 if (!avatar || !name || !score || !status) return;
                 
-                if (player.isActive) {
+                if (player.hands.some(hand => hand.isActive)) {
                     spot.classList.add('active');
                 }
                 
                 avatar.textContent = player.name.charAt(0).toUpperCase();
                 name.textContent = player.name;
-                score.textContent = player.score || '--';
+                score.textContent = player.hands[player.currentHandIndex].score || '--';
                 
                 // Status
-                if (player.result) {
-                    status.textContent = player.result === 'win' ? '🎉 Gagne' : 
-                                       player.result === 'lose' ? '💀 Perd' : '🤝 Égalité';
-                    status.className = `player-status ${player.result}`;
-                } else if (player.status === 'bust') {
+                if (player.hands[player.currentHandIndex].result) {
+                    status.textContent = player.hands[player.currentHandIndex].result === 'win' ? '🎉 Gagne' : 
+                                       player.hands[player.currentHandIndex].result === 'lose' ? '💀 Perd' : '🤝 Égalité';
+                    status.className = `player-status ${player.hands[player.currentHandIndex].result}`;
+                } else if (player.hands[player.currentHandIndex].status === 'bust') {
                     status.textContent = '💥 Bust';
                     status.className = 'player-status lose';
-                } else if (player.status === 'stand') {
+                } else if (player.hands[player.currentHandIndex].status === 'stand') {
                     status.textContent = '✋ Reste';
-                } else if (player.isActive) {
+                } else if (player.hands[player.currentHandIndex].isActive) {
                     status.textContent = '▶️ Joue';
                 }
             });
@@ -1595,7 +1606,7 @@
                 }
             } else {
                 const player = room.players.find(p => p.name === playerName);
-                if (player && player.isActive && room.gameState === 'playing') {
+                if (player && player.hands.some(hand => hand.isActive && room.gameState === 'playing')) {
                     if (playerControls) playerControls.style.display = 'flex';
                 } else {
                     if (waitingControls) waitingControls.style.display = 'flex';
