@@ -753,6 +753,8 @@
                 <div id="playerControls" style="display: none;">
                     <button class="btn btn-success" onclick="hit()">⬆️ Carte</button>
                     <button class="btn btn-danger" onclick="stand()">✋ Rester</button>
+                    <button class="btn btn-warning" id="playerDoubleBtn" onclick="doubleDown()" style="display:none;">💰 Doubler</button>
+                    <button class="btn btn-gold" id="playerSplitBtn" onclick="splitHand()" style="display:none;">🃏 Split</button>
                 </div>
                 
                 <div id="waitingControls" style="display: none;">
@@ -801,7 +803,7 @@
                 
                 if (isClaudeArtifact) {
                     console.log("🎮 Mode DEMO activé (localStorage)");
-                    console.log("ℹ️ Pour le multijoueur en ligne, hébergez ce code sur votre serveur");
+                    console.log("ℹ️ Pour le multijoueur en ligne, hébergez ce code sur ton serveur");
                     this.useLocalStorage = true;
                     database = null;
                     return;
@@ -1058,15 +1060,13 @@
             async distributeCards(roomCode) {
                 const room = await this.getRoom(roomCode);
                 if (!room) return;
-
-                // Distribuer 2 cartes à chaque joueur et au croupier
+                // Distribuer 2 cartes à chaque joueur et au croupier, mais ne pas donner de cartes supplémentaires
                 for (let round = 0; round < 2; round++) {
                     for (let index = 0; index < room.players.length; index++) {
                         await this.dealCard(roomCode, index);
                     }
                     await this.dealCard(roomCode, 'dealer');
                 }
-
                 // Activer le premier joueur
                 if (room.players.length > 0) {
                     const updatedRoom = await this.getRoom(roomCode);
@@ -1079,22 +1079,16 @@
             async playerAction(roomCode, playerName, action) {
                 const room = await this.getRoom(roomCode);
                 if (!room) return false;
-
-                // Vérifier et initialiser players si nécessaire
                 if (!room.players || !Array.isArray(room.players)) {
                     room.players = [];
                 }
-
                 const playerIndex = room.players.findIndex(p => p.name === playerName);
                 const player = room.players[playerIndex];
-                
                 if (!player || !player.isActive || room.gameState !== 'playing') return false;
-
                 if (action === 'hit') {
                     await this.dealCard(roomCode, playerIndex);
                     const updatedRoom = await this.getRoom(roomCode);
                     const updatedPlayer = updatedRoom.players[playerIndex];
-                    
                     if (updatedPlayer.score > 21) {
                         updatedPlayer.status = 'bust';
                         await this.nextPlayer(roomCode);
@@ -1108,8 +1102,35 @@
                     player.status = 'stand';
                     await this.updateRoom(roomCode, room);
                     await this.nextPlayer(roomCode);
+                } else if (action === 'double') {
+                    // Double : le joueur mise le double, reçoit une carte et termine son tour
+                    await this.dealCard(roomCode, playerIndex);
+                    const updatedRoom = await this.getRoom(roomCode);
+                    const updatedPlayer = updatedRoom.players[playerIndex];
+                    updatedPlayer.status = 'stand';
+                    await this.updateRoom(roomCode, updatedRoom);
+                    await this.nextPlayer(roomCode);
+                } else if (action === 'split') {
+                    // Split : séparer la main en deux (simplifié, une seule split possible)
+                    if (player.cards && player.cards.length === 2 && player.cards[0].value === player.cards[1].value) {
+                        const card1 = player.cards[0];
+                        const card2 = player.cards[1];
+                        // Créer une nouvelle main pour ce joueur
+                        const newPlayer = {
+                            ...player,
+                            cards: [card2],
+                            score: this.getCardValue(card2.value),
+                            status: 'playing',
+                            isActive: false,
+                            splitFrom: player.name
+                        };
+                        player.cards = [card1];
+                        player.score = this.getCardValue(card1.value);
+                        // Ajouter la nouvelle main juste après
+                        room.players.splice(playerIndex + 1, 0, newPlayer);
+                        await this.updateRoom(roomCode, room);
+                    }
                 }
-
                 return true;
             }
 
@@ -1603,29 +1624,57 @@
             const playerControls = document.getElementById('playerControls');
             const waitingControls = document.getElementById('waitingControls');
             const dealerPlayBtn = document.getElementById('dealerPlayBtn');
-            
             // Cacher tous les contrôles
             if (dealerControls) dealerControls.style.display = 'none';
             if (playerControls) playerControls.style.display = 'none';
             if (waitingControls) waitingControls.style.display = 'none';
             if (dealerPlayBtn) dealerPlayBtn.style.display = 'none';
 
-            // Vérifier et initialiser players si nécessaire
             if (!room.players || !Array.isArray(room.players)) {
                 room.players = [];
             }
 
+            // Gestion des boutons du croupier
             if (isDealer) {
                 if (dealerControls) dealerControls.style.display = 'flex';
-                if (dealerPlayBtn) {
-                    dealerPlayBtn.style.display = 'inline-block';
-                    dealerPlayBtn.textContent = '▶️ Distribuer une carte';
-                    dealerPlayBtn.onclick = dealerDealOne;
+                // Nouvelle partie
+                if (room.gameState === 'waiting' || room.gameState === 'finished') {
+                    document.querySelector('#dealerControls button[onclick="startNewHand()"]').style.display = 'inline-block';
+                    if (dealerPlayBtn) dealerPlayBtn.style.display = 'none';
+                }
+                // Distribution
+                else if (room.gameState === 'dealing') {
+                    document.querySelector('#dealerControls button[onclick="startNewHand()"]').style.display = 'none';
+                    if (dealerPlayBtn) {
+                        dealerPlayBtn.style.display = 'inline-block';
+                        dealerPlayBtn.textContent = '▶️ Distribuer une carte';
+                        dealerPlayBtn.onclick = dealerDealOne;
+                    }
+                }
+                // Tour croupier
+                else if (room.gameState === 'dealer_turn') {
+                    document.querySelector('#dealerControls button[onclick="startNewHand()"]').style.display = 'none';
+                    if (dealerPlayBtn) {
+                        dealerPlayBtn.style.display = 'inline-block';
+                        dealerPlayBtn.textContent = '🎲 Tour croupier';
+                        dealerPlayBtn.onclick = dealerPlay;
+                    }
+                } else {
+                    document.querySelector('#dealerControls button[onclick="startNewHand()"]').style.display = 'none';
+                    if (dealerPlayBtn) dealerPlayBtn.style.display = 'none';
                 }
             } else {
+                // Gestion des boutons joueurs
                 const player = room.players.find(p => p.name === playerName);
                 if (player && player.isActive && room.gameState === 'playing') {
+                    // Afficher les boutons selon la situation
                     if (playerControls) playerControls.style.display = 'flex';
+                    // Double
+                    const doubleBtn = document.getElementById('playerDoubleBtn');
+                    if (doubleBtn) doubleBtn.style.display = (player.cards && player.cards.length === 2) ? 'inline-block' : 'none';
+                    // Split
+                    const splitBtn = document.getElementById('playerSplitBtn');
+                    if (splitBtn) splitBtn.style.display = (player.cards && player.cards.length === 2 && player.cards[0].value === player.cards[1].value) ? 'inline-block' : 'none';
                 } else {
                     if (waitingControls) waitingControls.style.display = 'flex';
                 }
@@ -1892,6 +1941,20 @@
             await gameServer.dealCard(currentRoom, target);
             showNotification(`Carte distribuée à ${target === 'dealer' ? 'Croupier' : room.players[target].name}`, 'info');
             nextDealTarget = (nextDealTarget + 1) % targets.length;
+        }
+
+        async function doubleDown() {
+            const success = await gameServer.playerAction(currentRoom, playerName, 'double');
+            if (success) {
+                showNotification('💰 Vous doublez !', 'info');
+            }
+        }
+
+        async function splitHand() {
+            const success = await gameServer.playerAction(currentRoom, playerName, 'split');
+            if (success) {
+                showNotification('🃏 Split effectué !', 'info');
+            }
         }
     </script>
 </body>
