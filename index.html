@@ -1547,6 +1547,35 @@
             }
         }
 
+        function showNotification(message, type = 'info') {
+            const existing = document.querySelector('.notification');
+            if (existing) existing.remove();
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.right = '20px';
+            notification.style.padding = '20px 25px';
+            notification.style.borderRadius = '15px';
+            notification.style.color = 'white';
+            notification.style.fontWeight = 'bold';
+            notification.style.zIndex = 1000;
+            notification.style.background = type === 'success'
+                ? 'linear-gradient(135deg, #11998e, #38ef7d)'
+                : type === 'error'
+                ? 'linear-gradient(135deg, #ff416c, #ff4b2b)'
+                : 'linear-gradient(135deg, #667eea, #764ba2)';
+            notification.style.transition = 'all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
+            notification.style.transform = 'translateX(400px)';
+            document.body.appendChild(notification);
+            setTimeout(() => notification.style.transform = 'translateX(0)', 100);
+            setTimeout(() => {
+                notification.style.transform = 'translateX(400px)';
+                setTimeout(() => notification.remove(), 400);
+            }, 3000);
+        }
+
         function showShareableLink() {
             const url = `${window.location.origin}${window.location.pathname}?roomid=${currentRoom}`;
             
@@ -1581,7 +1610,6 @@
                             Actuellement en mode local. Pour un vrai multijoueur en ligne :
                         </p>
                         <ol style="text-align: left; font-size: 13px; margin: 10px 0;">
-                            <li>Télécharge ce fichier HTML</li>
                             <li>Héberge-le sur ton serveur/GitHub Pages</li>
                             <li>Firebase fonctionnera automatiquement !</li>
                         </ol>
@@ -1593,7 +1621,6 @@
                 
                 <div style="margin-top: 20px;">
                     <button onclick="copyToClipboard('${url}'); this.parentElement.parentElement.remove();" style="background: #FFD700; color: black; border: none; padding: 10px 20px; border-radius: 5px; margin: 5px; cursor: pointer;">📋 Copier le lien</button>
-                    <button onclick="downloadHTML()" style="background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin: 5px; cursor: pointer;">💾 Télécharger</button>
                     <button onclick="this.parentElement.parentElement.remove();" style="background: #666; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin: 5px; cursor: pointer;">Fermer</button>
                 </div>
             `;
@@ -1628,7 +1655,6 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            showNotification('💾 Fichier téléchargé! Hébergez-le pour le multijoueur en ligne', 'success');
         }
 
         function showJoinRoom() {
@@ -2248,34 +2274,16 @@
             });
         }
 
-        function showNotification(message, type = 'info') {
-            const existing = document.querySelector('.notification');
-            if (existing) existing.remove();
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.textContent = message;
-            notification.style.position = 'fixed';
-            notification.style.top = '20px';
-            notification.style.right = '20px';
-            notification.style.padding = '20px 25px';
-            notification.style.borderRadius = '15px';
-            notification.style.color = 'white';
-            notification.style.fontWeight = 'bold';
-            notification.style.zIndex = 1000;
-            notification.style.background = type === 'success'
-                ? 'linear-gradient(135deg, #11998e, #38ef7d)'
-                : type === 'error'
-                ? 'linear-gradient(135deg, #ff416c, #ff4b2b)'
-                : 'linear-gradient(135deg, #667eea, #764ba2)';
-            notification.style.transition = 'all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
-            notification.style.transform = 'translateX(400px)';
-            document.body.appendChild(notification);
-            setTimeout(() => notification.style.transform = 'translateX(0)', 100);
-            setTimeout(() => {
-                notification.style.transform = 'translateX(400px)';
-                setTimeout(() => notification.remove(), 400);
-            }, 3000);
+        async function splitHand() {
+            const success = await gameServer.playerAction(currentRoom, playerName, 'split');
+            if (success) {
+                showNotification('🃏 Split effectué !', 'info');
+                // Optionnel : masquer les contrôles du joueur pendant le traitement
+                const playerControls = document.getElementById('playerControls');
+                if (playerControls) playerControls.style.display = 'none';
+            }
         }
+
     </script>
 </body>
 </html>
