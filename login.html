@@ -1,6 +1,7 @@
 <!-- Fichier: login.html -->
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -48,12 +49,24 @@
         }
 
         @keyframes float {
-            0% { transform: translateY(100vh) rotate(0deg); }
-            100% { transform: translateY(-100px) rotate(360deg); }
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+            }
+
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+            }
         }
 
-        .floating-icon:nth-child(odd) { color: #ff00d4; animation-duration: 25s; }
-        .floating-icon:nth-child(3n) { color: #00ff88; animation-duration: 22s; }
+        .floating-icon:nth-child(odd) {
+            color: #ff00d4;
+            animation-duration: 25s;
+        }
+
+        .floating-icon:nth-child(3n) {
+            color: #00ff88;
+            animation-duration: 22s;
+        }
 
         .login-container {
             max-width: 450px;
@@ -86,8 +99,15 @@
         }
 
         @keyframes rainbow {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
+
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
         }
 
         .logo {
@@ -364,8 +384,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .error-message {
@@ -399,8 +424,15 @@
         }
 
         @keyframes slideIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .guest-login {
@@ -428,16 +460,16 @@
             .login-card {
                 padding: 2rem 1.5rem;
             }
-            
+
             .form-options {
                 flex-direction: column;
                 align-items: stretch;
             }
-            
+
             .social-login {
                 flex-direction: column;
             }
-            
+
             .back-home {
                 top: 1rem;
                 left: 1rem;
@@ -445,6 +477,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Background Animation -->
     <div class="background-animation" id="backgroundAnimation"></div>
@@ -531,14 +564,14 @@
             // Firebase est déjà initialisé par firebase-config.js
             auth = firebase.auth();
             database = firebase.database();
-            
+
             // Vérifier si l'utilisateur est déjà connecté
             auth.onAuthStateChanged((user) => {
                 if (user && !window.location.search.includes('force=true') && window.location.pathname.indexOf('login.html') === -1) {
                     window.location.href = 'index.html';
                 }
             });
-            
+
             // Initialiser l'interface
             init();
         });
@@ -558,16 +591,16 @@
         function createFloatingIcons() {
             const icons = ['🎰', '🃏', '💎', '🎲', '🎯', '💰', '⭐', '🔥'];
             const container = document.getElementById('backgroundAnimation');
-            
+
             setInterval(() => {
                 const icon = document.createElement('div');
                 icon.className = 'floating-icon';
                 icon.textContent = icons[Math.floor(Math.random() * icons.length)];
                 icon.style.left = Math.random() * 100 + '%';
                 icon.style.animationDelay = Math.random() * 2 + 's';
-                
+
                 container.appendChild(icon);
-                
+
                 setTimeout(() => {
                     if (icon.parentNode) {
                         icon.parentNode.removeChild(icon);
@@ -609,7 +642,7 @@
         function togglePassword() {
             const passwordInput = elements.password;
             const toggleBtn = document.querySelector('.password-toggle');
-            
+
             if (passwordInput.type === 'password') {
                 passwordInput.type = 'text';
                 toggleBtn.textContent = '🙈';
@@ -627,12 +660,20 @@
                 // Si ce n'est pas un email, on cherche le username dans la base
                 if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(identifier)) {
                     // Recherche du user par username
-                    const usersSnapshot = await database.ref('users').orderByChild('username').equalTo(identifier).once('value');
-                    const users = usersSnapshot.val();
-                    if (!users) throw { code: 'auth/user-not-found' };
-                    // Prend le premier utilisateur trouvé
-                    const userObj = Object.values(users)[0];
+                    // Accès via usernameToUid
+                    const uidSnapshot = await database.ref('usernameToUid/' + identifier).once('value');
+                    const uid = uidSnapshot.val();
+
+                    if (!uid) throw { code: 'auth/user-not-found' };
+
+                    // Récupérer l’email de l'utilisateur en toute sécurité
+                    const userSnapshot = await database.ref('users/' + uid).once('value');
+                    const userObj = userSnapshot.val();
+
+                    if (!userObj || !userObj.email) throw { code: 'auth/user-not-found' };
+
                     email = userObj.email;
+
                 }
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
                 const user = userCredential.user;
@@ -675,9 +716,9 @@
         // Gestion des erreurs d'authentification
         function handleAuthError(error) {
             console.error('Erreur auth:', error);
-            
+
             let message = 'Une erreur est survenue';
-            
+
             switch (error.code) {
                 case 'auth/user-not-found':
                     message = 'Aucun compte trouvé avec cet email ou pseudo';
@@ -700,7 +741,7 @@
                 default:
                     message = error.message || 'Erreur de connexion';
             }
-            
+
             return message;
         }
 
@@ -708,18 +749,18 @@
         async function loginWithGoogle() {
             try {
                 showLoading(true);
-                
+
                 const provider = new firebase.auth.GoogleAuthProvider();
                 provider.addScope('email');
                 provider.addScope('profile');
-                
+
                 const result = await auth.signInWithPopup(provider);
                 const user = result.user;
-                
+
                 // Créer ou mettre à jour le profil
                 const userSnapshot = await database.ref('users/' + user.uid).once('value');
                 const userData = userSnapshot.val();
-                
+
                 if (!userData) {
                     await database.ref('users/' + user.uid).set({
                         email: user.email,
@@ -737,7 +778,7 @@
                 }
 
                 showSuccess('Connexion Google réussie ! Redirection...');
-                
+
                 setTimeout(() => {
                     window.location.href = 'dashboard.html';
                 }, 1500);
@@ -753,10 +794,10 @@
         async function loginAnonymously() {
             try {
                 showLoading(true);
-                
+
                 const userCredential = await auth.signInAnonymously();
                 const user = userCredential.user;
-                
+
                 // Créer un profil anonyme
                 await database.ref('users/' + user.uid).set({
                     displayName: 'Joueur_' + Math.floor(Math.random() * 1000),
@@ -770,7 +811,7 @@
                 });
 
                 showSuccess('Connexion anonyme réussie ! Redirection...');
-                
+
                 setTimeout(() => {
                     window.location.href = 'dashboard.html';
                 }, 1500);
@@ -789,10 +830,10 @@
                 balance: 250,
                 isGuest: true
             };
-            
+
             sessionStorage.setItem('guestUser', JSON.stringify(guestUser));
             showSuccess('Mode démo activé ! Redirection...');
-            
+
             setTimeout(() => {
                 window.location.href = 'blackjack.html';
             }, 1500);
@@ -801,7 +842,7 @@
         // Mot de passe oublié
         async function forgotPassword() {
             const email = elements.email.value;
-            
+
             if (!email) {
                 showError('Veuillez entrer votre email d\'abord');
                 elements.email.focus();
@@ -846,7 +887,7 @@
         function init() {
             createFloatingIcons();
             prefillFromURL();
-            
+
             // Focus sur le premier champ vide
             if (!elements.email.value) {
                 elements.email.focus();
@@ -859,4 +900,5 @@
         document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
+
 </html>
