@@ -1209,6 +1209,8 @@
                     level: 1,
                     experience: 0
                 });
+                // Ajout dans l'index usernameToUid pour la connexion par pseudo
+                await database.ref('usernameToUid/' + formData.username).set(user.uid);
                 // Envoyer email de vérification
                 try {
                     await user.sendEmailVerification();
@@ -1257,7 +1259,10 @@
                         level: 1,
                         experience: 0
                     });
-
+                    // Ajout dans l'index usernameToUid si le displayName existe
+                    if (user.displayName) {
+                        await database.ref('usernameToUid/' + user.displayName).set(user.uid);
+                    }
                     showSuccess('Compte Google créé avec succès ! Redirection...');
                 } else {
                     showSuccess('Connexion réussie ! Redirection...');
@@ -1292,7 +1297,8 @@
                     gamesPlayed: 0,
                     totalWinnings: 0
                 });
-
+                // Ajout dans l'index usernameToUid pour l'anonyme
+                await database.ref('usernameToUid/' + user.uid).set(user.uid);
                 showSuccess('Compte anonyme créé ! Redirection...');
                 
                 setTimeout(() => {
