@@ -730,9 +730,7 @@
 
     <script>
         // Initialisation des instances Firebase globales
-        const auth = firebase.auth();
-        const database = firebase.database();
-
+        let auth, database;
         // Gestion des erreurs d'authentification (accessible partout)
         function handleAuthError(error) {
             console.error('Erreur auth:', error);
@@ -755,20 +753,16 @@
             }
             return message;
         }
-
-        // État du formulaire
-        let currentStep = 1;
-        const formData = {};
-
         // Initialisation après chargement de firebase-config.js
         document.addEventListener('DOMContentLoaded', () => {
+            auth = firebase.auth();
+            database = firebase.database();
             // Vérifier si l'utilisateur est déjà connecté
             auth.onAuthStateChanged((user) => {
                 if (user && !window.location.search.includes('force=true')) {
                     window.location.href = 'dashboard.html';
                 }
             });
-            
             // Initialiser l'interface
             init();
         });
