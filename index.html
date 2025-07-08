@@ -748,13 +748,16 @@
                 <div id="dealerControls" style="display: none;">
                     <button class="btn btn-gold" onclick="startNewHand()">🎴 Distribuer</button>
                     <button class="btn btn-warning" onclick="dealerPlay()" id="dealerPlayBtn" style="display: none;">🎲 Tour croupier</button>
+                    <button class="btn btn-primary" onclick="distribuerCarteJoueur()" id="distribuerCarteJoueurBtn" style="display: none; margin-left:10px;">🃏 Distribuer carte joueur</button>
+                    <button class="btn btn-warning" onclick="validerSplitJoueur()" id="validerSplitJoueurBtn" style="display: none; margin-left:10px;">🪓 Valider le split</button>
                     <button class="btn btn-danger" onclick="finishGame()" id="finishGameBtn" style="margin-left:10px;">🏁 Finir la partie</button>
+                    <div id="infoActionJoueur" style="margin-top:10px; color:#FFD700; font-weight:bold;"></div>
                 </div>
                 
                 <div id="playerControls" style="display: none;">
-                    <button class="btn btn-success" onclick="hit()">⬆️ Carte</button>
-                    <button class="btn btn-danger" onclick="stand()">✋ Rester</button>
-                    <button class="btn btn-warning" onclick="split()" id="splitBtn" style="display: none;">🪓 Split</button>
+                    <button class="btn btn-success" onclick="demanderCarte()">🖐️ Demander une carte</button>
+                    <button class="btn btn-danger" onclick="demanderStand()">✋ Rester</button>
+                    <button class="btn btn-warning" onclick="demanderSplit()" id="splitBtn" style="display: none;">🪓 Demander un split</button>
                 </div>
                 
                 <div id="waitingControls" style="display: none;">
@@ -794,7 +797,6 @@
                 this.useLocalStorage = true; // Mode localStorage par défaut pour Claude.ai
                 this.initFirebase();
             }
-
             async initFirebase() {
                 // Détecter l'environnement Claude.ai
                 const isClaudeArtifact = window.location.hostname.includes('claudeusercontent.com') || 
@@ -901,7 +903,8 @@
                         status: 'waiting',
                         isActive: false,
                         position: room.players.length + 1,
-                        joinedAt: Date.now()
+                        joinedAt: Date.now(),
+                        actionDemandee: null // Ajout du champ pour la demande d'action
                     });
 
                     room.lastUpdate = Date.now();
@@ -1083,6 +1086,26 @@
                 const playerIndex = room.players.findIndex(p => p.name === playerName);
                 const player = room.players[playerIndex];
                 if (!player || !player.isActive || room.gameState !== 'playing') return false;
+
+                // Nouvelle gestion : le joueur ne tire plus lui-même, il demande une action
+                if (action === 'demander_carte') {
+                    player.actionDemandee = 'carte';
+                    await this.updateRoom(roomCode, room);
+                    return true;
+                } else if (action === 'stand') {
+                    player.actionDemandee = 'stand';
+                    await this.updateRoom(roomCode, room);
+                    return true;
+                } else if (action === 'demander_split') {
+                    // Vérifier si le split est possible
+                    if (player.cards && player.cards.length === 2 && player.cards[0].value === player.cards[1].value && !player.isSplit) {
+                        player.actionDemandee = 'split';
+                        await this.updateRoom(roomCode, room);
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
 
                 // Gestion du split
                 if (action === 'split') {
@@ -1721,6 +1744,41 @@
                 if (room.gameState === 'dealer_turn' && dealerPlayBtn) {
                     dealerPlayBtn.style.display = allPlayersDone ? 'inline-block' : 'none';
                 }
+                // Affichage du bouton Distribuer carte joueur
+                const distribuerBtn = document.getElementById('distribuerCarteJoueurBtn');
+                if (distribuerBtn) {
+                    // Trouver le joueur actif
+                    const joueurActif = room.players.find(p => p.isActive);
+                    if (room.gameState === 'playing' && joueurActif && joueurActif.actionDemandee === 'carte') {
+                        distribuerBtn.style.display = 'inline-block';
+                    } else {
+                        distribuerBtn.style.display = 'none';
+                    }
+                }
+                // Affichage du bouton Valider le split
+                const validerSplitBtn = document.getElementById('validerSplitJoueurBtn');
+                if (validerSplitBtn) {
+                    const joueurActif = room.players.find(p => p.isActive);
+                    if (room.gameState === 'playing' && joueurActif && joueurActif.actionDemandee === 'split') {
+                        validerSplitBtn.style.display = 'inline-block';
+                    } else {
+                        validerSplitBtn.style.display = 'none';
+                    }
+                }
+                // Affichage de l'action demandée par le joueur actif
+                const infoActionDiv = document.getElementById('infoActionJoueur');
+                if (infoActionDiv) {
+                    const joueurActif = room.players.find(p => p.isActive);
+                    if (joueurActif && joueurActif.actionDemandee) {
+                        let actionText = '';
+                        if (joueurActif.actionDemandee === 'carte') actionText = 'Le joueur demande une carte';
+                        else if (joueurActif.actionDemandee === 'stand') actionText = 'Le joueur souhaite rester';
+                        else if (joueurActif.actionDemandee === 'split') actionText = 'Le joueur demande un split';
+                        infoActionDiv.textContent = `Action demandée : ${actionText}`;
+                    } else {
+                        infoActionDiv.textContent = '';
+                    }
+                }
             } else {
                 const player = room.players.find(p => p.name === playerName);
                 if (player && player.isActive && room.gameState === 'playing') {
@@ -1776,17 +1834,17 @@
             }
         }
 
-        async function hit() {
-            const success = await gameServer.playerAction(currentRoom, playerName, 'hit');
+        async function demanderCarte() {
+            const success = await gameServer.playerAction(currentRoom, playerName, 'demander_carte');
             if (success) {
-                showNotification('🃏 Carte tirée!', 'info');
+                showNotification('🖐️ Demande envoyée au croupier!', 'info');
             }
         }
 
-        async function stand() {
+        async function demanderStand() {
             const success = await gameServer.playerAction(currentRoom, playerName, 'stand');
             if (success) {
-                showNotification('✋ Vous restez', 'info');
+                showNotification('✋ Vous restez (en attente du croupier)', 'info');
             }
         }
 
@@ -1831,10 +1889,10 @@
             showNotification('👋 Vous avez quitté la table', 'info');
         }
 
-        async function split() {
-            const success = await gameServer.playerAction(currentRoom, playerName, 'split');
+        async function demanderSplit() {
+            const success = await gameServer.playerAction(currentRoom, playerName, 'demander_split');
             if (success) {
-                showNotification('🪓 Split effectué!', 'info');
+                showNotification('🪓 Demande de split envoyée au croupier!', 'info');
             } else {
                 showNotification('❌ Split impossible', 'error');
             }
@@ -2015,6 +2073,34 @@
             if (!isDealer || !currentRoom) return;
             await gameServer.finishGame(currentRoom);
             showNotification('🏁 Partie terminée, résultats affichés !', 'info');
+        }
+
+        async function distribuerCarteJoueur() {
+            // Trouver le joueur actif
+            const room = await gameServer.getRoom(currentRoom);
+            if (!room || !room.players) return;
+            const joueurActifIndex = room.players.findIndex(p => p.isActive);
+            if (joueurActifIndex === -1) return;
+            // Distribuer une carte au joueur actif
+            await gameServer.dealCard(currentRoom, joueurActifIndex);
+            // Réinitialiser la demande
+            room.players[joueurActifIndex].actionDemandee = null;
+            await gameServer.updateRoom(currentRoom, room);
+            showNotification('🃏 Carte distribuée au joueur', 'success');
+        }
+
+        async function validerSplitJoueur() {
+            // Trouver le joueur actif
+            const room = await gameServer.getRoom(currentRoom);
+            if (!room || !room.players) return;
+            const joueurActif = room.players.find(p => p.isActive);
+            if (!joueurActif || joueurActif.actionDemandee !== 'split') return;
+            // Effectuer le split
+            await gameServer.splitHand(currentRoom, joueurActif.name);
+            // Réinitialiser la demande
+            joueurActif.actionDemandee = null;
+            await gameServer.updateRoom(currentRoom, room);
+            showNotification('🪓 Split validé pour le joueur', 'success');
         }
     </script>
 </body>
