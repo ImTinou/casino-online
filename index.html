@@ -746,18 +746,13 @@
             <!-- Contrôles de jeu -->
             <div class="game-controls">
                 <div id="dealerControls" style="display: none;">
-                    <button class="btn btn-gold" onclick="startNewHand()">🎴 Distribuer</button>
-                    <button class="btn btn-warning" onclick="dealerPlay()" id="dealerPlayBtn" style="display: none;">🎲 Tour croupier</button>
-                    <button class="btn btn-primary" onclick="distribuerCarteJoueur()" id="distribuerCarteJoueurBtn" style="display: none; margin-left:10px;">🃏 Distribuer carte joueur</button>
-                    <button class="btn btn-warning" onclick="validerSplitJoueur()" id="validerSplitJoueurBtn" style="display: none; margin-left:10px;">🪓 Valider le split</button>
+                    <button class="btn btn-gold" onclick="startNewHand()">🎴 Nouvelle main</button>
+                    <button class="btn btn-primary" onclick="distribuerCarteTour()" id="distribuerCarteTourBtn" style="margin-left:10px;">🃏 Distribuer carte</button>
                     <button class="btn btn-danger" onclick="finishGame()" id="finishGameBtn" style="margin-left:10px;">🏁 Finir la partie</button>
-                    <div id="infoActionJoueur" style="margin-top:10px; color:#FFD700; font-weight:bold;"></div>
                 </div>
                 
                 <div id="playerControls" style="display: none;">
-                    <button class="btn btn-success" onclick="demanderCarte()">🖐️ Demander une carte</button>
-                    <button class="btn btn-danger" onclick="demanderStand()">✋ Rester</button>
-                    <button class="btn btn-warning" onclick="demanderSplit()" id="splitBtn" style="display: none;">🪓 Demander un split</button>
+                    <div style="color:#FFD700; font-weight:bold;">En attente du croupier...</div>
                 </div>
                 
                 <div id="waitingControls" style="display: none;">
@@ -767,6 +762,8 @@
                     </div>
                 </div>
             </div>
+            <!-- Zone cartes du joueur -->
+            <div id="myCardsArea" style="display:none; margin:30px auto 0 auto; max-width:400px; text-align:center;"></div>
         </div>
     </div>
 
@@ -1581,6 +1578,7 @@
             updatePlayerPositions(room);
             updateDealerDisplay(room);
             updateControls(room);
+            updateMyCards(room);
         }
 
         function updatePlayerCount(room) {
@@ -1611,23 +1609,19 @@
                 status.className = 'player-status';
             }
 
-            // Placer les joueurs
+            // Placer les joueurs et afficher leurs cartes
             room.players.forEach((player, index) => {
                 const position = index + 1;
                 const spot = document.getElementById(`spot-${position}`);
                 if (!spot) return;
-                
                 const avatar = spot.querySelector('.player-avatar');
                 const name = spot.querySelector('.player-name');
                 const score = spot.querySelector('.player-score');
                 const status = spot.querySelector('.player-status');
-                
                 if (!avatar || !name || !score || !status) return;
-                
                 if (player.isActive) {
                     spot.classList.add('active');
                 }
-                
                 avatar.textContent = player.name.charAt(0).toUpperCase();
                 name.textContent = player.name;
                 // Affichage split
@@ -1635,32 +1629,39 @@
                     score.innerHTML =
                         `<span style='color:#FFD700'>Main 1: ${player.scores[0] || '--'}</span><br>` +
                         `<span style='color:#4ECDC4'>Main 2: ${player.scores[1] || '--'}</span>`;
-                    // Statut split
-                    if (player.results) {
-                        status.innerHTML =
-                            `<span>${player.results[0] === 'win' ? '🎉' : player.results[0] === 'lose' ? '💀' : '🤝'} Main 1</span><br>` +
-                            `<span>${player.results[1] === 'win' ? '🎉' : player.results[1] === 'lose' ? '💀' : '🤝'} Main 2</span>`;
-                        status.className = 'player-status';
-                    } else if (player.statuses) {
-                        status.innerHTML =
-                            `<span>${player.statuses[0] === 'bust' ? '💥 Bust' : player.statuses[0] === 'stand' ? '✋ Reste' : player.isActive && player.activeHandIndex === 0 ? '▶️ Joue' : ''} Main 1</span><br>` +
-                            `<span>${player.statuses[1] === 'bust' ? '💥 Bust' : player.statuses[1] === 'stand' ? '✋ Reste' : player.isActive && player.activeHandIndex === 1 ? '▶️ Joue' : ''} Main 2</span>`;
-                        status.className = 'player-status';
-                    }
                 } else {
                     score.textContent = player.score || '--';
-                    if (player.result) {
-                        status.textContent = player.result === 'win' ? '🎉 Gagne' : 
-                                           player.result === 'lose' ? '💀 Perd' : '🤝 Égalité';
-                        status.className = `player-status ${player.result}`;
-                    } else if (player.status === 'bust') {
-                        status.textContent = '💥 Bust';
-                        status.className = 'player-status lose';
-                    } else if (player.status === 'stand') {
-                        status.textContent = '✋ Reste';
-                    } else if (player.isActive) {
-                        status.textContent = '▶️ Joue';
+                }
+                // Affichage des cartes du joueur
+                let cardsHtml = '';
+                if (player.cards && player.cards.length > 0) {
+                    cardsHtml = player.cards.map(card => `<span class="card ${card.isRed ? 'red' : 'black'}" style="display:inline-block;width:30px;height:45px;margin:2px;font-size:12px;border-radius:5px;border:1px solid #FFD700;background:#fff;color:${card.isRed ? '#d32f2f' : '#1a1a1a'};text-align:center;line-height:45px;">${card.value}${card.suit}</span>`).join('');
+                }
+                // Pour le split, afficher les deux mains
+                if (player.isSplit && player.hands) {
+                    cardsHtml = '';
+                    for (let h = 0; h < player.hands.length; h++) {
+                        cardsHtml += `<div style='margin-bottom:2px;'>Main ${h+1}: ` +
+                            player.hands[h].map(card => `<span class="card ${card.isRed ? 'red' : 'black'}" style="display:inline-block;width:30px;height:45px;margin:2px;font-size:12px;border-radius:5px;border:1px solid #FFD700;background:#fff;color:${card.isRed ? '#d32f2f' : '#1a1a1a'};text-align:center;line-height:45px;">${card.value}${card.suit}</span>`).join('') +
+                            `</div>`;
                     }
+                }
+                // Ajout des cartes sous le score
+                if (cardsHtml) {
+                    score.innerHTML += `<div style='margin-top:4px;'>${cardsHtml}</div>`;
+                }
+                // Statut
+                if (player.result) {
+                    status.textContent = player.result === 'win' ? '🎉 Gagne' : 
+                                       player.result === 'lose' ? '💀 Perd' : '🤝 Égalité';
+                    status.className = `player-status ${player.result}`;
+                } else if (player.status === 'bust') {
+                    status.textContent = '💥 Bust';
+                    status.className = 'player-status lose';
+                } else if (player.status === 'stand') {
+                    status.textContent = '✋ Reste';
+                } else if (player.isActive) {
+                    status.textContent = '▶️ Joue';
                 }
             });
         }
@@ -1834,20 +1835,6 @@
             }
         }
 
-        async function demanderCarte() {
-            const success = await gameServer.playerAction(currentRoom, playerName, 'demander_carte');
-            if (success) {
-                showNotification('🖐️ Demande envoyée au croupier!', 'info');
-            }
-        }
-
-        async function demanderStand() {
-            const success = await gameServer.playerAction(currentRoom, playerName, 'stand');
-            if (success) {
-                showNotification('✋ Vous restez (en attente du croupier)', 'info');
-            }
-        }
-
         async function dealerPlay() {
             if (!isDealer) return;
             
@@ -1887,15 +1874,6 @@
             isDealer = false;
             
             showNotification('👋 Vous avez quitté la table', 'info');
-        }
-
-        async function demanderSplit() {
-            const success = await gameServer.playerAction(currentRoom, playerName, 'demander_split');
-            if (success) {
-                showNotification('🪓 Demande de split envoyée au croupier!', 'info');
-            } else {
-                showNotification('❌ Split impossible', 'error');
-            }
         }
 
         function createCard(card, startPos, endPos, delay = 0) {
@@ -2101,6 +2079,57 @@
             joueurActif.actionDemandee = null;
             await gameServer.updateRoom(currentRoom, room);
             showNotification('🪓 Split validé pour le joueur', 'success');
+        }
+
+        // Distribution séquentielle : à chaque clic, distribuer une carte à chaque joueur dans l'ordre, puis au croupier
+        let distributionTour = 0;
+        async function distribuerCarteTour() {
+            const room = await gameServer.getRoom(currentRoom);
+            if (!room || !room.players) return;
+            const joueurs = room.players;
+            // Nombre de joueurs + 1 (pour le croupier)
+            const total = joueurs.length + 1;
+            // On distribue à chaque joueur puis au croupier
+            if (distributionTour < 2 * total) { // 2 tours de distribution
+                const index = distributionTour % total;
+                if (index < joueurs.length) {
+                    await gameServer.dealCard(currentRoom, index);
+                } else {
+                    await gameServer.dealCard(currentRoom, 'dealer');
+                }
+                distributionTour++;
+            }
+        }
+        // Remettre à zéro le tour de distribution à chaque nouvelle main
+        async function startNewHand() {
+            distributionTour = 0;
+            // ... le reste de la fonction startNewHand existante ...
+        }
+
+        function updateMyCards(room) {
+            const myCardsDiv = document.getElementById('myCardsArea');
+            if (!myCardsDiv) return;
+            // Trouver le joueur courant
+            const me = room.players.find(p => p.name === playerName);
+            if (!me) {
+                myCardsDiv.style.display = 'none';
+                myCardsDiv.innerHTML = '';
+                return;
+            }
+            myCardsDiv.style.display = 'block';
+            let html = '<div style="font-weight:bold;color:#FFD700;margin-bottom:8px;">Mes cartes :</div>';
+            if (me.isSplit && me.hands) {
+                for (let h = 0; h < me.hands.length; h++) {
+                    html += `<div style='margin-bottom:4px;'>Main ${h+1}: ` +
+                        me.hands[h].map(card => `<span class=\"card ${card.isRed ? 'red' : 'black'}\" style=\"display:inline-block;width:40px;height:60px;margin:2px;font-size:18px;border-radius:7px;border:2px solid #FFD700;background:#fff;color:${card.isRed ? '#d32f2f' : '#1a1a1a'};text-align:center;line-height:60px;\">${card.value}${card.suit}</span>`).join('') +
+                        `</div>`;
+                }
+            } else if (me.cards && me.cards.length > 0) {
+                html += me.cards.map(card => `<span class=\"card ${card.isRed ? 'red' : 'black'}\" style=\"display:inline-block;width:40px;height:60px;margin:2px;font-size:18px;border-radius:7px;border:2px solid #FFD700;background:#fff;color:${card.isRed ? '#d32f2f' : '#1a1a1a'};text-align:center;line-height:60px;\">${card.value}${card.suit}</span>`).join('');
+            } else {
+                html += '<span style="color:#fff;">Aucune carte</span>';
+            }
+            myCardsDiv.innerHTML = html;
         }
     </script>
 </body>
