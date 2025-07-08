@@ -117,12 +117,11 @@
             min-height: 100vh;
         }
 
-        /* ========== TABLE DE CASINO ========== */
         .casino-table {
-            width: 80vw;
-            max-width: 900px;
-            height: 420px;
-            margin: 30px auto 0 auto;
+            width: 95%;
+            max-width: 1000px;
+            height: 500px;
+            margin: 30px auto;
             background: 
                 radial-gradient(ellipse at center, #1B5E20, #2E7D32, #1B5E20),
                 linear-gradient(45deg, #0D4F11 0%, #1B5E20 25%, #2E7D32 50%, #1B5E20 75%, #0D4F11 100%);
@@ -133,8 +132,7 @@
                 inset 0 0 100px rgba(0, 0, 0, 0.3),
                 0 0 100px rgba(255, 215, 0, 0.1);
             position: relative;
-            overflow: hidden;
-            min-width: 320px;
+            overflow: visible; /* ✅ Changé pour que les éléments puissent dépasser */
         }
 
         .table-felt {
@@ -158,46 +156,59 @@
         /* ========== POSITIONS SUR LA TABLE ========== */
         .dealer-position {
             position: absolute;
-            top: 35px;
+            top: -40px; /* ✅ Déplacé vers le haut pour plus d'espace */
             left: 50%;
             transform: translateX(-50%);
             text-align: center;
             z-index: 20;
+            background: rgba(0, 0, 0, 0.7); /* ✅ Fond pour la lisibilité */
+            padding: 10px 20px;
+            border-radius: 15px;
+            border: 2px solid rgba(255, 215, 0, 0.3);
         }
 
         .dealer-avatar {
-            width: 80px;
-            height: 80px;
+            width: 60px; /* ✅ Réduit pour économiser l'espace */
+            height: 60px;
             border-radius: 50%;
             background: linear-gradient(135deg, #FFD700, #FFA500);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2em;
-            margin: 0 auto 15px;
-            border: 4px solid #8D6E63;
+            font-size: 1.5em;
+            margin: 0 auto 10px;
+            border: 3px solid #8D6E63;
             box-shadow: 
-                0 0 30px rgba(255, 215, 0, 0.5),
-                inset 0 0 20px rgba(0, 0, 0, 0.2);
+                0 0 20px rgba(255, 215, 0, 0.5),
+                inset 0 0 15px rgba(0, 0, 0, 0.2);
             animation: dealerGlow 3s ease-in-out infinite;
         }
 
         @keyframes dealerGlow {
-            0%, 100% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.5), inset 0 0 20px rgba(0, 0, 0, 0.2); }
-            50% { box-shadow: 0 0 50px rgba(255, 215, 0, 0.8), inset 0 0 20px rgba(0, 0, 0, 0.2); }
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.5), inset 0 0 15px rgba(0, 0, 0, 0.2); }
+            50% { box-shadow: 0 0 35px rgba(255, 215, 0, 0.8), inset 0 0 15px rgba(0, 0, 0, 0.2); }
+        }
+
+        /* ✅ Nouveau style pour le nom du croupier */
+        .dealer-name {
+            font-size: 14px;
+            font-weight: bold;
+            color: #FFD700;
+            margin-bottom: 5px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
         }
 
         .deck-position {
             position: absolute;
             top: 50%;
-            left: 30px;
+            left: 15px; /* ✅ Ajusté pour rester dans la table */
             transform: translateY(-50%);
             z-index: 15;
         }
 
         .deck-stack {
-            width: 60px;
-            height: 90px;
+            width: 50px; /* ✅ Réduit légèrement */
+            height: 75px;
             position: relative;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -209,16 +220,16 @@
 
         .deck-card {
             position: absolute;
-            width: 60px;
-            height: 90px;
+            width: 50px;
+            height: 75px;
             background: linear-gradient(135deg, #1a237e, #3949ab);
-            border-radius: 8px;
+            border-radius: 6px;
             border: 2px solid #FFD700;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #FFD700;
-            font-size: 20px;
+            font-size: 16px;
             font-weight: bold;
         }
 
@@ -233,47 +244,50 @@
             position: absolute;
             width: 100%;
             height: 100%;
-            top: 0;
-            left: 0;
         }
 
         .player-spot {
             position: absolute;
-            width: 120px;
-            height: 140px;
+            width: 140px; /* ✅ Légèrement réduit */
+            height: 160px;
             display: flex;
             flex-direction: column;
             align-items: center;
             z-index: 20;
+            background: rgba(0, 0, 0, 0.5); /* ✅ Fond pour la lisibilité */
+            border-radius: 10px;
+            padding: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .player-spot.spot-1 { bottom: 30px; left: 10%; }
-        .player-spot.spot-2 { bottom: 50px; left: 30%; }
-        .player-spot.spot-3 { bottom: 70px; left: 50%; transform: translateX(-50%); }
-        .player-spot.spot-4 { bottom: 50px; right: 30%; }
-        .player-spot.spot-5 { bottom: 30px; right: 10%; }
+        /* ✅ Repositionnement des spots pour qu'ils restent visibles */
+        .player-spot.spot-1 { bottom: -80px; left: 12%; }
+        .player-spot.spot-2 { bottom: -80px; left: 28%; }
+        .player-spot.spot-3 { bottom: -80px; left: 50%; transform: translateX(-50%); }
+        .player-spot.spot-4 { bottom: -80px; right: 28%; }
+        .player-spot.spot-5 { bottom: -80px; right: 12%; }
 
         .player-avatar {
-            width: 60px;
-            height: 60px;
+            width: 50px; /* ✅ Légèrement réduit */
+            height: 50px;
             border-radius: 50%;
             background: linear-gradient(135deg, #667eea, #764ba2);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.4em;
+            font-size: 1.2em;
             font-weight: bold;
             border: 3px solid transparent;
             transition: all 0.3s ease;
-            margin-bottom: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            margin-bottom: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
 
         .player-spot.active .player-avatar {
             border-color: #00ff88;
             box-shadow: 
-                0 0 30px rgba(0, 255, 136, 0.6),
-                0 5px 15px rgba(0, 0, 0, 0.3);
+                0 0 25px rgba(0, 255, 136, 0.6),
+                0 4px 12px rgba(0, 0, 0, 0.3);
             animation: activePlayer 2s ease-in-out infinite;
         }
 
@@ -283,27 +297,37 @@
         }
 
         .player-name {
-            font-size: 14px;
+            font-size: 12px; /* ✅ Légèrement réduit */
             font-weight: bold;
             text-align: center;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .player-score {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             background: rgba(0, 0, 0, 0.6);
-            padding: 5px 12px;
-            border-radius: 15px;
+            padding: 4px 10px;
+            border-radius: 12px;
             border: 1px solid rgba(255, 255, 255, 0.2);
-            margin-bottom: 5px;
+            margin-bottom: 4px;
+        }
+
+        .player-streak {
+            font-size: 10px;
+            color: #FFD700;
+            margin-bottom: 4px;
         }
 
         .player-status {
-            font-size: 12px;
-            padding: 3px 8px;
-            border-radius: 10px;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 8px;
             text-align: center;
         }
 
@@ -314,17 +338,17 @@
         /* ========== CARTES ET ANIMATIONS ========== */
         .card {
             position: absolute;
-            width: 60px;
-            height: 90px;
-            border-radius: 8px;
+            width: 50px; /* ✅ Légèrement réduit */
+            height: 75px;
+            border-radius: 6px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: space-between;
-            padding: 8px 6px;
+            padding: 6px 4px;
             font-weight: bold;
-            font-size: 12px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+            font-size: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
             cursor: pointer;
             transform-style: preserve-3d;
             transition: all 0.3s ease;
@@ -332,8 +356,8 @@
         }
 
         .card:hover {
-            transform: translateY(-5px) scale(1.05);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
         }
 
         .card.red {
@@ -351,17 +375,17 @@
         .card.hidden {
             background: linear-gradient(135deg, #1a237e, #3949ab);
             color: #FFD700;
-            font-size: 18px;
+            font-size: 14px;
             border: 2px solid #FFD700;
         }
 
         .card-value {
-            font-size: 14px;
+            font-size: 12px;
             font-weight: bold;
         }
 
         .card-suit {
-            font-size: 16px;
+            font-size: 14px;
         }
 
         /* Animation de distribution des cartes */
@@ -457,25 +481,27 @@
         /* ========== BOUTONS ET CONTRÔLES ========== */
         .game-controls {
             position: fixed;
-            bottom: 70px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
             gap: 15px;
             z-index: 50;
+            flex-wrap: wrap; /* ✅ Pour éviter le débordement */
+            justify-content: center;
         }
 
         .btn {
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
             border: none;
-            padding: 15px 30px;
-            border-radius: 25px;
+            padding: 12px 25px; /* ✅ Légèrement réduit */
+            border-radius: 20px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
             transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             position: relative;
             overflow: hidden;
         }
@@ -499,8 +525,8 @@
         }
 
         .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
         }
 
         .btn:disabled {
@@ -574,16 +600,104 @@
         .notification.error { background: linear-gradient(135deg, #ff416c, #ff4b2b); }
         .notification.info { background: linear-gradient(135deg, #667eea, #764ba2); }
 
-        /* ========== RESPONSIVE ========== */
-        @media (max-width: 1100px) {
-            .casino-table { height: 340px; max-width: 98vw; }
-            .player-spot { width: 90px; height: 110px; }
-            .dealer-position { top: 18px; }
+        /* ✅ Amélioration des cartes dans les zones des joueurs */
+        .player-cards-area {
+            display: flex;
+            gap: 3px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 5px;
         }
-        @media (max-width: 700px) {
-            .casino-table { height: 220px; }
-            .player-spot { width: 60px; height: 70px; }
-            .dealer-position { top: 8px; }
+
+        .player-cards-area .card {
+            position: static;
+            width: 28px;
+            height: 40px;
+            font-size: 8px;
+            padding: 3px 2px;
+        }
+
+        .player-cards-area .card .card-value {
+            font-size: 9px;
+        }
+
+        .player-cards-area .card .card-suit {
+            font-size: 10px;
+        }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 768px) {
+            .casino-table {
+                width: 98%;
+                height: 400px;
+                margin: 15px auto;
+            }
+            
+            .player-spot {
+                width: 90px;
+                height: 130px;
+                padding: 5px;
+            }
+            
+            .player-avatar {
+                width: 35px;
+                height: 35px;
+                font-size: 1em;
+            }
+            
+            .player-name {
+                font-size: 10px;
+            }
+            
+            .player-score {
+                font-size: 12px;
+                padding: 3px 6px;
+            }
+            
+            .card {
+                width: 35px;
+                height: 50px;
+                font-size: 8px;
+            }
+            
+            .dealer-avatar {
+                width: 45px;
+                height: 45px;
+                font-size: 1.2em;
+            }
+            
+            .dealer-position {
+                top: -35px;
+                padding: 8px 15px;
+            }
+            
+            .game-controls {
+                bottom: 10px;
+                flex-direction: row;
+                flex-wrap: wrap;
+                max-width: 95%;
+            }
+            
+            .btn {
+                padding: 10px 15px;
+                font-size: 12px;
+                margin: 2px;
+            }
+            
+            .casino-logo {
+                font-size: 2.5em;
+            }
+            
+            .lobby-card {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+
+            .player-spot.spot-1 { bottom: -70px; left: 8%; }
+            .player-spot.spot-2 { bottom: -70px; left: 24%; }
+            .player-spot.spot-3 { bottom: -70px; left: 50%; }
+            .player-spot.spot-4 { bottom: -70px; right: 24%; }
+            .player-spot.spot-5 { bottom: -70px; right: 8%; }
         }
 
         /* ========== LOADING ========== */
@@ -623,6 +737,60 @@
             0% { transform: scale(0) rotate(0deg); opacity: 1; }
             50% { transform: scale(2) rotate(180deg); opacity: 0.8; }
             100% { transform: scale(0) rotate(360deg); opacity: 0; }
+        }
+
+        /* ✅ Chat Box Styles */
+        #chatBox {
+            background: rgba(0,0,0,0.7);
+            border-radius: 12px;
+            padding: 12px 8px 0 8px;
+            margin: 24px auto 0 auto;
+            max-width: 600px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+
+        #chatMessages {
+            max-height: 180px;
+            overflow-y: auto;
+            padding-bottom: 8px;
+            scrollbar-width: thin;
+            scrollbar-color: #FFD700 transparent;
+        }
+
+        #chatMessages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #chatMessages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #chatMessages::-webkit-scrollbar-thumb {
+            background: #FFD700;
+            border-radius: 3px;
+        }
+
+        #chatForm {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-top: 8px;
+            padding-bottom: 8px;
+        }
+
+        #chatInput {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: none;
+            outline: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 14px;
+        }
+
+        #chatInput::placeholder {
+            color: rgba(255, 255, 255, 0.6);
         }
     </style>
 </head>
@@ -690,7 +858,7 @@
                 <!-- Position du croupier -->
                 <div class="dealer-position">
                     <div class="dealer-avatar">🎩</div>
-                    <div class="player-name">Croupier</div>
+                    <div class="dealer-name" id="dealerName">Croupier</div>
                     <div class="player-score" id="dealerScore">--</div>
                     <div id="dealerCards" class="cards-area"></div>
                 </div>
@@ -733,6 +901,15 @@
                     </div>
                 </div>
             </div>
+
+            <!-- ✅ Chat Box -->
+            <div id="chatBox">
+                <div id="chatMessages"></div>
+                <form id="chatForm">
+                    <input id="chatInput" type="text" maxlength="120" placeholder="Message...">
+                    <button type="submit" class="btn btn-gold" style="padding: 8px 15px; font-size: 12px;">💬</button>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -761,12 +938,11 @@
         // Système de backend intelligent (Firebase + localStorage)
         class OnlineGameServer {
             constructor() {
-                this.useLocalStorage = true; // Mode localStorage par défaut pour Claude.ai
+                this.useLocalStorage = true;
                 this.initFirebase();
             }
 
             async initFirebase() {
-                // Détecter l'environnement Claude.ai
                 const isClaudeArtifact = window.location.hostname.includes('claudeusercontent.com') || 
                                         window.location.hostname.includes('claude.ai');
                 
@@ -779,7 +955,6 @@
                 }
 
                 try {
-                    // Utiliser Firebase seulement sur ton propre hébergement
                     firebase.initializeApp(firebaseConfig);
                     database = firebase.database();
                     console.log("🔥 Firebase connecté avec succès!");
@@ -813,7 +988,8 @@
                     dealerScore: 0,
                     currentPlayerIndex: 0,
                     created: Date.now(),
-                    lastUpdate: Date.now()
+                    lastUpdate: Date.now(),
+                    chat: [] // ✅ Initialiser le chat
                 };
                 
                 try {
@@ -968,7 +1144,6 @@
                 const room = await this.getRoom(roomCode);
                 if (!room || room.deck.length === 0) return null;
 
-                // Vérifier et initialiser players si nécessaire
                 if (!room.players || !Array.isArray(room.players)) {
                     room.players = [];
                 }
@@ -996,12 +1171,10 @@
                 const room = await this.getRoom(roomCode);
                 if (!room) return false;
 
-                // Vérifier et initialiser players si nécessaire
                 if (!room.players || !Array.isArray(room.players)) {
                     room.players = [];
                 }
 
-                // Reset complet
                 room.players.forEach(player => {
                     player.cards = [];
                     player.score = 0;
@@ -1018,7 +1191,6 @@
 
                 await this.updateRoom(roomCode, room);
 
-                // Simulation de distribution avec délai
                 setTimeout(() => {
                     this.distributeCards(roomCode);
                 }, 500);
@@ -1033,11 +1205,9 @@
                     for (let index = 0; index < room.players.length; index++) {
                         await this.dealCard(roomCode, index);
                     }
-                    // Pour le croupier :
                     if (round === 0) {
-                        await this.dealCard(roomCode, 'dealer'); // visible
+                        await this.dealCard(roomCode, 'dealer');
                     } else {
-                        // On ajoute la carte cachée
                         const card = room.deck.pop();
                         card.hidden = true;
                         room.dealerCards = room.dealerCards || [];
@@ -1050,7 +1220,6 @@
                     const updatedRoom = await this.getRoom(roomCode);
                     updatedRoom.players[0].isActive = true;
                     updatedRoom.gameState = 'playing';
-                    updatedRoom.playerTurnStart = Date.now();
                     await this.updateRoom(roomCode, updatedRoom);
                 }
             }
@@ -1078,29 +1247,37 @@
                 return false;
             }
 
+            // ✅ FONCTION nextPlayer AMÉLIORÉE pour gérer les splits
             async nextPlayer(roomCode) {
                 const room = await this.getRoom(roomCode);
                 if (!room) return;
-                room.players[room.currentPlayerIndex].isActive = false;
+                
+                const currentPlayer = room.players[room.currentPlayerIndex];
+                currentPlayer.isActive = false;
+                
                 let nextIndex = room.currentPlayerIndex + 1;
+                
+                // Chercher le prochain joueur qui peut encore jouer
                 while (nextIndex < room.players.length) {
-                    if (room.players[nextIndex].status === 'playing') {
-                        room.players[nextIndex].isActive = true;
+                    const nextPlayer = room.players[nextIndex];
+                    if (nextPlayer.status === 'playing') {
+                        nextPlayer.isActive = true;
                         room.currentPlayerIndex = nextIndex;
-                        // Ajout du timestamp de début de tour
-                        room.playerTurnStart = Date.now();
                         await this.updateRoom(roomCode, room);
                         return;
                     }
                     nextIndex++;
                 }
+                
                 // Tous les joueurs ont joué, c'est au croupier
                 room.gameState = 'dealer_turn';
-                // Révéler la carte cachée
+                
+                // Révéler la carte cachée du croupier
                 if (room.dealerCards && room.dealerCards.length > 1 && room.dealerCards[1].hidden) {
                     room.dealerCards[1].hidden = false;
+                    room.dealerScore = this.calculateScore(room.dealerCards);
                 }
-                room.playerTurnStart = null;
+                
                 await this.updateRoom(roomCode, room);
             }
 
@@ -1111,10 +1288,8 @@
                 room.gameState = 'dealer_playing';
                 await this.updateRoom(roomCode, room);
                 
-                // Simulation du jeu du croupier avec délais
                 const dealerPlayInterval = setInterval(async () => {
                     const currentRoom = await this.getRoom(roomCode);
-                    // Soft 17 : s'arrêter si 17 et contient un As compté comme 11
                     const hasSoft17 = currentRoom.dealerScore === 17 &&
                         currentRoom.dealerCards.some(card => card.value === 'A') &&
                         this.calculateScore(currentRoom.dealerCards) === 17;
@@ -1129,21 +1304,22 @@
                 return true;
             }
 
+            // ✅ FONCTION finishGame AMÉLIORÉE pour gérer les splits
             async finishGame(roomCode) {
                 const room = await this.getRoom(roomCode);
                 if (!room) return;
 
-                // Vérifier et initialiser players si nécessaire
                 if (!room.players || !Array.isArray(room.players)) {
                     room.players = [];
                 }
 
-                // Déterminer les gagnants
+                // Déterminer les blackjacks
                 room.players.forEach(p => {
                     p.hasBlackjack = (p.cards.length === 2 && p.score === 21);
                 });
                 room.dealerHasBlackjack = (room.dealerCards.length === 2 && room.dealerScore === 21);
 
+                // Calculer les résultats pour chaque main (y compris les splits)
                 room.players.forEach(player => {
                     if (player.hasBlackjack && !room.dealerHasBlackjack) {
                         player.result = 'blackjack';
@@ -1160,11 +1336,25 @@
                     } else {
                         player.result = 'lose';
                     }
-                    // Win streak
-                    if (player.result === 'win' || player.result === 'blackjack') {
-                        player.winStreak = (player.winStreak || 0) + 1;
-                    } else {
-                        player.winStreak = 0;
+
+                    // Win streak - seulement pour les joueurs originaux, pas les splits
+                    if (!player.splitFrom && !player.isSplit) {
+                        // Compter les gains de toutes les mains du joueur
+                        const playerSplits = room.players.filter(p => 
+                            p.splitFrom === player.name || p.name === player.name
+                        );
+                        const wins = playerSplits.filter(p => 
+                            p.result === 'win' || p.result === 'blackjack'
+                        ).length;
+                        
+                        if (wins > 0) {
+                            player.winStreak = (player.winStreak || 0) + 1;
+                            // Appliquer la streak aux mains splittées aussi
+                            playerSplits.forEach(p => p.winStreak = player.winStreak);
+                        } else {
+                            player.winStreak = 0;
+                            playerSplits.forEach(p => p.winStreak = 0);
+                        }
                     }
                 });
 
@@ -1200,7 +1390,6 @@
                             localStorage.removeItem(`blackjack_room_${code}`);
                         }
                     } else {
-                        // Réorganiser les positions
                         room.players.forEach((player, index) => {
                             player.position = index + 1;
                         });
@@ -1214,7 +1403,6 @@
                 }
             }
 
-            // Listener en temps réel pour les changements
             setupRoomListener(roomCode, callback) {
                 if (database && !this.useLocalStorage) {
                     database.ref(`rooms/${roomCode}`).on('value', (snapshot) => {
@@ -1222,11 +1410,10 @@
                         callback(room);
                     });
                 } else {
-                    // Mode localStorage avec simulation temps réel
                     const pollInterval = setInterval(async () => {
                         const room = await this.getRoom(roomCode);
                         callback(room);
-                    }, 500); // Plus fréquent pour une meilleure réactivité
+                    }, 500);
                     this.pollInterval = pollInterval;
                 }
             }
@@ -1239,12 +1426,14 @@
                 }
             }
 
+            // ✅ FONCTION processPendingAction CORRIGÉE avec split amélioré
             async processPendingAction(roomCode) {
                 const room = await this.getRoom(roomCode);
                 if (!room || !room.pendingAction) return false;
                 const { type, player } = room.pendingAction;
                 const playerIndex = room.players.findIndex(p => p.name === player);
                 if (playerIndex === -1) return false;
+                
                 if (type === 'hit') {
                     await this.dealCard(roomCode, playerIndex);
                     const updatedRoom = await this.getRoom(roomCode);
@@ -1273,37 +1462,55 @@
                     await this.nextPlayer(roomCode);
                 } else if (type === 'split') {
                     const playerObj = room.players[playerIndex];
-                    if (playerObj.cards && playerObj.cards.length === 2 && playerObj.cards[0].value === playerObj.cards[1].value) {
+                    if (playerObj.cards && playerObj.cards.length === 2 && 
+                        playerObj.cards[0].value === playerObj.cards[1].value) {
+                        
                         const card1 = playerObj.cards[0];
                         const card2 = playerObj.cards[1];
-                        // Créer la nouvelle main (main splitée)
+                        
+                        // Créer le nouveau joueur splitté avec nom unique
                         const newPlayer = {
-                            ...playerObj,
+                            name: `${playerObj.name} (Split)`,
                             cards: [card2],
-                            score: this.getCardValue(card2.value),
+                            score: this.calculateScore([card2]),
                             status: 'playing',
                             isActive: false,
-                            splitFrom: playerObj.name
+                            position: playerObj.position + 0.5,
+                            joinedAt: playerObj.joinedAt,
+                            winStreak: playerObj.winStreak,
+                            splitFrom: playerObj.name,
+                            isSplit: true
                         };
-                        // Mettre à jour la main originale
+                        
+                        // Modifier le joueur original
                         playerObj.cards = [card1];
-                        playerObj.score = this.getCardValue(card1.value);
-                        playerObj.status = 'playing';
-                        playerObj.isActive = true;
-                        // Insérer la nouvelle main juste après la main originale
+                        playerObj.score = this.calculateScore([card1]);
+                        playerObj.name = `${playerObj.name.replace(' (Split)', '')} (Main 1)`;
+                        playerObj.isSplit = true;
+                        
+                        // Insérer le nouveau joueur juste après l'original
                         room.players.splice(playerIndex + 1, 0, newPlayer);
-                        // Distribuer une carte à chaque main
-                        await this.dealCard(roomCode, playerIndex);
-                        await this.dealCard(roomCode, playerIndex + 1);
-                        // Activer la première main, désactiver la seconde
-                        room.players[playerIndex].isActive = true;
-                        room.players[playerIndex + 1].isActive = false;
-                        // Mettre à jour l'index du joueur courant pour que le tour passe à la première main
-                        room.currentPlayerIndex = playerIndex;
+                        
+                        // Distribuer une nouvelle carte à chaque main
+                        if (room.deck && room.deck.length >= 2) {
+                            // Nouvelle carte pour la main originale
+                            const newCard1 = room.deck.pop();
+                            playerObj.cards.push(newCard1);
+                            playerObj.score = this.calculateScore(playerObj.cards);
+                            
+                            // Nouvelle carte pour la main splittée
+                            const newCard2 = room.deck.pop();
+                            newPlayer.cards.push(newCard2);
+                            newPlayer.score = this.calculateScore(newPlayer.cards);
+                        }
+                        
+                        console.log(`✅ Split effectué pour ${playerObj.splitFrom}: ${playerObj.score} | ${newPlayer.score}`);
                     }
+                    
                     room.pendingAction = null;
                     await this.updateRoom(roomCode, room);
                 }
+                
                 return true;
             }
         }
@@ -1409,7 +1616,6 @@
         }
 
         function downloadHTML() {
-            // Créer le contenu HTML complet à télécharger
             const htmlContent = document.documentElement.outerHTML;
             const blob = new Blob([htmlContent], { type: 'text/html' });
             const url = URL.createObjectURL(blob);
@@ -1543,7 +1749,6 @@
         function updateGameDisplay(room) {
             if (!room) return;
 
-            // Vérifier et initialiser la structure de la room si nécessaire
             if (!room.players || !Array.isArray(room.players)) {
                 room.players = [];
             }
@@ -1551,6 +1756,7 @@
             updatePlayerCount(room);
             updatePlayerPositions(room);
             updateDealerDisplay(room);
+            renderChat(room); // ✅ Ajouter le chat
             updateControls(room);
         }
 
@@ -1561,6 +1767,7 @@
             }
         }
 
+        // ✅ FONCTION updatePlayerPositions AMÉLIORÉE pour gérer les splits
         function updatePlayerPositions(room) {
             // Réinitialiser toutes les positions
             for (let i = 1; i <= 5; i++) {
@@ -1579,169 +1786,257 @@
                 status.className = 'player-status';
                 // Réinitialiser les cartes
                 let cardsArea = spot.querySelector('.player-cards-area');
-                if (!cardsArea) {
-                    cardsArea = document.createElement('div');
-                    cardsArea.className = 'player-cards-area';
-                    cardsArea.style.display = 'flex';
-                    cardsArea.style.gap = '4px';
-                    cardsArea.style.justifyContent = 'center';
-                    spot.insertBefore(cardsArea, score); // avant le score
-                }
-                cardsArea.innerHTML = '';
+                if (cardsArea) cardsArea.innerHTML = '';
                 // Réinitialiser la streak
                 const streakEl = spot.querySelector('.player-streak span');
                 if (streakEl) streakEl.textContent = '0';
-                // Supprimer le timer global s'il existe
-                let timerDiv = spot.querySelector('.global-timer');
-                if (timerDiv) timerDiv.remove();
             }
-            // Placer les joueurs
+            
+            // Grouper les joueurs par position originale pour gérer les splits
+            const playersByPosition = {};
             room.players.forEach((player, idx) => {
-                const position = player.position || (idx + 1);
+                const basePosition = Math.floor(player.position || (idx + 1));
+                if (!playersByPosition[basePosition]) {
+                    playersByPosition[basePosition] = [];
+                }
+                playersByPosition[basePosition].push(player);
+            });
+            
+            // Afficher les joueurs (avec gestion des splits)
+            Object.keys(playersByPosition).forEach(pos => {
+                const position = parseInt(pos);
+                const playersAtPosition = playersByPosition[position];
                 const spot = document.getElementById(`spot-${position}`);
                 if (!spot) return;
-                const avatar = spot.querySelector('.player-avatar');
-                const name = spot.querySelector('.player-name');
-                const score = spot.querySelector('.player-score');
-                const status = spot.querySelector('.player-status');
-                if (!avatar || !name || !score || !status) return;
-                if (player.isActive) {
-                    spot.classList.add('active');
-                }
-                avatar.textContent = player.name.charAt(0).toUpperCase();
-                name.textContent = player.name;
-                score.textContent = player.score || '--';
-                // Status
-                if (player.result) {
-                    status.textContent = player.result === 'win' ? '🎉 Gagne' : 
-                                        player.result === 'lose' ? '💀 Perd' : '🤝 Égalité';
-                    status.className = `player-status ${player.result}`;
-                } else if (player.status === 'bust') {
-                    status.textContent = '💥 Bust';
-                    status.className = 'player-status lose';
-                } else if (player.status === 'stand') {
-                    status.textContent = '✋ Reste';
-                } else if (player.isActive) {
-                    status.textContent = '▶️ Joue';
-                }
-                // Win streak
-                const streakEl = spot.querySelector('.player-streak span');
-                if (streakEl) streakEl.textContent = player.winStreak || 0;
-                // Affichage des cartes du joueur sous l'avatar
-                let cardsArea = spot.querySelector('.player-cards-area');
-                if (!cardsArea) {
-                    cardsArea = document.createElement('div');
-                    cardsArea.className = 'player-cards-area';
-                    cardsArea.style.display = 'flex';
-                    cardsArea.style.gap = '4px';
-                    cardsArea.style.justifyContent = 'center';
-                    spot.insertBefore(cardsArea, score); // avant le score
-                }
-                cardsArea.innerHTML = '';
-                if (player.cards && player.cards.length > 0) {
-                    player.cards.forEach(card => {
-                        const el = document.createElement('div');
-                        el.className = `card ${card.isRed ? 'red' : 'black'}`;
-                        el.style.position = 'static';
-                        el.style.width = '32px';
-                        el.style.height = '48px';
-                        el.style.fontSize = '10px';
-                        el.innerHTML = `<div class='card-value'>${card.value}</div><div class='card-suit'>${card.suit}</div>`;
-                        cardsArea.appendChild(el);
-                    });
-                }
-                // Affichage du timer global sous l'avatar du joueur actif
-                if (player.isActive && room.playerTurnStart && room.gameState === 'playing') {
-                    let timerDiv = spot.querySelector('.global-timer');
-                    if (!timerDiv) {
-                        timerDiv = document.createElement('div');
-                        timerDiv.className = 'global-timer';
-                        timerDiv.style.width = '90%';
-                        timerDiv.style.margin = '6px auto 0 auto';
-                        timerDiv.style.height = '10px';
-                        timerDiv.style.background = '#333';
-                        timerDiv.style.borderRadius = '6px';
-                        timerDiv.style.position = 'relative';
-                        spot.appendChild(timerDiv);
-                        // Texte
-                        const timerText = document.createElement('div');
-                        timerText.className = 'global-timer-text';
-                        timerText.style.position = 'absolute';
-                        timerText.style.top = '-22px';
-                        timerText.style.left = '50%';
-                        timerText.style.transform = 'translateX(-50%)';
-                        timerText.style.color = '#FFD700';
-                        timerText.style.fontWeight = 'bold';
-                        timerText.style.fontSize = '13px';
-                        timerDiv.appendChild(timerText);
-                        // Barre
-                        const timerBar = document.createElement('div');
-                        timerBar.className = 'global-timer-bar';
-                        timerBar.style.height = '100%';
-                        timerBar.style.background = 'linear-gradient(90deg,#FFD700,#ff4b2b)';
-                        timerBar.style.borderRadius = '6px';
-                        timerBar.style.transition = 'width 0.3s';
-                        timerDiv.appendChild(timerBar);
-                    }
-                    // Animation du timer (calcul du temps restant)
-                    const timerText = timerDiv.querySelector('.global-timer-text');
-                    const timerBar = timerDiv.querySelector('.global-timer-bar');
-                    const now = Date.now();
-                    const elapsed = Math.floor((now - room.playerTurnStart) / 1000);
-                    const timeLeft = Math.max(0, 15 - elapsed);
-                    timerText.textContent = `⏳ ${timeLeft}s pour jouer...`;
-                    timerBar.style.width = (100 * timeLeft / 15) + '%';
-                    timerDiv.style.display = 'block';
-                    // Rafraîchir le timer toutes les 300ms
-                    if (!timerDiv._interval) {
-                        timerDiv._interval = setInterval(() => {
-                            updatePlayerPositions(room);
-                        }, 300);
-                    }
-                    // Si le temps est écoulé, masquer le timer
-                    if (timeLeft <= 0) {
-                        timerDiv.style.display = 'none';
-                        clearInterval(timerDiv._interval);
-                        timerDiv._interval = null;
-                    }
+                
+                if (playersAtPosition.length === 1) {
+                    // Joueur normal (pas de split)
+                    displaySinglePlayer(spot, playersAtPosition[0]);
                 } else {
-                    // Supprimer le timer si ce n'est pas le joueur actif
-                    let timerDiv = spot.querySelector('.global-timer');
-                    if (timerDiv) {
-                        timerDiv.style.display = 'none';
-                        if (timerDiv._interval) {
-                            clearInterval(timerDiv._interval);
-                            timerDiv._interval = null;
-                        }
-                    }
+                    // Joueur avec split - afficher les deux mains
+                    displaySplitPlayer(spot, playersAtPosition);
                 }
             });
         }
 
+        // ✅ Fonction pour afficher un joueur normal
+        function displaySinglePlayer(spot, player) {
+            const avatar = spot.querySelector('.player-avatar');
+            const name = spot.querySelector('.player-name');
+            const score = spot.querySelector('.player-score');
+            const status = spot.querySelector('.player-status');
+            
+            if (player.isActive) spot.classList.add('active');
+            
+            avatar.textContent = player.name.charAt(0).toUpperCase();
+            name.textContent = player.name;
+            score.textContent = player.score || '--';
+            
+            updatePlayerStatus(status, player);
+            updatePlayerCards(spot, player);
+            updatePlayerStreak(spot, player);
+        }
+
+        // ✅ Fonction pour afficher un joueur avec split
+        function displaySplitPlayer(spot, players) {
+            const mainPlayer = players.find(p => !p.name.includes('Split')) || players[0];
+            const splitPlayer = players.find(p => p.name.includes('Split')) || players[1];
+            
+            const avatar = spot.querySelector('.player-avatar');
+            const name = spot.querySelector('.player-name');
+            const score = spot.querySelector('.player-score');
+            const status = spot.querySelector('.player-status');
+            
+            // Marquer comme actif si l'un des deux joue
+            if (players.some(p => p.isActive)) {
+                spot.classList.add('active');
+            }
+            
+            avatar.textContent = mainPlayer.splitFrom?.charAt(0).toUpperCase() || mainPlayer.name.charAt(0).toUpperCase();
+            name.textContent = `${mainPlayer.splitFrom || mainPlayer.name} (Split)`;
+            
+            // Afficher les deux scores
+            score.innerHTML = `
+                <div style="font-size: 12px;">
+                    Main 1: ${mainPlayer.score}<br>
+                    Main 2: ${splitPlayer.score}
+                </div>
+            `;
+            
+            // Statut combiné
+            const status1 = getPlayerStatusText(mainPlayer);
+            const status2 = getPlayerStatusText(splitPlayer);
+            status.innerHTML = `
+                <div style="font-size: 11px;">
+                    ${status1}<br>${status2}
+                </div>
+            `;
+            
+            // Afficher les cartes des deux mains
+            updateSplitPlayerCards(spot, mainPlayer, splitPlayer);
+            updatePlayerStreak(spot, mainPlayer);
+        }
+
+        // ✅ Fonction helper pour le statut d'un joueur
+        function getPlayerStatusText(player) {
+            if (player.result) {
+                return player.result === 'win' ? '🎉 Gagne' : 
+                       player.result === 'lose' ? '💀 Perd' : '🤝 Égalité';
+            } else if (player.status === 'bust') {
+                return '💥 Bust';
+            } else if (player.status === 'stand') {
+                return '✋ Reste';
+            } else if (player.isActive) {
+                return '▶️ Joue';
+            }
+            return '';
+        }
+
+        // ✅ Fonction pour afficher les cartes d'un joueur splitté
+        function updateSplitPlayerCards(spot, player1, player2) {
+            let cardsArea = spot.querySelector('.player-cards-area');
+            if (!cardsArea) {
+                cardsArea = document.createElement('div');
+                cardsArea.className = 'player-cards-area';
+                cardsArea.style.display = 'flex';
+                cardsArea.style.flexDirection = 'column';
+                cardsArea.style.gap = '4px';
+                cardsArea.style.alignItems = 'center';
+                spot.insertBefore(cardsArea, spot.querySelector('.player-score'));
+            }
+            
+            cardsArea.innerHTML = '';
+            
+            // Main 1
+            if (player1.cards && player1.cards.length > 0) {
+                const hand1 = document.createElement('div');
+                hand1.style.display = 'flex';
+                hand1.style.flexDirection = 'column';
+                hand1.style.alignItems = 'center';
+                hand1.style.gap = '2px';
+                
+                const label1 = document.createElement('div');
+                label1.style.color = '#FFD700';
+                label1.style.fontSize = '9px';
+                label1.textContent = 'Main 1';
+                hand1.appendChild(label1);
+                
+                const cards1 = document.createElement('div');
+                cards1.style.display = 'flex';
+                cards1.style.gap = '2px';
+                
+                player1.cards.forEach(card => {
+                    const el = document.createElement('div');
+                    el.className = `card ${card.isRed ? 'red' : 'black'}`;
+                    el.style.position = 'static';
+                    el.style.width = '20px';
+                    el.style.height = '30px';
+                    el.style.fontSize = '7px';
+                    el.style.padding = '2px 1px';
+                    el.innerHTML = `<div class='card-value'>${card.value}</div><div class='card-suit'>${card.suit}</div>`;
+                    cards1.appendChild(el);
+                });
+                
+                hand1.appendChild(cards1);
+                cardsArea.appendChild(hand1);
+            }
+            
+            // Main 2
+            if (player2.cards && player2.cards.length > 0) {
+                const hand2 = document.createElement('div');
+                hand2.style.display = 'flex';
+                hand2.style.flexDirection = 'column';
+                hand2.style.alignItems = 'center';
+                hand2.style.gap = '2px';
+                
+                const label2 = document.createElement('div');
+                label2.style.color = '#FFD700';
+                label2.style.fontSize = '9px';
+                label2.textContent = 'Main 2';
+                hand2.appendChild(label2);
+                
+                const cards2 = document.createElement('div');
+                cards2.style.display = 'flex';
+                cards2.style.gap = '2px';
+                
+                player2.cards.forEach(card => {
+                    const el = document.createElement('div');
+                    el.className = `card ${card.isRed ? 'red' : 'black'}`;
+                    el.style.position = 'static';
+                    el.style.width = '20px';
+                    el.style.height = '30px';
+                    el.style.fontSize = '7px';
+                    el.style.padding = '2px 1px';
+                    el.innerHTML = `<div class='card-value'>${card.value}</div><div class='card-suit'>${card.suit}</div>`;
+                    cards2.appendChild(el);
+                });
+                
+                hand2.appendChild(cards2);
+                cardsArea.appendChild(hand2);
+            }
+        }
+
+        // Fonctions helper pour l'affichage
+        function updatePlayerStatus(statusElement, player) {
+            if (player.result) {
+                statusElement.textContent = player.result === 'win' ? '🎉 Gagne' : 
+                                          player.result === 'lose' ? '💀 Perd' : '🤝 Égalité';
+                statusElement.className = `player-status ${player.result}`;
+            } else if (player.status === 'bust') {
+                statusElement.textContent = '💥 Bust';
+                statusElement.className = 'player-status lose';
+            } else if (player.status === 'stand') {
+                statusElement.textContent = '✋ Reste';
+            } else if (player.isActive) {
+                statusElement.textContent = '▶️ Joue';
+            }
+        }
+
+        function updatePlayerCards(spot, player) {
+            let cardsArea = spot.querySelector('.player-cards-area');
+            if (!cardsArea) {
+                cardsArea = document.createElement('div');
+                cardsArea.className = 'player-cards-area';
+                spot.insertBefore(cardsArea, spot.querySelector('.player-score'));
+            }
+            cardsArea.innerHTML = '';
+            if (player.cards && player.cards.length > 0) {
+                player.cards.forEach(card => {
+                    const el = document.createElement('div');
+                    el.className = `card ${card.isRed ? 'red' : 'black'}`;
+                    el.innerHTML = `<div class='card-value'>${card.value}</div><div class='card-suit'>${card.suit}</div>`;
+                    cardsArea.appendChild(el);
+                });
+            }
+        }
+
+        function updatePlayerStreak(spot, player) {
+            const streakEl = spot.querySelector('.player-streak span');
+            if (streakEl) streakEl.textContent = player.winStreak || 0;
+        }
+
         function updateDealerDisplay(room) {
+            // ✅ Afficher le nom du croupier
+            const dealerNameElement = document.getElementById('dealerName');
+            if (dealerNameElement && room.dealer) {
+                dealerNameElement.textContent = `🎩 ${room.dealer}`;
+            }
+
             const container = document.getElementById('dealerCards');
             if (!container) return;
             container.innerHTML = '';
-            // Affichage du nom du croupier
-            const dealerNameEl = document.querySelector('.dealer-position .player-name');
-            if (dealerNameEl) {
-                dealerNameEl.textContent = room.dealer || 'Croupier';
-            }
             if (room.dealerCards && room.dealerCards.length > 0) {
-                // Si phase playing et la 2ème carte est cachée, n'afficher que la première
                 if (room.gameState === 'playing' && room.dealerCards.length > 1 && room.dealerCards[1].hidden) {
                     const card = room.dealerCards[0];
                     const el = document.createElement('div');
                     el.className = `card ${card.isRed ? 'red' : 'black'}`;
                     el.innerHTML = `<div class='card-value'>${card.value}</div><div class='card-suit'>${card.suit}</div>`;
                     container.appendChild(el);
-                    // Afficher une carte cachée
                     const hidden = document.createElement('div');
                     hidden.className = 'card hidden';
                     hidden.innerHTML = `<div class='card-value'>?</div><div class='card-suit'>🂠</div>`;
                     container.appendChild(hidden);
                 } else {
-                    // Afficher toutes les cartes (même si certaines sont cachées)
                     room.dealerCards.forEach(card => {
                         const el = document.createElement('div');
                         if (card.hidden) {
@@ -1755,7 +2050,6 @@
                     });
                 }
             }
-            // Afficher le score : ? si carte cachée, sinon le vrai score
             const scoreElement = document.getElementById('dealerScore');
             if (scoreElement) {
                 if (room.dealerCards && room.dealerCards.length > 1 && room.dealerCards[1].hidden && room.gameState === 'playing') {
@@ -1763,6 +2057,22 @@
                 } else {
                     scoreElement.textContent = room.dealerScore || '--';
                 }
+            }
+        }
+
+        // ✅ Fonction pour rendre le chat
+        function renderChat(room) {
+            const chatMessages = document.getElementById('chatMessages');
+            if (!chatMessages) return;
+            chatMessages.innerHTML = '';
+            if (room.chat && Array.isArray(room.chat)) {
+                room.chat.slice(-50).forEach(msg => {
+                    const div = document.createElement('div');
+                    div.style.marginBottom = '4px';
+                    div.innerHTML = `<span style='color:#FFD700;font-weight:bold;'>${msg.name}</span> <span style='color:#aaa;font-size:11px;'>${new Date(msg.time).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span> : <span style='color:#fff;'>${msg.text}</span>`;
+                    chatMessages.appendChild(div);
+                });
+                chatMessages.scrollTop = chatMessages.scrollHeight;
             }
         }
 
@@ -1780,20 +2090,10 @@
             }
             if (isDealer) {
                 if (dealerControls) dealerControls.style.display = 'flex';
-                const distribBtn = document.querySelector('#dealerControls button[onclick="startNewHand()"]');
                 if (room.gameState === 'waiting' || room.gameState === 'finished') {
-                    if (distribBtn) {
-                        distribBtn.style.setProperty('display', 'inline-block');
-                        distribBtn.disabled = false;
-                    }
+                    document.querySelector('#dealerControls button[onclick="startNewHand()"]')?.style.setProperty('display', 'inline-block');
                     if (dealerPlayBtn) dealerPlayBtn.style.display = 'none';
-                } else {
-                    if (distribBtn) {
-                        distribBtn.style.setProperty('display', 'inline-block');
-                        distribBtn.disabled = true;
-                    }
-                }
-                if (room.pendingAction) {
+                } else if (room.pendingAction) {
                     document.querySelector('#dealerControls button[onclick="startNewHand()"]')?.style.setProperty('display', 'none');
                     if (dealerPlayBtn) {
                         dealerPlayBtn.style.display = 'inline-block';
@@ -1837,8 +2137,13 @@
 
         async function startNewHand() {
             if (!isDealer) return;
-            const room = await gameServer.getRoom(currentRoom);
-            if (!room || room.gameState === 'dealing' || room.gameState === 'playing') return;
+            const casinoTable = document.querySelector('.casino-table');
+            if (casinoTable) {
+                const existingCards = casinoTable.querySelectorAll('.card:not(.deck-card)');
+                existingCards.forEach(card => card.remove());
+            }
+            initialDealIndex = 0;
+            initialDealRound = 0;
             const success = await gameServer.startNewHand(currentRoom);
             if (success) {
                 showNotification('🎴 Nouvelle main en cours...', 'info');
@@ -1863,7 +2168,6 @@
             if (!isDealer) return;
             const room = await gameServer.getRoom(currentRoom);
             if (!room) return;
-            // Si le croupier doit tirer (score < 17 ou soft 17)
             const hasSoft17 = room.dealerScore === 17 &&
                 room.dealerCards.some(card => card.value === 'A') &&
                 gameServer.calculateScore(room.dealerCards) === 17;
@@ -1871,7 +2175,6 @@
                 await gameServer.dealCard(currentRoom, 'dealer');
                 showNotification('🃏 Carte tirée pour le croupier', 'info');
             } else {
-                // Fin du tour croupier, on termine la partie
                 await gameServer.finishGame(currentRoom);
                 showNotification('✅ Tour du croupier terminé', 'success');
             }
@@ -1887,7 +2190,6 @@
                 clearInterval(gameUpdateInterval);
             }
             
-            // Nettoyer les cartes
             const casinoTable = document.querySelector('.casino-table');
             if (casinoTable) {
                 const existingCards = casinoTable.querySelectorAll('.card:not(.deck-card)');
@@ -1926,294 +2228,24 @@
                             <div class="card-suit">🂠</div>
                         `;
                     } else {
+                        cardElement.className = `card ${card.isRed ? 'red' : 'black'} dealing`;
                         cardElement.innerHTML = `
                             <div class="card-value">${card.value}</div>
                             <div class="card-suit">${card.suit}</div>
                         `;
                     }
-                    
-                    const casinoTable = document.querySelector('.casino-table');
-                    if (casinoTable) {
-                        casinoTable.appendChild(cardElement);
-                        
-                        // Effet sonore visuel
-                        createSparkle(startPos.x, startPos.y);
-                        
-                        setTimeout(() => {
-                            cardElement.classList.remove('dealing');
-                            resolve(cardElement);
-                        }, 1000);
-                    } else {
-                        resolve(null);
-                    }
-                }, delay);
-            });
-        }
-
-        function createSparkle(x, y) {
-            const sparkle = document.createElement('div');
-            sparkle.style.position = 'absolute';
-            sparkle.style.left = x + 'px';
-            sparkle.style.top = y + 'px';
-            sparkle.style.width = '4px';
-            sparkle.style.height = '4px';
-            sparkle.style.background = '#FFD700';
-            sparkle.style.borderRadius = '50%';
-            sparkle.style.animation = 'sparkle 0.5s ease-out forwards';
-            sparkle.style.zIndex = '100';
-            
-            const casinoTable = document.querySelector('.casino-table');
-            if (casinoTable) {
-                casinoTable.appendChild(sparkle);
-                
-                setTimeout(() => {
-                    sparkle.remove();
-                }, 500);
-            }
-        }
-
-        function showNotification(message, type = 'info') {
-            const existing = document.querySelector('.notification');
-            if (existing) {
-                existing.remove();
-            }
-
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.textContent = message;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => notification.classList.add('show'), 100);
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => notification.remove(), 400);
-            }, 3000);
-        }
-
-        // Création des particules d'ambiance
-        function createParticles() {
-            const particlesContainer = document.getElementById('particles');
-            if (!particlesContainer) return;
-            
-            setInterval(() => {
-                const existingParticles = document.querySelectorAll('.particle');
-                if (existingParticles.length < 20) {
-                    const particle = document.createElement('div');
-                    particle.className = 'particle';
-                    particle.style.left = Math.random() * 100 + 'vw';
-                    particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
-                    particle.style.animationDelay = Math.random() * 2 + 's';
-                    particlesContainer.appendChild(particle);
+                    container.appendChild(cardElement);
+                    cardElement.style.transition = `all 0.3s ease ${delay}s`;
+                    cardElement.style.transform = `translateX(${startPos.x}px) translateY(${startPos.y}px) rotate(0deg) scale(0.8)`;
+                    cardElement.style.opacity = 0;
                     
                     setTimeout(() => {
-                        if (particle && particle.parentNode) {
-                            particle.remove();
-                        }
-                    }, 8000);
-                }
-            }, 500);
-        }
-
-        function setupEventListeners() {
-            const roomCodeInput = document.getElementById('roomCode');
-            const playerNameInput = document.getElementById('playerName');
-            
-            if (roomCodeInput) {
-                roomCodeInput.addEventListener('input', function(e) {
-                    e.target.value = e.target.value.toUpperCase();
-                });
-                
-                roomCodeInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        joinRoom();
-                    }
-                });
-            }
-
-            if (playerNameInput) {
-                playerNameInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        createRoom();
-                    }
-                });
-                
-                playerNameInput.focus();
-            }
-
-            window.addEventListener('beforeunload', function() {
-                if (currentRoom) {
-                    gameServer.leaveRoom(currentRoom, playerName);
-                }
+                        cardElement.style.transform = `translateX(${endPos.x}px) translateY(${endPos.y}px) rotate(360deg) scale(1)`;
+                        cardElement.style.opacity = 1;
+                        resolve();
+                    }, delay * 1000);
+                }, delay * 1000);
             });
-        }
-
-        // Initialisation sécurisée
-        async function initializeGame() {
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initializeGame);
-                return;
-            }
-            
-            console.log("🎮 Initialisation du Blackjack Casino Royal...");
-            
-            gameServer = new OnlineGameServer();
-            
-            // Attendre l'initialisation
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            createParticles();
-            setupEventListeners();
-            joinFromURL();
-            
-            // Afficher le mode de fonctionnement
-            if (gameServer.useLocalStorage) {
-                console.log("✅ Jeu initialisé en mode DEMO (localStorage)");
-                showNotification('🎮 Mode DEMO - Multijoueur local uniquement', 'info');
-            } else {
-                console.log("✅ Jeu initialisé avec Firebase (multijoueur en ligne)");
-                showNotification('🔥 Multijoueur en ligne activé!', 'success');
-            }
-        }
-
-        // Démarrer l'initialisation
-        initializeGame();
-
-        async function doubleDown() {
-            const success = await gameServer.playerAction(currentRoom, playerName, 'double');
-            if (success) {
-                showNotification('💰 Vous doublez !', 'info');
-            }
-        }
-
-        async function splitHand() {
-            const success = await gameServer.playerAction(currentRoom, playerName, 'split');
-            if (success) {
-                showNotification('🃏 Split effectué !', 'info');
-            }
-        }
-
-        async function processPendingActionBtn() {
-            await gameServer.processPendingAction(currentRoom);
-        }
-
-        // 2. Ajout du chat sous la table (HTML)
-        // Ajoute juste avant </div> de .container :
-        /*
-        <div id="chatBox" style="background:rgba(0,0,0,0.7);border-radius:12px;padding:12px 8px 0 8px;margin:24px auto 0 auto;max-width:600px;">
-          <div id="chatMessages" style="max-height:180px;overflow-y:auto;padding-bottom:8px;"></div>
-          <form id="chatForm" style="display:flex;gap:8px;align-items:center;">
-            <input id="chatInput" type="text" maxlength="120" placeholder="Message..." style="flex:1;padding:8px 12px;border-radius:8px;border:none;outline:none;">
-            <button type="submit" class="btn btn-gold">Envoyer</button>
-          </form>
-        </div>
-        */
-
-        // 3. Ajout de la logique JS du chat
-        // Après initializeGame();
-        function renderChat(room) {
-            const chatMessages = document.getElementById('chatMessages');
-            if (!chatMessages) return;
-            chatMessages.innerHTML = '';
-            if (room.chat && Array.isArray(room.chat)) {
-                room.chat.slice(-50).forEach(msg => {
-                    const div = document.createElement('div');
-                    div.style.marginBottom = '4px';
-                    div.innerHTML = `<span style='color:#FFD700;font-weight:bold;'>${msg.name}</span> <span style='color:#aaa;font-size:11px;'>${new Date(msg.time).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span> : <span style='color:#fff;'>${msg.text}</span>`;
-                    chatMessages.appendChild(div);
-                });
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            }
-        }
-
-        // Hook dans updateGameDisplay
-        // ...
-        updateDealerDisplay(room);
-        renderChat(room);
-        updateControls(room);
-        // ...
-
-        // Gestion de l'envoi de message
-        const chatForm = document.getElementById('chatForm');
-        if (chatForm) {
-            chatForm.onsubmit = async function(e) {
-                e.preventDefault();
-                const input = document.getElementById('chatInput');
-                if (!input || !input.value.trim()) return;
-                const text = input.value.trim();
-                input.value = '';
-                // Ajout du message dans la room
-                const room = await gameServer.getRoom(currentRoom);
-                if (!room) return;
-                if (!room.chat) room.chat = [];
-                room.chat.push({ name: playerName, text, time: Date.now() });
-                // Limiter à 50 messages
-                if (room.chat.length > 50) room.chat = room.chat.slice(-50);
-                await gameServer.updateRoom(currentRoom, room);
-            };
-        }
-
-        // === TIMER DE TOUR DE JEU ===
-        let playerTurnTimer = null;
-        let playerTurnTimeLeft = 15;
-
-        function startPlayerTurnTimer() {
-            clearPlayerTurnTimer();
-            playerTurnTimeLeft = 15;
-            updatePlayerTimerUI(playerTurnTimeLeft);
-            playerTurnTimer = setInterval(async () => {
-                playerTurnTimeLeft--;
-                updatePlayerTimerUI(playerTurnTimeLeft);
-                if (playerTurnTimeLeft <= 0) {
-                    clearPlayerTurnTimer();
-                    await stand(); // Action auto
-                }
-            }, 1000);
-        }
-
-        function clearPlayerTurnTimer() {
-            if (playerTurnTimer) {
-                clearInterval(playerTurnTimer);
-                playerTurnTimer = null;
-            }
-            updatePlayerTimerUI(null);
-        }
-
-        function updatePlayerTimerUI(timeLeft) {
-            let timerBar = document.getElementById('playerTimerBar');
-            let timerText = document.getElementById('playerTimerText');
-            if (!timerBar) {
-                const controls = document.getElementById('playerControls');
-                if (controls) {
-                    timerBar = document.createElement('div');
-                    timerBar.id = 'playerTimerBar';
-                    timerBar.style.height = '8px';
-                    timerBar.style.background = 'linear-gradient(90deg,#FFD700,#ff4b2b)';
-                    timerBar.style.borderRadius = '6px';
-                    timerBar.style.margin = '8px 0 0 0';
-                    timerBar.style.transition = 'width 0.3s';
-                    controls.appendChild(timerBar);
-                    timerText = document.createElement('div');
-                    timerText.id = 'playerTimerText';
-                    timerText.style.textAlign = 'center';
-                    timerText.style.color = '#FFD700';
-                    timerText.style.fontWeight = 'bold';
-                    timerText.style.marginTop = '2px';
-                    controls.appendChild(timerText);
-                }
-            }
-            if (timerBar && timerText) {
-                if (typeof timeLeft === 'number' && timeLeft > 0) {
-                    timerBar.style.width = (100 * timeLeft / 15) + '%';
-                    timerBar.style.display = 'block';
-                    timerText.textContent = `⏳ ${timeLeft}s pour jouer...`;
-                    timerText.style.display = 'block';
-                } else {
-                    timerBar.style.display = 'none';
-                    timerText.style.display = 'none';
-                }
-            }
         }
     </script>
 </body>
