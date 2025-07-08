@@ -917,41 +917,33 @@
                 alert('Connexion Firebase requise !');
                 return;
             }
-
             const code = roomCode || elements.roomInput.value.trim().toUpperCase();
-            
             if (!code) {
                 alert('Veuillez entrer un code de room');
                 return;
             }
-
             try {
                 const roomSnapshot = await database.ref('rooms/' + code).once('value');
                 const roomData = roomSnapshot.val();
-
                 if (!roomData) {
                     alert('Room non trouvée');
                     return;
                 }
-
-                const playerCount = Object.keys(roomData.players || {}).length;
-                if (playerCount >= MAX_PLAYERS) {
-                    alert('Room pleine (max 5 joueurs)');
-                    return;
-                }
-
+                const playerCount = Object.values(roomData.players || {}).filter(p => p.status !== 'spectator').length;
+                const isFull = playerCount >= MAX_PLAYERS;
                 if (roomData.players && roomData.players[currentUser.uid]) {
                     alert('Vous êtes déjà dans cette room');
                     return;
                 }
-
                 currentRoom = code;
-
                 // Récupérer les données utilisateur actuelles
                 const userSnapshot = await database.ref('users/' + currentUser.uid).once('value');
                 const userData = userSnapshot.val();
-
-                // Ajouter le joueur à la room
+                // Déterminer le statut du joueur
+                let status = 'waiting';
+                if (roomData.gamePhase !== 'waiting') {
+                    status = isFull ? 'spectator' : 'betting';
+                }
                 await database.ref('rooms/' + code + '/players/' + currentUser.uid).set({
                     id: currentUser.uid,
                     name: userData.displayName || 'Joueur',
@@ -959,20 +951,15 @@
                     cards: [],
                     bet: 0,
                     score: 0,
-                    status: 'waiting',
+                    status: status,
                     isReady: false,
                     joinedAt: firebase.database.ServerValue.TIMESTAMP
                 });
-
-                // Mettre à jour l'activité de la room
-                await database.ref('rooms/' + code + '/lastActivity').set(firebase.database.ServerValue.TIMESTAMP);
-
                 updateURL(code);
                 showGame();
                 listenToRoom();
-
             } catch (error) {
-                console.error('Erreur rejoindre room:', error);
+                console.error('Erreur joinRoom:', error);
                 alert('Erreur lors de la connexion à la room');
             }
         }
@@ -1073,7 +1060,22 @@
         function updateGameControls(roomData) {
             const phase = roomData.gamePhase;
             const currentPlayerData = roomData.players[currentUser.id];
-            
+            const isHost = roomData.host === currentUser.id;
+            // Affichage du bouton 'Lancer la partie' uniquement pour le host en phase 'waiting'
+            let launchBtn = document.getElementById('launchBtn');
+            if (!launchBtn) {
+                launchBtn = document.createElement('button');
+                launchBtn.id = 'launchBtn';
+                launchBtn.className = 'btn btn-primary';
+                launchBtn.textContent = 'Lancer la partie';
+                launchBtn.onclick = startGame;
+                elements.waitingSection.appendChild(launchBtn);
+            }
+            if (phase === 'waiting' && isHost) {
+                launchBtn.style.display = 'block';
+            } else {
+                launchBtn.style.display = 'none';
+            }
             switch (phase) {
                 case 'waiting':
                     elements.waitingSection.style.display = 'block';
@@ -1081,13 +1083,11 @@
                     elements.betSection.style.display = 'none';
                     document.getElementById('readyBtn').style.display = currentPlayerData.isReady ? 'none' : 'block';
                     break;
-                    
                 case 'betting':
                     elements.waitingSection.style.display = 'none';
                     elements.gameTable.style.display = 'block';
                     elements.betSection.style.display = 'block';
                     break;
-                    
                 case 'playing':
                     elements.betSection.style.display = 'none';
                     const isMyTurn = roomData.currentPlayerTurn === currentUser.id;
@@ -1129,20 +1129,9 @@
         // Actions de jeu
         async function playerReady() {
             if (!currentRoom) return;
-            
             try {
                 await database.ref('rooms/' + currentRoom + '/players/' + currentUser.id + '/isReady').set(true);
-                
-                // Vérifier si tous les joueurs sont prêts
-                const roomSnapshot = await database.ref('rooms/' + currentRoom).once('value');
-                const roomData = roomSnapshot.val();
-                const players = Object.values(roomData.players);
-                const allReady = players.every(p => p.isReady);
-                const minPlayers = players.length >= 2;
-                
-                if (allReady && minPlayers) {
-                    startGame();
-                }
+                // Plus de lancement automatique ici
             } catch (error) {
                 console.error('Erreur playerReady:', error);
             }
