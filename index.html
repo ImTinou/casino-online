@@ -1845,7 +1845,7 @@
             }
         }
 
-        // Nouvelle main : distribuer 2 cartes à chaque joueur et au croupier automatiquement
+        // Nouvelle main : ne pas distribuer les cartes ici, c'est déjà fait côté serveur
         async function startNewHand() {
             if (!isDealer) return;
             // Nettoyer les cartes existantes
@@ -1864,23 +1864,6 @@
                     setTimeout(() => {
                         deckStack.style.animation = '';
                     }, 500);
-                }
-                // Distribution automatique de 2 cartes à chaque joueur et au croupier
-                const room = await gameServer.getRoom(currentRoom);
-                if (!room || !room.players) return;
-                for (let round = 0; round < 2; round++) {
-                    for (let index = 0; index < room.players.length; index++) {
-                        await gameServer.dealCard(currentRoom, index);
-                    }
-                    await gameServer.dealCard(currentRoom, 'dealer');
-                }
-                // Passer directement au tour du croupier
-                const updatedRoom = await gameServer.getRoom(currentRoom);
-                if (updatedRoom) {
-                    updatedRoom.gameState = 'dealer_turn';
-                    await gameServer.updateRoom(currentRoom, updatedRoom);
-                    // Lancer le tour du croupier automatiquement
-                    gameServer.dealerPlay(currentRoom);
                 }
             }
         }
