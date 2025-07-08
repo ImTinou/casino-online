@@ -731,6 +731,8 @@
     <script>
         // Initialisation des instances Firebase globales
         let auth, database;
+        // Données du formulaire accessibles partout
+        let formData = {};
         // Gestion des erreurs d'authentification (accessible partout)
         function handleAuthError(error) {
             console.error('Erreur auth:', error);
