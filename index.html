@@ -2247,6 +2247,35 @@
                 }, delay * 1000);
             });
         }
+
+        function showNotification(message, type = 'info') {
+            const existing = document.querySelector('.notification');
+            if (existing) existing.remove();
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.right = '20px';
+            notification.style.padding = '20px 25px';
+            notification.style.borderRadius = '15px';
+            notification.style.color = 'white';
+            notification.style.fontWeight = 'bold';
+            notification.style.zIndex = 1000;
+            notification.style.background = type === 'success'
+                ? 'linear-gradient(135deg, #11998e, #38ef7d)'
+                : type === 'error'
+                ? 'linear-gradient(135deg, #ff416c, #ff4b2b)'
+                : 'linear-gradient(135deg, #667eea, #764ba2)';
+            notification.style.transition = 'all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
+            notification.style.transform = 'translateX(400px)';
+            document.body.appendChild(notification);
+            setTimeout(() => notification.style.transform = 'translateX(0)', 100);
+            setTimeout(() => {
+                notification.style.transform = 'translateX(400px)';
+                setTimeout(() => notification.remove(), 400);
+            }, 3000);
+        }
     </script>
 </body>
 </html>
