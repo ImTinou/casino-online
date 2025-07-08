@@ -994,14 +994,11 @@
 
         // Initialisation
         function init() {
-            hideLoading();
             createFloatingIcons();
             initScrollEffects();
             updateStats();
-            
             // Mettre à jour les stats toutes les 10 secondes
             setInterval(updateStats, 10000);
-            
             // Connexion automatique pour la démo (à supprimer en production)
             setTimeout(() => {
                 const savedUser = localStorage.getItem('demoUser');
@@ -1026,6 +1023,7 @@
         database.ref('.info/connected').on('value', (snapshot) => {
             if (snapshot.val() === true) {
                 console.log('✅ Connecté à Firebase');
+                hideLoading(); // On masque le loader uniquement quand connecté
             } else {
                 console.log('❌ Déconnecté de Firebase');
             }
