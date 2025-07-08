@@ -860,7 +860,7 @@
             auth = firebase.auth();
             database = firebase.database();
             
-            // Gestion de l'authentification
+            // Gestion de l'authentification (unique)
             auth.onAuthStateChanged(async (user) => {
                 if (user) {
                     currentUser = user;
@@ -895,21 +895,6 @@
             gamesList: document.getElementById('gamesList'),
             achievementsList: document.getElementById('achievementsList')
         };
-
-        // Gestion de l'authentification
-        auth.onAuthStateChanged(async (user) => {
-            if (user) {
-                currentUser = user;
-                await loadUserData();
-                await loadUserStats();
-                await loadRecentGames();
-                updateUI();
-                hideLoading();
-            } else {
-                // Utilisateur non connecté, rediriger vers login
-                window.location.href = 'login.html';
-            }
-        });
 
         // Charger les données utilisateur
         async function loadUserData() {
