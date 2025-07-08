@@ -811,7 +811,7 @@
             </div>
 
             <div style="display: flex; gap: 20px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
-                <button class="btn btn-gold" onclick="createRoom()">
+                <button class="btn btn-gold">
                     🎯 Ouvrir une table (Croupier)
                 </button>
                 <button class="btn btn-primary" onclick="showJoinRoom()">
@@ -826,7 +826,7 @@
                 <label for="roomCode">Code de la table :</label>
                 <input type="text" id="roomCode" placeholder="Code à 6 lettres..." maxlength="6" style="text-transform: uppercase;">
             </div>
-            <button class="btn btn-success" onclick="joinRoom()">Entrer à la table</button>
+            <button class="btn btn-success">Entrer à la table</button>
             <button class="btn" onclick="hideJoinRoom()">Annuler</button>
         </div>
     </div>
@@ -2286,7 +2286,13 @@
 
         function initializeGame() {
             gameServer = new OnlineGameServer();
-            // Tu peux ajouter ici d'autres initialisations si besoin (ex: createParticles, setupEventListeners, joinFromURL)
+
+            // Ajout des event listeners JS pour les boutons
+            const btnCreate = document.querySelector('button.btn-gold');
+            if (btnCreate) btnCreate.addEventListener('click', createRoom);
+
+            const btnJoin = document.querySelector('#joinRoomCard button.btn-success');
+            if (btnJoin) btnJoin.addEventListener('click', joinRoom);
         }
 
         if (document.readyState === 'loading') {
