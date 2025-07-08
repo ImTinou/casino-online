@@ -754,6 +754,7 @@
             <button class="btn btn-primary" id="hitBtn" onclick="hit()" disabled>Carte</button>
             <button class="btn btn-secondary" id="standBtn" onclick="stand()" disabled>Rester</button>
             <button class="btn btn-primary" id="doubleBtn" onclick="doubleDown()" disabled>Double</button>
+            <button class="btn btn-warning" id="splitBtn" onclick="splitHand()" style="display:none;">Split</button>
             <button class="btn btn-secondary" onclick="leaveRoom()">Quitter</button>
         </div>
     </div>
@@ -989,6 +990,17 @@
             elements.gameContainer.style.display = 'block';
             elements.roomDisplay.style.display = 'block';
             elements.currentRoom.textContent = currentRoom;
+            // Ajout du bouton 'Lancer la partie' si absent
+            let launchBtn = document.getElementById('launchBtn');
+            if (!launchBtn) {
+                launchBtn = document.createElement('button');
+                launchBtn.id = 'launchBtn';
+                launchBtn.className = 'btn btn-primary';
+                launchBtn.textContent = 'Lancer la partie';
+                launchBtn.onclick = startGame;
+                elements.waitingSection.appendChild(launchBtn);
+                launchBtn.style.display = 'none'; // Sera affiché par updateGameControls si host
+            }
         }
 
         // Mettre à jour l'affichage du jeu
@@ -1012,28 +1024,30 @@
             
             Object.values(players).forEach(player => {
                 const isMe = player.id === currentUser.id;
+                let cardsHtml = '';
+                if (player.isSplit && player.hands) {
+                    cardsHtml = player.hands.map((hand, idx) => `
+                        <div class="split-hand">Main ${idx + 1}: ${hand.map(card => {
+                            const isRed = ['♥', '♦'].includes(card.suit);
+                            return `<span class="mini-card"><span class="card-value ${isRed ? 'red' : 'black'}">${card.value}</span><span class="card-suit ${isRed ? 'red' : 'black'}">${card.suit}</span></span>`;
+                        }).join('')}</div>
+                    `).join('');
+                } else {
+                    cardsHtml = player.cards.map((card, index) => {
+                        const isRed = ['♥', '♦'].includes(card.suit);
+                        return `<div class="mini-card"><div class="card-value ${isRed ? 'red' : 'black'}">${card.value}</div><div class="card-suit ${isRed ? 'red' : 'black'}">${card.suit}</div></div>`;
+                    }).join('');
+                }
                 const playerCard = document.createElement('div');
                 playerCard.className = `player-card ${isMe ? 'is-me' : ''}`;
-                
                 playerCard.innerHTML = `
                     <div class="player-header">
                         <div class="player-name ${isMe ? 'me' : ''}">${player.name} ${isMe ? '(Vous)' : ''}</div>
                         <div class="player-balance">${player.balance}€</div>
                     </div>
-                    <div class="player-cards">
-                        ${player.cards.map((card, index) => {
-                            const isRed = ['♥', '♦'].includes(card.suit);
-                            return `<div class="mini-card">
-                                <div class="card-value ${isRed ? 'red' : 'black'}">${card.value}</div>
-                                <div class="card-suit ${isRed ? 'red' : 'black'}">${card.suit}</div>
-                            </div>`;
-                        }).join('')}
-                    </div>
-                    <div class="player-status status-${player.status}">
-                        ${getStatusText(player)}
-                    </div>
+                    <div class="player-cards">${cardsHtml}</div>
+                    <div class="player-status status-${player.status}">${getStatusText(player)}</div>
                 `;
-                
                 elements.playersPanel.appendChild(playerCard);
             });
 
@@ -1070,11 +1084,28 @@
                 launchBtn.textContent = 'Lancer la partie';
                 launchBtn.onclick = startGame;
                 elements.waitingSection.appendChild(launchBtn);
+                launchBtn.style.display = 'none';
             }
             if (phase === 'waiting' && isHost) {
                 launchBtn.style.display = 'block';
             } else {
                 launchBtn.style.display = 'none';
+            }
+            // Bouton Split
+            let splitBtn = document.getElementById('splitBtn');
+            if (!splitBtn) {
+                splitBtn = document.createElement('button');
+                splitBtn.id = 'splitBtn';
+                splitBtn.className = 'btn btn-warning';
+                splitBtn.textContent = 'Split';
+                splitBtn.onclick = splitHand;
+                document.getElementById('gameControls').appendChild(splitBtn);
+            }
+            // Afficher Split uniquement si deux cartes identiques et assez de balance
+            if (phase === 'playing' && currentPlayerData && currentPlayerData.cards && currentPlayerData.cards.length === 2 && currentPlayerData.cards[0].value === currentPlayerData.cards[1].value && currentPlayerData.balance >= currentPlayerData.bet) {
+                splitBtn.style.display = 'inline-block';
+            } else {
+                splitBtn.style.display = 'none';
             }
             switch (phase) {
                 case 'waiting':
@@ -1322,6 +1353,36 @@
                 database.ref('rooms/' + currentRoom + '/players/' + currentUser.id).remove();
             }
         });
+
+        // Logique de split simple (une seule split possible)
+        async function splitHand() {
+            if (!currentRoom) return;
+            try {
+                // Récupérer la room et le joueur
+                const roomSnapshot = await database.ref('rooms/' + currentRoom).once('value');
+                const roomData = roomSnapshot.val();
+                const player = roomData.players[currentUser.id];
+                if (!player || !player.cards || player.cards.length !== 2 || player.cards[0].value !== player.cards[1].value) return;
+                // Déduire la mise du solde
+                if (player.balance < player.bet) return;
+                const newBalance = player.balance - player.bet;
+                // Créer deux mains
+                const splitHands = [
+                    [player.cards[0]],
+                    [player.cards[1]]
+                ];
+                // Nouvelle structure pour stocker les deux mains
+                await database.ref('rooms/' + currentRoom + '/players/' + currentUser.id).update({
+                    hands: splitHands,
+                    activeHand: 0,
+                    isSplit: true,
+                    balance: newBalance
+                });
+                // Affichage et gestion des mains à adapter dans updatePlayersDisplay et la logique de jeu (version simple)
+            } catch (error) {
+                console.error('Erreur splitHand:', error);
+            }
+        }
 
         // Lancement de l'application
         // L'initialisation se fait dans DOMContentLoaded ci-dessus

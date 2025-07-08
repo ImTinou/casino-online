@@ -759,8 +759,8 @@
             database = firebase.database();
             // Vérifier si l'utilisateur est déjà connecté
             auth.onAuthStateChanged((user) => {
-                if (user && !window.location.search.includes('force=true')) {
-                    window.location.href = 'dashboard.html';
+                if (user && !window.location.search.includes('force=true') && window.location.pathname.indexOf('register.html') === -1) {
+                    window.location.href = 'index.html';
                 }
             });
             // Initialiser l'interface
@@ -1319,13 +1319,6 @@
             if (validateStep(3)) {
                 saveStepData(3);
                 await registerWithEmail();
-            }
-        });
-
-        // Vérifier si l'utilisateur est déjà connecté
-        auth.onAuthStateChanged((user) => {
-            if (user && !window.location.search.includes('force=true')) {
-                window.location.href = 'dashboard.html';
             }
         });
 
