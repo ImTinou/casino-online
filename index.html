@@ -132,7 +132,7 @@
                 inset 0 0 100px rgba(0, 0, 0, 0.3),
                 0 0 100px rgba(255, 215, 0, 0.1);
             position: relative;
-            overflow: visible; /* ✅ Changé pour que les éléments puissent dépasser */
+            overflow: visible;
         }
 
         .table-felt {
@@ -156,19 +156,19 @@
         /* ========== POSITIONS SUR LA TABLE ========== */
         .dealer-position {
             position: absolute;
-            top: -40px; /* ✅ Déplacé vers le haut pour plus d'espace */
+            top: -40px;
             left: 50%;
             transform: translateX(-50%);
             text-align: center;
             z-index: 20;
-            background: rgba(0, 0, 0, 0.7); /* ✅ Fond pour la lisibilité */
+            background: rgba(0, 0, 0, 0.7);
             padding: 10px 20px;
             border-radius: 15px;
             border: 2px solid rgba(255, 215, 0, 0.3);
         }
 
         .dealer-avatar {
-            width: 60px; /* ✅ Réduit pour économiser l'espace */
+            width: 60px;
             height: 60px;
             border-radius: 50%;
             background: linear-gradient(135deg, #FFD700, #FFA500);
@@ -189,7 +189,6 @@
             50% { box-shadow: 0 0 35px rgba(255, 215, 0, 0.8), inset 0 0 15px rgba(0, 0, 0, 0.2); }
         }
 
-        /* ✅ Nouveau style pour le nom du croupier */
         .dealer-name {
             font-size: 14px;
             font-weight: bold;
@@ -201,13 +200,13 @@
         .deck-position {
             position: absolute;
             top: 50%;
-            left: 15px; /* ✅ Ajusté pour rester dans la table */
+            left: 15px;
             transform: translateY(-50%);
             z-index: 15;
         }
 
         .deck-stack {
-            width: 50px; /* ✅ Réduit légèrement */
+            width: 50px;
             height: 75px;
             position: relative;
             cursor: pointer;
@@ -248,19 +247,18 @@
 
         .player-spot {
             position: absolute;
-            width: 140px; /* ✅ Légèrement réduit */
+            width: 140px;
             height: 160px;
             display: flex;
             flex-direction: column;
             align-items: center;
             z-index: 20;
-            background: rgba(0, 0, 0, 0.5); /* ✅ Fond pour la lisibilité */
+            background: rgba(0, 0, 0, 0.5);
             border-radius: 10px;
             padding: 8px;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        /* ✅ Repositionnement des spots pour qu'ils restent visibles */
         .player-spot.spot-1 { bottom: -80px; left: 12%; }
         .player-spot.spot-2 { bottom: -80px; left: 28%; }
         .player-spot.spot-3 { bottom: -80px; left: 50%; transform: translateX(-50%); }
@@ -268,7 +266,7 @@
         .player-spot.spot-5 { bottom: -80px; right: 12%; }
 
         .player-avatar {
-            width: 50px; /* ✅ Légèrement réduit */
+            width: 50px;
             height: 50px;
             border-radius: 50%;
             background: linear-gradient(135deg, #667eea, #764ba2);
@@ -297,7 +295,7 @@
         }
 
         .player-name {
-            font-size: 12px; /* ✅ Légèrement réduit */
+            font-size: 12px;
             font-weight: bold;
             text-align: center;
             margin-bottom: 4px;
@@ -338,7 +336,7 @@
         /* ========== CARTES ET ANIMATIONS ========== */
         .card {
             position: absolute;
-            width: 50px; /* ✅ Légèrement réduit */
+            width: 50px;
             height: 75px;
             border-radius: 6px;
             display: flex;
@@ -487,7 +485,7 @@
             display: flex;
             gap: 15px;
             z-index: 50;
-            flex-wrap: wrap; /* ✅ Pour éviter le débordement */
+            flex-wrap: wrap;
             justify-content: center;
         }
 
@@ -495,7 +493,7 @@
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
             border: none;
-            padding: 12px 25px; /* ✅ Légèrement réduit */
+            padding: 12px 25px;
             border-radius: 20px;
             cursor: pointer;
             font-size: 14px;
@@ -600,7 +598,7 @@
         .notification.error { background: linear-gradient(135deg, #ff416c, #ff4b2b); }
         .notification.info { background: linear-gradient(135deg, #667eea, #764ba2); }
 
-        /* ✅ Amélioration des cartes dans les zones des joueurs */
+        /* ========== CARTES DANS LES ZONES DES JOUEURS ========== */
         .player-cards-area {
             display: flex;
             gap: 3px;
@@ -739,7 +737,7 @@
             100% { transform: scale(0) rotate(360deg); opacity: 0; }
         }
 
-        /* ✅ Chat Box Styles */
+        /* ========== CHAT BOX STYLES ========== */
         #chatBox {
             background: rgba(0,0,0,0.7);
             border-radius: 12px;
@@ -811,7 +809,7 @@
             </div>
 
             <div style="display: flex; gap: 20px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
-                <button class="btn btn-gold">
+                <button class="btn btn-gold" onclick="createRoom()">
                     🎯 Ouvrir une table (Croupier)
                 </button>
                 <button class="btn btn-primary" onclick="showJoinRoom()">
@@ -826,7 +824,7 @@
                 <label for="roomCode">Code de la table :</label>
                 <input type="text" id="roomCode" placeholder="Code à 6 lettres..." maxlength="6" style="text-transform: uppercase;">
             </div>
-            <button class="btn btn-success">Entrer à la table</button>
+            <button class="btn btn-success" onclick="joinRoom()">Entrer à la table</button>
             <button class="btn" onclick="hideJoinRoom()">Annuler</button>
         </div>
     </div>
@@ -902,7 +900,7 @@
                 </div>
             </div>
 
-            <!-- ✅ Chat Box -->
+            <!-- Chat Box -->
             <div id="chatBox">
                 <div id="chatMessages"></div>
                 <form id="chatForm">
@@ -924,7 +922,7 @@
         let isAnimating = false;
         let database = null;
 
-        // 🔥 TA VRAIE CONFIGURATION FIREBASE 🔥
+        // Configuration Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyBlF0Rv-vaLHlopMYNbs7JnLyiqi-HUnn4",
             authDomain: "blackjack-casino-royal.firebaseapp.com",
@@ -989,7 +987,7 @@
                     currentPlayerIndex: 0,
                     created: Date.now(),
                     lastUpdate: Date.now(),
-                    chat: [] // ✅ Initialiser le chat
+                    chat: []
                 };
                 
                 try {
@@ -1547,35 +1545,6 @@
             }
         }
 
-        function showNotification(message, type = 'info') {
-            const existing = document.querySelector('.notification');
-            if (existing) existing.remove();
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.textContent = message;
-            notification.style.position = 'fixed';
-            notification.style.top = '20px';
-            notification.style.right = '20px';
-            notification.style.padding = '20px 25px';
-            notification.style.borderRadius = '15px';
-            notification.style.color = 'white';
-            notification.style.fontWeight = 'bold';
-            notification.style.zIndex = 1000;
-            notification.style.background = type === 'success'
-                ? 'linear-gradient(135deg, #11998e, #38ef7d)'
-                : type === 'error'
-                ? 'linear-gradient(135deg, #ff416c, #ff4b2b)'
-                : 'linear-gradient(135deg, #667eea, #764ba2)';
-            notification.style.transition = 'all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
-            notification.style.transform = 'translateX(400px)';
-            document.body.appendChild(notification);
-            setTimeout(() => notification.style.transform = 'translateX(0)', 100);
-            setTimeout(() => {
-                notification.style.transform = 'translateX(400px)';
-                setTimeout(() => notification.remove(), 400);
-            }, 3000);
-        }
-
         function showShareableLink() {
             const url = `${window.location.origin}${window.location.pathname}?roomid=${currentRoom}`;
             
@@ -1610,6 +1579,7 @@
                             Actuellement en mode local. Pour un vrai multijoueur en ligne :
                         </p>
                         <ol style="text-align: left; font-size: 13px; margin: 10px 0;">
+                            <li>Télécharge ce fichier HTML</li>
                             <li>Héberge-le sur ton serveur/GitHub Pages</li>
                             <li>Firebase fonctionnera automatiquement !</li>
                         </ol>
@@ -1621,6 +1591,7 @@
                 
                 <div style="margin-top: 20px;">
                     <button onclick="copyToClipboard('${url}'); this.parentElement.parentElement.remove();" style="background: #FFD700; color: black; border: none; padding: 10px 20px; border-radius: 5px; margin: 5px; cursor: pointer;">📋 Copier le lien</button>
+                    <button onclick="downloadHTML()" style="background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin: 5px; cursor: pointer;">💾 Télécharger</button>
                     <button onclick="this.parentElement.parentElement.remove();" style="background: #666; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin: 5px; cursor: pointer;">Fermer</button>
                 </div>
             `;
@@ -1655,6 +1626,7 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
+            showNotification('💾 Fichier téléchargé! Hébergez-le pour le multijoueur en ligne', 'success');
         }
 
         function showJoinRoom() {
@@ -1782,7 +1754,7 @@
             updatePlayerCount(room);
             updatePlayerPositions(room);
             updateDealerDisplay(room);
-            renderChat(room); // ✅ Ajouter le chat
+            renderChat(room);
             updateControls(room);
         }
 
@@ -2190,6 +2162,20 @@
             }
         }
 
+        async function doubleDown() {
+            const success = await gameServer.playerAction(currentRoom, playerName, 'double');
+            if (success) {
+                showNotification('💰 Vous doublez !', 'info');
+            }
+        }
+
+        async function splitHand() {
+            const success = await gameServer.playerAction(currentRoom, playerName, 'split');
+            if (success) {
+                showNotification('🃏 Split effectué !', 'info');
+            }
+        }
+
         async function dealerPlay() {
             if (!isDealer) return;
             const room = await gameServer.getRoom(currentRoom);
@@ -2204,6 +2190,10 @@
                 await gameServer.finishGame(currentRoom);
                 showNotification('✅ Tour du croupier terminé', 'success');
             }
+        }
+
+        async function processPendingActionBtn() {
+            await gameServer.processPendingAction(currentRoom);
         }
 
         async function leaveGame() {
@@ -2254,51 +2244,55 @@
                             <div class="card-suit">🂠</div>
                         `;
                     } else {
-                        cardElement.className = `card ${card.isRed ? 'red' : 'black'} dealing`;
                         cardElement.innerHTML = `
                             <div class="card-value">${card.value}</div>
                             <div class="card-suit">${card.suit}</div>
                         `;
                     }
-                    container.appendChild(cardElement);
-                    cardElement.style.transition = `all 0.3s ease ${delay}s`;
-                    cardElement.style.transform = `translateX(${startPos.x}px) translateY(${startPos.y}px) rotate(0deg) scale(0.8)`;
-                    cardElement.style.opacity = 0;
                     
-                    setTimeout(() => {
-                        cardElement.style.transform = `translateX(${endPos.x}px) translateY(${endPos.y}px) rotate(360deg) scale(1)`;
-                        cardElement.style.opacity = 1;
-                        resolve();
-                    }, delay * 1000);
-                }, delay * 1000);
+                    const casinoTable = document.querySelector('.casino-table');
+                    if (casinoTable) {
+                        casinoTable.appendChild(cardElement);
+                        
+                        createSparkle(startPos.x, startPos.y);
+                        
+                        setTimeout(() => {
+                            cardElement.classList.remove('dealing');
+                            resolve(cardElement);
+                        }, 1000);
+                    } else {
+                        resolve(null);
+                    }
+                }, delay);
             });
         }
 
-        async function splitHand() {
-            const success = await gameServer.playerAction(currentRoom, playerName, 'split');
-            if (success) {
-                showNotification('🃏 Split effectué !', 'info');
-                // Optionnel : masquer les contrôles du joueur pendant le traitement
-                const playerControls = document.getElementById('playerControls');
-                if (playerControls) playerControls.style.display = 'none';
-            }
-        }
+        // Effet visuel lors de la distribution d'une carte
+        function createSparkle(x, y) {
+            const sparkle = document.createElement('div');
+            sparkle.style.position = 'fixed';
+            sparkle.style.left = x + 'px';
+            sparkle.style.top = y + 'px';
+            sparkle.style.width = '8px';
+            sparkle.style.height = '8px';
+            sparkle.style.borderRadius = '50%';
+            sparkle.style.background = 'radial-gradient(circle, #FFD700 60%, transparent 100%)';
+            sparkle.style.pointerEvents = 'none';
+            sparkle.style.zIndex = 9999;
+            sparkle.style.opacity = 1;
+            sparkle.style.transform = 'scale(0)';
+            sparkle.style.transition = 'transform 0.5s, opacity 0.7s';
 
-        function initializeGame() {
-            gameServer = new OnlineGameServer();
+            document.body.appendChild(sparkle);
 
-            // Ajout des event listeners JS pour les boutons
-            const btnCreate = document.querySelector('button.btn-gold');
-            if (btnCreate) btnCreate.addEventListener('click', createRoom);
+            setTimeout(() => {
+                sparkle.style.transform = 'scale(2)';
+                sparkle.style.opacity = 0;
+            }, 10);
 
-            const btnJoin = document.querySelector('#joinRoomCard button.btn-success');
-            if (btnJoin) btnJoin.addEventListener('click', joinRoom);
-        }
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeGame);
-        } else {
-            initializeGame();
+            setTimeout(() => {
+                if (sparkle.parentElement) sparkle.parentElement.removeChild(sparkle);
+            }, 700);
         }
     </script>
 </body>
