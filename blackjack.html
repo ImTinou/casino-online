@@ -1073,8 +1073,8 @@
         // Mettre à jour les contrôles de jeu
         function updateGameControls(roomData) {
             const phase = roomData.gamePhase;
-            const currentPlayerData = roomData.players[currentUser.id];
-            const isHost = roomData.host === currentUser.id;
+            const currentPlayerData = roomData.players[currentUser.id] || roomData.players[currentUser.uid];
+            const isHost = roomData.host === (currentUser.uid || currentUser.id);
             // Affichage du bouton 'Lancer la partie' uniquement pour le host en phase 'waiting'
             let launchBtn = document.getElementById('launchBtn');
             if (!launchBtn) {

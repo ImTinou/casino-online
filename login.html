@@ -475,8 +475,8 @@
             <!-- Login Form -->
             <form id="loginForm">
                 <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" class="form-input" placeholder="votre@email.com" required>
+                    <label for="email">Email ou pseudo</label>
+                    <input type="text" id="email" class="form-input" placeholder="votre@email.com ou pseudo" required>
                 </div>
 
                 <div class="form-group">
@@ -619,18 +619,26 @@
             }
         }
 
-        // Connexion par email/mot de passe
-        async function loginWithEmail(email, password) {
+        // Connexion par email/pseudo/mot de passe
+        async function loginWithEmailOrUsername(identifier, password) {
             try {
                 showLoading(true);
-                
+                let email = identifier;
+                // Si ce n'est pas un email, on cherche le username dans la base
+                if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(identifier)) {
+                    // Recherche du user par username
+                    const usersSnapshot = await database.ref('users').orderByChild('username').equalTo(identifier).once('value');
+                    const users = usersSnapshot.val();
+                    if (!users) throw { code: 'auth/user-not-found' };
+                    // Prend le premier utilisateur trouvé
+                    const userObj = Object.values(users)[0];
+                    email = userObj.email;
+                }
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
                 const user = userCredential.user;
-                
                 // Vérifier si le profil utilisateur existe
                 const userSnapshot = await database.ref('users/' + user.uid).once('value');
                 const userData = userSnapshot.val();
-                
                 if (!userData) {
                     // Créer le profil utilisateur s'il n'existe pas
                     await database.ref('users/' + user.uid).set({
@@ -646,21 +654,17 @@
                     // Mettre à jour la dernière connexion
                     await database.ref('users/' + user.uid + '/lastLogin').set(firebase.database.ServerValue.TIMESTAMP);
                 }
-
                 // Sauvegarder les préférences
                 if (elements.remember.checked) {
                     auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
                 } else {
                     auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
                 }
-
                 showSuccess('Connexion réussie ! Redirection...');
-                
                 setTimeout(() => {
-                    const redirect = new URLSearchParams(window.location.search).get('redirect') || 'dashboard.html';
+                    const redirect = new URLSearchParams(window.location.search).get('redirect') || 'index.html';
                     window.location.href = redirect;
                 }, 1500);
-
             } catch (error) {
                 showLoading(false);
                 const errorMessage = handleAuthError(error);
@@ -676,7 +680,7 @@
             
             switch (error.code) {
                 case 'auth/user-not-found':
-                    message = 'Aucun compte trouvé avec cet email';
+                    message = 'Aucun compte trouvé avec cet email ou pseudo';
                     break;
                 case 'auth/wrong-password':
                     message = 'Mot de passe incorrect';
@@ -816,16 +820,9 @@
         // Gestion du formulaire
         elements.loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            const email = elements.email.value.trim();
+            const identifier = elements.email.value.trim();
             const password = elements.password.value;
-            
-            if (!email || !password) {
-                showError('Veuillez remplir tous les champs');
-                return;
-            }
-
-            await loginWithEmail(email, password);
+            await loginWithEmailOrUsername(identifier, password);
         });
 
         // Auto-complétion depuis URL
