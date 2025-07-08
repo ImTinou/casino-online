@@ -737,9 +737,9 @@
                     </div>
                 </div>
 
-                <!-- Positions des joueurs -->
+
                 <div class="player-positions" id="playerPositions">
-                    <!-- Les positions seront générées dynamiquement -->
+
                 </div>
             </div>
 
@@ -748,6 +748,7 @@
                 <div id="dealerControls" style="display: none;">
                     <button class="btn btn-gold" onclick="startNewHand()">🎴 Distribuer</button>
                     <button class="btn btn-warning" onclick="dealerPlay()" id="dealerPlayBtn" style="display: none;">🎲 Tour croupier</button>
+                    <button class="btn btn-danger" onclick="finishGame()" id="finishGameBtn" style="margin-left:10px;">🏁 Finir la partie</button>
                 </div>
                 
                 <div id="playerControls" style="display: none;">
@@ -767,7 +768,6 @@
     </div>
 
     <script>
-        // Variables globales
         let gameServer;
         let currentRoom = null;
         let playerName = '';
@@ -777,7 +777,7 @@
         let isAnimating = false;
         let database = null;
 
-        // 🔥 TA VRAIE CONFIGURATION FIREBASE 🔥
+
         const firebaseConfig = {
             apiKey: "AIzaSyBlF0Rv-vaLHlopMYNbs7JnLyiqi-HUnn4",
             authDomain: "blackjack-casino-royal.firebaseapp.com",
@@ -1663,11 +1663,14 @@
             if (!dealerCardsDiv) return;
             dealerCardsDiv.innerHTML = '';
             if (!room.dealerCards) return;
+            dealerCardsDiv.style.display = 'flex';
+            dealerCardsDiv.style.flexDirection = 'row';
+            dealerCardsDiv.style.gap = '0px';
             room.dealerCards.forEach((card, idx) => {
                 const cardDiv = document.createElement('div');
                 cardDiv.className = 'card ' + (card.isRed ? 'red' : 'black');
-                cardDiv.style.position = 'static';
-                cardDiv.style.marginRight = '-30px';
+                cardDiv.style.position = 'relative';
+                cardDiv.style.marginLeft = idx === 0 ? '0' : '-30px';
                 if (room.gameState === 'playing' && idx === 0) {
                     // Première carte cachée pendant le tour des joueurs
                     cardDiv.className = 'card hidden';
@@ -1698,8 +1701,25 @@
 
             if (isDealer) {
                 if (dealerControls) dealerControls.style.display = 'flex';
+                // Le bouton 'Tour croupier' ne s'affiche que si tous les joueurs ont fini
+                let allPlayersDone = true;
+                if (room.players && Array.isArray(room.players)) {
+                    for (const p of room.players) {
+                        if (p.isSplit && p.statuses) {
+                            if (p.statuses.some(s => s === 'playing')) {
+                                allPlayersDone = false;
+                                break;
+                            }
+                        } else {
+                            if (p.status === 'playing') {
+                                allPlayersDone = false;
+                                break;
+                            }
+                        }
+                    }
+                }
                 if (room.gameState === 'dealer_turn' && dealerPlayBtn) {
-                    dealerPlayBtn.style.display = 'inline-block';
+                    dealerPlayBtn.style.display = allPlayersDone ? 'inline-block' : 'none';
                 }
             } else {
                 const player = room.players.find(p => p.name === playerName);
@@ -1990,6 +2010,12 @@
 
         // Démarrer l'initialisation
         initializeGame();
+
+        async function finishGame() {
+            if (!isDealer || !currentRoom) return;
+            await gameServer.finishGame(currentRoom);
+            showNotification('🏁 Partie terminée, résultats affichés !', 'info');
+        }
     </script>
 </body>
 </html>
