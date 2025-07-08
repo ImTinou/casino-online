@@ -1,8 +1,20 @@
 // Fichier: firebase-config.js
 // Configuration Firebase centralisée pour SIO Casino
 
-// Configuration Firebase
-const firebaseConfig = {
+// Protection contre la redéclaration
+if (typeof window !== 'undefined' && typeof window.firebaseConfig === 'undefined') {
+    window.firebaseConfig = {
+        apiKey: "AIzaSyBlF0Rv-vaLHlopMYNbs7JnLyiqi-HUnn4",
+        authDomain: "blackjack-casino-royal.firebaseapp.com",
+        databaseURL: "https://blackjack-casino-royal-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "blackjack-casino-royal",
+        storageBucket: "blackjack-casino-royal.firebasestorage.app",
+        messagingSenderId: "554706185893",
+        appId: "1:554706185893:web:847eefcd131c6a929f674c",
+        measurementId: "G-8XTRFPR9VQ"
+    };
+}
+const firebaseConfig = (typeof window !== 'undefined') ? window.firebaseConfig : {
     apiKey: "AIzaSyBlF0Rv-vaLHlopMYNbs7JnLyiqi-HUnn4",
     authDomain: "blackjack-casino-royal.firebaseapp.com",
     databaseURL: "https://blackjack-casino-royal-default-rtdb.europe-west1.firebasedatabase.app",
