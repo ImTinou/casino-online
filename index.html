@@ -2284,7 +2284,16 @@
             }
         }
 
-        gameServer = new OnlineGameServer();
+        function initializeGame() {
+            gameServer = new OnlineGameServer();
+            // Tu peux ajouter ici d'autres initialisations si besoin (ex: createParticles, setupEventListeners, joinFromURL)
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeGame);
+        } else {
+            initializeGame();
+        }
     </script>
 </body>
 </html>
