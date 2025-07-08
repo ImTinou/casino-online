@@ -793,7 +793,7 @@
                     <div class="game-icon">🎯</div>
                 </div>
                 <div class="game-content">
-                    <div class="game-status status-coming-soon">Bientôt</div>
+                    <div class="game-status status-coming-soon">Disponible</div>
                     <h3 class="game-title">Plinko</h3>
                     <p class="game-description">
                         Laissez tomber la bille et regardez-la rebondir 
@@ -805,7 +805,7 @@
                         <li>Mode automatique</li>
                         <li>Graphismes 3D</li>
                     </ul>
-                    <button class="btn btn-outline" style="width: 100%;" disabled>Bientôt disponible</button>
+                    <button class="btn btn-outline" style="width: 100%;" >Jouer Maintenant</button>
                 </div>
             </div>
         </div>
@@ -853,20 +853,7 @@
     </footer>
 
     <script>
-        // Configuration Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyBlF0Rv-vaLHlopMYNbs7JnLyiqi-HUnn4",
-            authDomain: "blackjack-casino-royal.firebaseapp.com",
-            databaseURL: "https://blackjack-casino-royal-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "blackjack-casino-royal",
-            storageBucket: "blackjack-casino-royal.firebasestorage.app",
-            messagingSenderId: "554706185893",
-            appId: "1:554706185893:web:847eefcd131c6a929f674c",
-            measurementId: "G-8XTRFPR9VQ"
-        };
-
-        // Initialisation Firebase
-        firebase.initializeApp(firebaseConfig);
+        // Firebase est déjà initialisé par firebase-config.js
         const database = firebase.database();
         const auth = firebase.auth();
 

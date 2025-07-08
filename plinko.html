@@ -1,0 +1,1141 @@
+<!-- Fichier: plinko.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plinko - SIO Casino</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #00d4ff, #ff00d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-decoration: none;
+        }
+
+        .user-info {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .balance {
+            background: rgba(0, 212, 255, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: #00d4ff;
+        }
+
+        .back-button {
+            background: rgba(255, 68, 68, 0.2);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            color: #ff4444;
+            padding: 8px 16px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 68, 68, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .game-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 350px 1fr 300px;
+            gap: 2rem;
+        }
+
+        .controls-panel {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 2rem;
+            height: fit-content;
+        }
+
+        .panel-title {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            color: #00d4ff;
+            text-align: center;
+        }
+
+        .control-group {
+            margin-bottom: 2rem;
+        }
+
+        .control-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+        }
+
+        .control-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .control-input:focus {
+            outline: none;
+            border-color: #00d4ff;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+        }
+
+        .quick-amounts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .quick-amount {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: #00d4ff;
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .quick-amount:hover {
+            background: rgba(0, 212, 255, 0.2);
+            transform: scale(1.02);
+        }
+
+        .difficulty-selector {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .difficulty-btn {
+            flex: 1;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .difficulty-btn.active {
+            background: linear-gradient(45deg, #00d4ff, #0099cc);
+            border-color: #00d4ff;
+        }
+
+        .difficulty-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .rows-selector {
+            display: flex;
+            gap: 0.3rem;
+            margin-top: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .rows-btn {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+            min-width: 35px;
+            text-align: center;
+        }
+
+        .rows-btn.active {
+            background: linear-gradient(45deg, #ff00d4, #cc0099);
+            border-color: #ff00d4;
+        }
+
+        .play-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .play-btn {
+            padding: 15px;
+            background: linear-gradient(45deg, #00ff88, #00cc6a);
+            border: none;
+            border-radius: 15px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .play-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 255, 136, 0.4);
+        }
+
+        .play-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .auto-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .auto-btn {
+            flex: 1;
+            padding: 12px;
+            background: rgba(255, 170, 0, 0.1);
+            border: 1px solid rgba(255, 170, 0, 0.3);
+            border-radius: 10px;
+            color: #ffaa00;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .auto-btn:hover {
+            background: rgba(255, 170, 0, 0.2);
+        }
+
+        .auto-btn.active {
+            background: rgba(255, 170, 0, 0.3);
+            border-color: #ffaa00;
+        }
+
+        .game-board {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            min-height: 80vh;
+        }
+
+        .plinko-canvas {
+            border-radius: 15px;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.5) 100%);
+            box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .multipliers {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 800px;
+            margin-top: 1rem;
+            gap: 2px;
+        }
+
+        .multiplier {
+            flex: 1;
+            padding: 10px 5px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .multiplier.hit {
+            animation: multiplierHit 0.5s ease;
+            transform: scale(1.1);
+        }
+
+        @keyframes multiplierHit {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .multiplier.low { background: rgba(255, 68, 68, 0.2); color: #ff4444; border-color: rgba(255, 68, 68, 0.3); }
+        .multiplier.medium { background: rgba(255, 170, 0, 0.2); color: #ffaa00; border-color: rgba(255, 170, 0, 0.3); }
+        .multiplier.high { background: rgba(0, 255, 136, 0.2); color: #00ff88; border-color: rgba(0, 255, 136, 0.3); }
+        .multiplier.jackpot { background: rgba(255, 0, 212, 0.2); color: #ff00d4; border-color: rgba(255, 0, 212, 0.3); }
+
+        .stats-panel {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 1.5rem;
+            height: fit-content;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+        }
+
+        .stat-value {
+            color: #00d4ff;
+            font-weight: bold;
+        }
+
+        .recent-results {
+            margin-top: 2rem;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            margin: 0.3rem 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            font-size: 0.8rem;
+        }
+
+        .result-multiplier {
+            font-weight: bold;
+        }
+
+        .result-win { color: #00ff88; }
+        .result-lose { color: #ff4444; }
+
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a1a, #1a0a2e);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(0, 212, 255, 0.3);
+            border-top: 3px solid #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 1200px) {
+            .game-container {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .controls-panel, .stats-panel {
+                display: flex;
+                gap: 2rem;
+                overflow-x: auto;
+            }
+            
+            .control-group {
+                min-width: 200px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 1rem;
+            }
+            
+            .controls-panel {
+                flex-direction: column;
+            }
+            
+            .plinko-canvas {
+                width: 100%;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading" id="loadingScreen">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="dashboard.html" class="logo">🎯 Plinko</a>
+            <div class="user-info">
+                <div class="balance">💰 <span id="userBalance">1000</span>€</div>
+                <span id="userName">Joueur</span>
+                <a href="dashboard.html" class="back-button">← Dashboard</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Game Container -->
+    <div class="game-container">
+        <!-- Controls Panel -->
+        <div class="controls-panel">
+            <h2 class="panel-title">🎮 Contrôles</h2>
+            
+            <div class="control-group">
+                <label class="control-label">Mise</label>
+                <input type="number" id="betAmount" class="control-input" value="10" min="0.1" max="1000" step="0.1">
+                <div class="quick-amounts">
+                    <button class="quick-amount" onclick="setBetAmount(1)">1€</button>
+                    <button class="quick-amount" onclick="setBetAmount(5)">5€</button>
+                    <button class="quick-amount" onclick="setBetAmount(10)">10€</button>
+                    <button class="quick-amount" onclick="setBetAmount(25)">25€</button>
+                    <button class="quick-amount" onclick="setBetAmount(50)">50€</button>
+                    <button class="quick-amount" onclick="setBetAmount(100)">100€</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label">Difficulté</label>
+                <div class="difficulty-selector">
+                    <button class="difficulty-btn active" onclick="setDifficulty('low')">Low</button>
+                    <button class="difficulty-btn" onclick="setDifficulty('medium')">Medium</button>
+                    <button class="difficulty-btn" onclick="setDifficulty('high')">High</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label">Lignes</label>
+                <div class="rows-selector">
+                    <button class="rows-btn" onclick="setRows(8)">8</button>
+                    <button class="rows-btn" onclick="setRows(9)">9</button>
+                    <button class="rows-btn" onclick="setRows(10)">10</button>
+                    <button class="rows-btn" onclick="setRows(11)">11</button>
+                    <button class="rows-btn" onclick="setRows(12)">12</button>
+                    <button class="rows-btn active" onclick="setRows(13)">13</button>
+                    <button class="rows-btn" onclick="setRows(14)">14</button>
+                    <button class="rows-btn" onclick="setRows(15)">15</button>
+                    <button class="rows-btn" onclick="setRows(16)">16</button>
+                </div>
+            </div>
+
+            <div class="play-controls">
+                <button class="play-btn" id="playBtn" onclick="dropBall()">
+                    🎯 Lancer la bille
+                </button>
+                
+                <div class="auto-controls">
+                    <button class="auto-btn" id="autoBtn" onclick="toggleAuto()">
+                        Auto (OFF)
+                    </button>
+                    <button class="auto-btn" onclick="stopAuto()">
+                        Stop
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Board -->
+        <div class="game-board">
+            <canvas id="plinkoCanvas" class="plinko-canvas" width="800" height="600"></canvas>
+            <div class="multipliers" id="multipliers">
+                <!-- Multiplicateurs générés dynamiquement -->
+            </div>
+        </div>
+
+        <!-- Stats Panel -->
+        <div class="stats-panel">
+            <h3 class="panel-title">📊 Statistiques</h3>
+            
+            <div class="stat-item">
+                <span class="stat-label">Parties jouées</span>
+                <span class="stat-value" id="gamesPlayed">0</span>
+            </div>
+            
+            <div class="stat-item">
+                <span class="stat-label">Gains totaux</span>
+                <span class="stat-value" id="totalWinnings">0€</span>
+            </div>
+            
+            <div class="stat-item">
+                <span class="stat-label">Plus gros gain</span>
+                <span class="stat-value" id="biggestWin">0€</span>
+            </div>
+            
+            <div class="stat-item">
+                <span class="stat-label">Multiplicateur max</span>
+                <span class="stat-value" id="maxMultiplier">0x</span>
+            </div>
+
+            <div class="recent-results">
+                <h4 style="margin-bottom: 1rem; color: #00d4ff;">Résultats récents</h4>
+                <div id="recentResults">
+                    <!-- Résultats récents -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Utilisation de Firebase Manager (configuration dans firebase-config.js)
+        let auth, database;
+        let currentUser = null;
+
+        // Configuration du jeu
+        let gameConfig = {
+            rows: 13,
+            difficulty: 'low',
+            betAmount: 10,
+            autoMode: false,
+            autoCount: 0
+        };
+
+        // État du jeu
+        let gameStats = {
+            gamesPlayed: 0,
+            totalWinnings: 0,
+            biggestWin: 0,
+            maxMultiplier: 0,
+            recentResults: []
+        };
+
+        // Canvas et physique
+        let canvas, ctx;
+        let balls = [];
+        let pegs = [];
+        let multipliers = [];
+        let isGameRunning = false;
+
+        // Multiplicateurs par difficulté et nombre de lignes (identiques à Stake)
+        const multiplierSets = {
+            low: {
+                8: [5.6, 2.1, 1.1, 1, 0.5, 1, 1.1, 2.1, 5.6],
+                9: [5.6, 2, 1.6, 1, 0.7, 0.7, 1, 1.6, 2, 5.6],
+                10: [8.9, 3, 1.4, 1.1, 1, 0.5, 1, 1.1, 1.4, 3, 8.9],
+                11: [8.4, 3, 1.9, 1.3, 1, 0.7, 0.7, 1, 1.3, 1.9, 3, 8.4],
+                12: [10, 3, 1.6, 1.4, 1.1, 1, 0.5, 1, 1.1, 1.4, 1.6, 3, 10],
+                13: [8.1, 4, 3, 1.9, 1.2, 0.9, 0.7, 0.7, 0.9, 1.2, 1.9, 3, 4, 8.1],
+                14: [7.1, 4, 1.9, 1.4, 1.3, 1.1, 1, 0.5, 1, 1.1, 1.3, 1.4, 1.9, 4, 7.1],
+                15: [15, 8, 3, 2, 1.5, 1.1, 1, 0.7, 0.7, 1, 1.1, 1.5, 2, 3, 8, 15],
+                16: [16, 9, 2, 1.4, 1.4, 1.2, 1.1, 1, 0.5, 1, 1.1, 1.2, 1.4, 1.4, 2, 9, 16]
+            },
+            medium: {
+                8: [13, 3, 1.3, 0.7, 0.4, 0.7, 1.3, 3, 13],
+                9: [18, 4, 1.7, 0.9, 0.5, 0.5, 0.5, 0.9, 1.7, 4, 18],
+                10: [22, 5, 2, 1.4, 0.6, 0.4, 0.4, 0.6, 1.4, 2, 5, 22],
+                11: [24, 6, 3, 1.8, 0.7, 0.5, 0.5, 0.5, 0.7, 1.8, 3, 6, 24],
+                12: [33, 11, 4, 2, 1.1, 0.6, 0.3, 0.3, 0.6, 1.1, 2, 4, 11, 33],
+                13: [43, 13, 6, 3, 1.3, 0.7, 0.4, 0.4, 0.4, 0.7, 1.3, 3, 6, 13, 43],
+                14: [58, 15, 7, 4, 1.9, 1, 0.5, 0.2, 0.2, 0.5, 1, 1.9, 4, 7, 15, 58],
+                15: [88, 18, 11, 5, 3, 1.3, 0.5, 0.3, 0.3, 0.3, 0.5, 1.3, 3, 5, 11, 18, 88],
+                16: [110, 41, 10, 5, 3, 1.5, 1, 0.5, 0.3, 0.5, 1, 1.5, 3, 5, 10, 41, 110]
+            },
+            high: {
+                8: [29, 4, 1.5, 0.3, 0.2, 0.3, 1.5, 4, 29],
+                9: [43, 7, 2, 0.6, 0.2, 0.2, 0.2, 0.6, 2, 7, 43],
+                10: [76, 10, 3, 0.9, 0.3, 0.2, 0.2, 0.2, 0.3, 0.9, 3, 10, 76],
+                11: [120, 14, 5.2, 1.4, 0.4, 0.2, 0.2, 0.2, 0.2, 0.4, 1.4, 5.2, 14, 120],
+                12: [170, 24, 8.1, 2, 0.7, 0.2, 0.2, 0.1, 0.2, 0.2, 0.7, 2, 8.1, 24, 170],
+                13: [260, 37, 11, 4, 1, 0.2, 0.2, 0.1, 0.1, 0.2, 0.2, 1, 4, 11, 37, 260],
+                14: [420, 56, 18, 5, 1.9, 0.3, 0.2, 0.1, 0.1, 0.1, 0.2, 0.3, 1.9, 5, 18, 56, 420],
+                15: [620, 83, 27, 8, 3, 0.5, 0.2, 0.1, 0.1, 0.1, 0.1, 0.2, 0.5, 3, 8, 27, 83, 620],
+                16: [1000, 130, 26, 9, 4, 2, 0.2, 0.2, 0.1, 0.2, 0.2, 2, 4, 9, 26, 130, 1000]
+            }
+        };
+
+        // Initialisation après chargement de firebase-config.js
+        document.addEventListener('DOMContentLoaded', () => {
+            auth = firebase.auth();
+            database = firebase.database();
+            
+            // Gestion des utilisateurs
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    currentUser = user;
+                    await loadUserData();
+                    await loadGameStats();
+                    hideLoading();
+                } else {
+                    window.location.href = 'login.html?redirect=plinko.html';
+                }
+            });
+            
+            // Initialiser le jeu
+            initGame();
+        });
+
+        // Charger les données utilisateur
+        async function loadUserData() {
+            try {
+                const userSnapshot = await database.ref('users/' + currentUser.uid).once('value');
+                const userData = userSnapshot.val();
+                
+                if (userData) {
+                    document.getElementById('userName').textContent = userData.displayName || 'Joueur';
+                    document.getElementById('userBalance').textContent = userData.balance || 1000;
+                    
+                    // Mettre à jour la dernière activité
+                    await database.ref('users/' + currentUser.uid + '/lastActivity').set(firebase.database.ServerValue.TIMESTAMP);
+                }
+            } catch (error) {
+                console.error('Erreur chargement utilisateur:', error);
+            }
+        }
+
+        // Charger les statistiques de jeu
+        async function loadGameStats() {
+            try {
+                const statsSnapshot = await database.ref('gameStats/' + currentUser.uid + '/plinko').once('value');
+                const stats = statsSnapshot.val();
+                
+                if (stats) {
+                    gameStats = {
+                        gamesPlayed: stats.gamesPlayed || 0,
+                        totalWinnings: stats.totalWinnings || 0,
+                        biggestWin: stats.biggestWin || 0,
+                        maxMultiplier: stats.maxMultiplier || 0,
+                        recentResults: stats.recentResults || []
+                    };
+                }
+                
+                updateStatsDisplay();
+            } catch (error) {
+                console.error('Erreur chargement stats:', error);
+            }
+        }
+
+        // Sauvegarder les statistiques
+        async function saveGameStats() {
+            try {
+                await database.ref('gameStats/' + currentUser.uid + '/plinko').set(gameStats);
+            } catch (error) {
+                console.error('Erreur sauvegarde stats:', error);
+            }
+        }
+
+        // Initialiser le jeu
+        function initGame() {
+            canvas = document.getElementById('plinkoCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // Responsive canvas
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            setupPegs();
+            setupMultipliers();
+            startGameLoop();
+        }
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const maxWidth = Math.min(800, container.clientWidth - 40);
+            const maxHeight = Math.min(600, window.innerHeight * 0.6);
+            
+            canvas.width = maxWidth;
+            canvas.height = maxHeight;
+            
+            setupPegs();
+        }
+
+        // Configuration des chevilles
+        function setupPegs() {
+            pegs = [];
+            const rows = gameConfig.rows;
+            const pegRadius = 4;
+            const rowSpacing = canvas.height * 0.8 / rows;
+            const startY = 50;
+            
+            for (let row = 0; row < rows; row++) {
+                const pegsInRow = row + 3;
+                const totalWidth = canvas.width * 0.8;
+                const pegSpacing = totalWidth / (pegsInRow - 1);
+                const startX = (canvas.width - totalWidth) / 2;
+                
+                for (let col = 0; col < pegsInRow; col++) {
+                    pegs.push({
+                        x: startX + col * pegSpacing,
+                        y: startY + row * rowSpacing,
+                        radius: pegRadius
+                    });
+                }
+            }
+        }
+
+        // Configuration des multiplicateurs
+        function setupMultipliers() {
+            const mults = multiplierSets[gameConfig.difficulty][gameConfig.rows];
+            const multiplierContainer = document.getElementById('multipliers');
+            multiplierContainer.innerHTML = '';
+            
+            multipliers = [];
+            const slotWidth = canvas.width * 0.8 / mults.length;
+            const startX = canvas.width * 0.1;
+            
+            mults.forEach((mult, index) => {
+                // Ajouter au tableau pour la logique
+                multipliers.push({
+                    x: startX + index * slotWidth,
+                    width: slotWidth,
+                    multiplier: mult,
+                    index: index
+                });
+                
+                // Créer l'élément visuel
+                const multElement = document.createElement('div');
+                multElement.className = `multiplier ${getMultiplierClass(mult)}`;
+                multElement.textContent = mult + 'x';
+                multElement.id = `mult-${index}`;
+                multiplierContainer.appendChild(multElement);
+            });
+        }
+
+        function getMultiplierClass(mult) {
+            if (mult >= 100) return 'jackpot';
+            if (mult >= 10) return 'high';
+            if (mult >= 2) return 'medium';
+            return 'low';
+        }
+
+        // Contrôles du jeu
+        function setBetAmount(amount) {
+            document.getElementById('betAmount').value = amount;
+            gameConfig.betAmount = amount;
+        }
+
+        function setDifficulty(difficulty) {
+            gameConfig.difficulty = difficulty;
+            
+            // Mettre à jour l'UI
+            document.querySelectorAll('.difficulty-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            setupMultipliers();
+        }
+
+        function setRows(rows) {
+            gameConfig.rows = rows;
+            
+            // Mettre à jour l'UI
+            document.querySelectorAll('.rows-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            setupPegs();
+            setupMultipliers();
+        }
+
+        function toggleAuto() {
+            gameConfig.autoMode = !gameConfig.autoMode;
+            const autoBtn = document.getElementById('autoBtn');
+            
+            if (gameConfig.autoMode) {
+                autoBtn.textContent = 'Auto (ON)';
+                autoBtn.classList.add('active');
+                startAutoPlay();
+            } else {
+                autoBtn.textContent = 'Auto (OFF)';
+                autoBtn.classList.remove('active');
+            }
+        }
+
+        function stopAuto() {
+            gameConfig.autoMode = false;
+            const autoBtn = document.getElementById('autoBtn');
+            autoBtn.textContent = 'Auto (OFF)';
+            autoBtn.classList.remove('active');
+        }
+
+        function startAutoPlay() {
+            if (gameConfig.autoMode && !isGameRunning) {
+                dropBall();
+            }
+        }
+
+        // Lancer une bille
+        async function dropBall() {
+            const betAmount = parseFloat(document.getElementById('betAmount').value);
+            const userBalance = parseFloat(document.getElementById('userBalance').textContent);
+            
+            if (betAmount <= 0) {
+                alert('Montant de mise invalide');
+                return;
+            }
+            
+            if (betAmount > userBalance) {
+                alert('Solde insuffisant');
+                return;
+            }
+            
+            if (isGameRunning) return;
+            
+            isGameRunning = true;
+            document.getElementById('playBtn').disabled = true;
+            
+            // Déduire la mise du solde
+            const newBalance = userBalance - betAmount;
+            document.getElementById('userBalance').textContent = newBalance;
+            await database.ref('users/' + currentUser.uid + '/balance').set(newBalance);
+            
+            // Créer la bille
+            const ball = {
+                x: canvas.width / 2,
+                y: 20,
+                vx: (Math.random() - 0.5) * 2,
+                vy: 0,
+                radius: 6,
+                color: '#00d4ff',
+                trail: []
+            };
+            
+            balls.push(ball);
+            
+            // Simulation physique
+            animateBall(ball, betAmount);
+        }
+
+        // Animation de la bille
+        function animateBall(ball, betAmount) {
+            const gravity = 0.3;
+            const bounce = 0.7;
+            const friction = 0.99;
+            
+            function update() {
+                // Physique
+                ball.vy += gravity;
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+                
+                ball.vx *= friction;
+                
+                // Ajouter à la traînée
+                ball.trail.push({ x: ball.x, y: ball.y });
+                if (ball.trail.length > 10) {
+                    ball.trail.shift();
+                }
+                
+                // Collision avec les chevilles
+                for (let peg of pegs) {
+                    const dx = ball.x - peg.x;
+                    const dy = ball.y - peg.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < ball.radius + peg.radius) {
+                        // Rebond réaliste
+                        const angle = Math.atan2(dy, dx);
+                        const force = peg.radius + ball.radius - distance;
+                        
+                        ball.x += Math.cos(angle) * force;
+                        ball.y += Math.sin(angle) * force;
+                        
+                        ball.vx += Math.cos(angle) * force * 0.1;
+                        ball.vy += Math.sin(angle) * force * 0.1;
+                        
+                        ball.vx *= bounce;
+                        ball.vy *= bounce;
+                        
+                        // Effet sonore (simulation)
+                        createPegHitEffect(peg.x, peg.y);
+                    }
+                }
+                
+                // Collision avec les bords
+                if (ball.x < ball.radius) {
+                    ball.x = ball.radius;
+                    ball.vx *= -bounce;
+                } else if (ball.x > canvas.width - ball.radius) {
+                    ball.x = canvas.width - ball.radius;
+                    ball.vx *= -bounce;
+                }
+                
+                // Vérifier si la bille a atteint le bas
+                if (ball.y > canvas.height - 50) {
+                    const multiplierIndex = findMultiplierSlot(ball.x);
+                    const multiplier = multipliers[multiplierIndex].multiplier;
+                    const winAmount = betAmount * multiplier;
+                    
+                    finishGame(ball, multiplierIndex, multiplier, betAmount, winAmount);
+                    return;
+                }
+                
+                requestAnimationFrame(update);
+            }
+            
+            update();
+        }
+
+        // Trouver le slot de multiplicateur
+        function findMultiplierSlot(ballX) {
+            for (let i = 0; i < multipliers.length; i++) {
+                const mult = multipliers[i];
+                if (ballX >= mult.x && ballX < mult.x + mult.width) {
+                    return i;
+                }
+            }
+            return Math.floor(multipliers.length / 2); // Centre par défaut
+        }
+
+        // Terminer la partie
+        async function finishGame(ball, multiplierIndex, multiplier, betAmount, winAmount) {
+            // Animation du multiplicateur touché
+            const multElement = document.getElementById(`mult-${multiplierIndex}`);
+            multElement.classList.add('hit');
+            setTimeout(() => multElement.classList.remove('hit'), 500);
+            
+            // Mettre à jour le solde
+            const currentBalance = parseFloat(document.getElementById('userBalance').textContent);
+            const newBalance = currentBalance + winAmount;
+            document.getElementById('userBalance').textContent = newBalance;
+            await database.ref('users/' + currentUser.uid + '/balance').set(newBalance);
+            
+            // Mettre à jour les statistiques
+            gameStats.gamesPlayed++;
+            gameStats.totalWinnings += (winAmount - betAmount);
+            if (winAmount > gameStats.biggestWin) {
+                gameStats.biggestWin = winAmount;
+            }
+            if (multiplier > gameStats.maxMultiplier) {
+                gameStats.maxMultiplier = multiplier;
+            }
+            
+            // Ajouter aux résultats récents
+            gameStats.recentResults.unshift({
+                multiplier: multiplier,
+                bet: betAmount,
+                win: winAmount,
+                profit: winAmount - betAmount,
+                timestamp: Date.now()
+            });
+            
+            if (gameStats.recentResults.length > 10) {
+                gameStats.recentResults.pop();
+            }
+            
+            updateStatsDisplay();
+            await saveGameStats();
+            
+            // Sauvegarder dans l'historique
+            await database.ref('gameHistory/' + currentUser.uid).push({
+                gameType: 'plinko',
+                bet: betAmount,
+                multiplier: multiplier,
+                winnings: winAmount,
+                profit: winAmount - betAmount,
+                difficulty: gameConfig.difficulty,
+                rows: gameConfig.rows,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+            
+            // Nettoyer
+            balls = balls.filter(b => b !== ball);
+            isGameRunning = false;
+            document.getElementById('playBtn').disabled = false;
+            
+            // Continuer l'auto-play si activé
+            if (gameConfig.autoMode) {
+                setTimeout(() => {
+                    if (gameConfig.autoMode) {
+                        dropBall();
+                    }
+                }, 1000);
+            }
+        }
+
+        // Effets visuels
+        function createPegHitEffect(x, y) {
+            // Créer une particule visuelle temporaire
+            const effect = {
+                x: x,
+                y: y,
+                radius: 8,
+                alpha: 1,
+                decay: 0.05
+            };
+            
+            // Animation de l'effet (simplifié)
+            function animateEffect() {
+                effect.alpha -= effect.decay;
+                effect.radius += 0.5;
+                
+                if (effect.alpha > 0) {
+                    requestAnimationFrame(animateEffect);
+                }
+            }
+            
+            animateEffect();
+        }
+
+        // Boucle de rendu
+        function startGameLoop() {
+            function render() {
+                // Effacer le canvas
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Dessiner les chevilles
+                ctx.fillStyle = '#ffffff';
+                for (let peg of pegs) {
+                    ctx.beginPath();
+                    ctx.arc(peg.x, peg.y, peg.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // Dessiner les lignes de séparation des multiplicateurs
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                ctx.lineWidth = 1;
+                for (let i = 1; i < multipliers.length; i++) {
+                    const x = multipliers[i].x;
+                    ctx.beginPath();
+                    ctx.moveTo(x, canvas.height - 40);
+                    ctx.lineTo(x, canvas.height);
+                    ctx.stroke();
+                }
+                
+                // Dessiner les billes
+                for (let ball of balls) {
+                    // Traînée
+                    ctx.strokeStyle = 'rgba(0, 212, 255, 0.3)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    for (let i = 0; i < ball.trail.length - 1; i++) {
+                        if (i === 0) {
+                            ctx.moveTo(ball.trail[i].x, ball.trail[i].y);
+                        } else {
+                            ctx.lineTo(ball.trail[i].x, ball.trail[i].y);
+                        }
+                    }
+                    ctx.stroke();
+                    
+                    // Bille
+                    const gradient = ctx.createRadialGradient(ball.x, ball.y, 0, ball.x, ball.y, ball.radius);
+                    gradient.addColorStop(0, '#00d4ff');
+                    gradient.addColorStop(1, '#0099cc');
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Bordure
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+                
+                requestAnimationFrame(render);
+            }
+            
+            render();
+        }
+
+        // Mettre à jour l'affichage des statistiques
+        function updateStatsDisplay() {
+            document.getElementById('gamesPlayed').textContent = gameStats.gamesPlayed;
+            document.getElementById('totalWinnings').textContent = gameStats.totalWinnings.toFixed(2) + '€';
+            document.getElementById('biggestWin').textContent = gameStats.biggestWin.toFixed(2) + '€';
+            document.getElementById('maxMultiplier').textContent = gameStats.maxMultiplier + 'x';
+            
+            // Résultats récents
+            const recentContainer = document.getElementById('recentResults');
+            recentContainer.innerHTML = '';
+            
+            gameStats.recentResults.slice(0, 5).forEach(result => {
+                const resultElement = document.createElement('div');
+                resultElement.className = `result-item ${result.profit >= 0 ? 'result-win' : 'result-lose'}`;
+                resultElement.innerHTML = `
+                    <span class="result-multiplier">${result.multiplier}x</span>
+                    <span>${result.profit >= 0 ? '+' : ''}${result.profit.toFixed(2)}€</span>
+                `;
+                recentContainer.appendChild(resultElement);
+            });
+        }
+
+        function hideLoading() {
+            setTimeout(() => {
+                document.getElementById('loadingScreen').classList.add('hidden');
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

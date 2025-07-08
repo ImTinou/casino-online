@@ -1,7 +1,7 @@
 // Fichier: firebase-config.js
 // Configuration Firebase centralisée pour SIO Casino
 
-// Configuration Firebase (votre vraie configuration)
+// Configuration Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyBlF0Rv-vaLHlopMYNbs7JnLyiqi-HUnn4",
     authDomain: "blackjack-casino-royal.firebaseapp.com",
@@ -13,41 +13,29 @@ const firebaseConfig = {
     measurementId: "G-8XTRFPR9VQ"
 };
 
-// Initialisation Firebase au chargement
+// Initialisation Firebase sécurisée
 try {
-    // Initialiser Firebase si pas déjà fait
-    if (!firebase.apps.length) {
+    if (typeof firebase !== 'undefined' && !firebase.apps.length) {
         firebase.initializeApp(firebaseConfig);
         console.log('✅ Firebase initialisé avec succès');
+        
+        // Vérifier la connexion à la base de données
+        const database = firebase.database();
+        database.ref('.info/connected').on('value', (snapshot) => {
+            const connected = snapshot.val();
+            if (connected) {
+                console.log('✅ Database connectée');
+            } else {
+                console.log('❌ Database déconnectée');
+            }
+            updateConnectionStatus(connected);
+        });
+        
+    } else if (firebase.apps.length > 0) {
+        console.log('ℹ️ Firebase déjà initialisé');
     }
 } catch (error) {
     console.error('❌ Erreur initialisation Firebase:', error);
-}
-
-// Test de connexion automatique
-if (typeof window !== 'undefined') {
-    document.addEventListener('DOMContentLoaded', () => {
-        try {
-            const database = firebase.database();
-            
-            // Test de connexion avec un délai pour éviter les messages multiples
-            let connectionLogged = false;
-            database.ref('.info/connected').on('value', (snapshot) => {
-                if (snapshot.val() === true && !connectionLogged) {
-                    console.log('✅ Database connectée');
-                    connectionLogged = true;
-                    updateConnectionStatus(true);
-                } else if (!snapshot.val()) {
-                    console.log('❌ Database déconnectée');
-                    connectionLogged = false;
-                    updateConnectionStatus(false);
-                }
-            });
-            
-        } catch (error) {
-            console.error('❌ Erreur test connexion:', error);
-        }
-    });
 }
 
 // Mettre à jour le statut de connexion dans l'UI
@@ -65,25 +53,32 @@ function updateConnectionStatus(connected) {
 }
 
 // Nettoyage automatique des rooms toutes les 30 minutes
+function setupRoomCleanup() {
+    if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+        setInterval(() => {
+            try {
+                const database = firebase.database();
+                const cutoff = Date.now() - (2 * 60 * 60 * 1000); // 2 heures
+                
+                database.ref('rooms').orderByChild('lastActivity').endAt(cutoff).once('value', (snapshot) => {
+                    const oldRooms = snapshot.val();
+                    if (oldRooms) {
+                        Object.keys(oldRooms).forEach(roomId => {
+                            database.ref('rooms/' + roomId).remove();
+                        });
+                        console.log(`🧹 ${Object.keys(oldRooms).length} rooms inactives supprimées`);
+                    }
+                });
+            } catch (error) {
+                console.error('Erreur nettoyage rooms:', error);
+            }
+        }, 30 * 60 * 1000);
+    }
+}
+
+// Initialiser le nettoyage une fois que la page est chargée
 if (typeof window !== 'undefined') {
-    setInterval(() => {
-        try {
-            const database = firebase.database();
-            const cutoff = Date.now() - (2 * 60 * 60 * 1000); // 2 heures
-            
-            database.ref('rooms').orderByChild('lastActivity').endAt(cutoff).once('value', (snapshot) => {
-                const oldRooms = snapshot.val();
-                if (oldRooms) {
-                    Object.keys(oldRooms).forEach(roomId => {
-                        database.ref('rooms/' + roomId).remove();
-                    });
-                    console.log(`🧹 ${Object.keys(oldRooms).length} rooms inactives supprimées`);
-                }
-            });
-        } catch (error) {
-            console.error('Erreur nettoyage rooms:', error);
-        }
-    }, 30 * 60 * 1000);
+    window.addEventListener('load', setupRoomCleanup);
 }
 
 console.log('🎰 SIO Casino - Firebase Config chargé');
