@@ -729,8 +729,8 @@
     </div>
 
     <script>
-        // Initialisation des instances Firebase globales
         let auth, database;
+        let formData = {};
         // Gestion des erreurs d'authentification (accessible partout)
         function handleAuthError(error) {
             console.error('Erreur auth:', error);
@@ -1184,20 +1184,17 @@
         async function registerWithEmail() {
             try {
                 showLoading(true);
-                
                 // Créer le compte Firebase Auth
                 const userCredential = await auth.createUserWithEmailAndPassword(formData.email, formData.password);
                 const user = userCredential.user;
-
-                // Mettre à jour le profil
+                // Mettre à jour le profil avec le pseudo choisi
                 await user.updateProfile({
-                    displayName: `${formData.firstName} ${formData.lastName}`
+                    displayName: formData.username // Utilise le pseudo choisi
                 });
-
                 // Créer le profil utilisateur en base
                 await database.ref('users/' + user.uid).set({
                     email: formData.email,
-                    displayName: `${formData.firstName} ${formData.lastName}`,
+                    displayName: formData.username, // Utilise le pseudo choisi
                     firstName: formData.firstName,
                     lastName: formData.lastName,
                     username: formData.username,
@@ -1212,20 +1209,16 @@
                     level: 1,
                     experience: 0
                 });
-
                 // Envoyer email de vérification
                 try {
                     await user.sendEmailVerification();
                 } catch (emailError) {
                     console.warn('Email de vérification non envoyé:', emailError);
                 }
-
                 showSuccess('Compte créé avec succès ! Redirection...');
-                
                 setTimeout(() => {
-                    window.location.href = 'dashboard.html';
+                    window.location.href = 'index.html';
                 }, 2000);
-
             } catch (error) {
                 showLoading(false);
                 const errorMessage = handleAuthError(error);
