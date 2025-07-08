@@ -1771,10 +1771,6 @@
 
             if (isDealer) {
                 if (dealerControls) dealerControls.style.display = 'flex';
-                // Affichage du bouton Distribuer carte uniquement au début (état 'dealing')
-                if (room.gameState === 'dealing' && distribuerCarteTourBtn) {
-                    distribuerCarteTourBtn.style.display = 'inline-block';
-                }
                 // Le bouton 'Tour croupier' ne s'affiche que si tous les joueurs ont fini
                 let allPlayersDone = true;
                 if (room.players && Array.isArray(room.players)) {
@@ -1795,6 +1791,41 @@
                 if (room.gameState === 'dealer_turn' && dealerPlayBtn) {
                     dealerPlayBtn.style.display = allPlayersDone ? 'inline-block' : 'none';
                 }
+                // Affichage du bouton Distribuer carte joueur
+                const distribuerBtn = document.getElementById('distribuerCarteJoueurBtn');
+                if (distribuerBtn) {
+                    // Trouver le joueur actif
+                    const joueurActif = room.players.find(p => p.isActive);
+                    if (room.gameState === 'playing' && joueurActif && joueurActif.actionDemandee === 'carte') {
+                        distribuerBtn.style.display = 'inline-block';
+                    } else {
+                        distribuerBtn.style.display = 'none';
+                    }
+                }
+                // Affichage du bouton Valider le split
+                const validerSplitBtn = document.getElementById('validerSplitJoueurBtn');
+                if (validerSplitBtn) {
+                    const joueurActif = room.players.find(p => p.isActive);
+                    if (room.gameState === 'playing' && joueurActif && joueurActif.actionDemandee === 'split') {
+                        validerSplitBtn.style.display = 'inline-block';
+                    } else {
+                        validerSplitBtn.style.display = 'none';
+                    }
+                }
+                // Affichage de l'action demandée par le joueur actif
+                const infoActionDiv = document.getElementById('infoActionJoueur');
+                if (infoActionDiv) {
+                    const joueurActif = room.players.find(p => p.isActive);
+                    if (joueurActif && joueurActif.actionDemandee) {
+                        let actionText = '';
+                        if (joueurActif.actionDemandee === 'carte') actionText = 'Le joueur demande une carte';
+                        else if (joueurActif.actionDemandee === 'stand') actionText = 'Le joueur souhaite rester';
+                        else if (joueurActif.actionDemandee === 'split') actionText = 'Le joueur demande un split';
+                        infoActionDiv.textContent = `Action demandée : ${actionText}`;
+                    } else {
+                        infoActionDiv.textContent = '';
+                    }
+                }
             } else {
                 const player = room.players.find(p => p.name === playerName);
                 if (player && player.isActive && room.gameState === 'playing') {
@@ -1803,6 +1834,8 @@
                         playerControls.innerHTML = `
                             <button class="btn btn-success" onclick="hit()">⬆️ Carte</button>
                             <button class="btn btn-danger" onclick="stand()">✋ Rester</button>
+                            <button class="btn btn-warning" onclick="demanderDouble()">💰 Doubler</button>
+                            <button class="btn btn-gold" onclick="demanderSplit()">🪓 Split</button>
                         `;
                     }
                 } else {
@@ -1841,12 +1874,13 @@
                     }
                     await gameServer.dealCard(currentRoom, 'dealer');
                 }
-                // Activer le premier joueur et passer à l'état 'playing'
+                // Passer directement au tour du croupier
                 const updatedRoom = await gameServer.getRoom(currentRoom);
-                if (updatedRoom && updatedRoom.players.length > 0) {
-                    updatedRoom.players[0].isActive = true;
-                    updatedRoom.gameState = 'playing';
+                if (updatedRoom) {
+                    updatedRoom.gameState = 'dealer_turn';
                     await gameServer.updateRoom(currentRoom, updatedRoom);
+                    // Lancer le tour du croupier automatiquement
+                    gameServer.dealerPlay(currentRoom);
                 }
             }
         }
@@ -2119,6 +2153,20 @@
             });
             html += '</div>';
             allDiv.innerHTML = html;
+        }
+
+        // Désactiver les fonctions hit et stand (elles ne font plus rien)
+        async function hit() {
+            showNotification('Action désactivée : le jeu est automatique.', 'info');
+        }
+        async function stand() {
+            showNotification('Action désactivée : le jeu est automatique.', 'info');
+        }
+        async function demanderDouble() {
+            showNotification('Fonctionnalité "Double" à implémenter.', 'info');
+        }
+        async function demanderSplit() {
+            await gameServer.playerAction(currentRoom, playerName, 'demander_split');
         }
     </script>
 </body>
