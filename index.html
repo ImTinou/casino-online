@@ -1016,9 +1016,6 @@
             }
         }, 5000);
 
-        // Lancement de l'application
-        // L'initialisation se fait dans DOMContentLoaded ci-dessus
-
         // Gestion des erreurs Firebase
         database.ref('.info/connected').on('value', (snapshot) => {
             if (snapshot.val() === true) {
@@ -1028,6 +1025,9 @@
                 console.log('❌ Déconnecté de Firebase');
             }
         });
+        
+        // Initialisation de l'application au chargement du DOM
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
