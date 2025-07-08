@@ -1081,6 +1081,7 @@
                     const updatedRoom = await this.getRoom(roomCode);
                     updatedRoom.players[0].isActive = true;
                     updatedRoom.gameState = 'playing';
+                    updatedRoom.playerTurnStart = Date.now();
                     await this.updateRoom(roomCode, updatedRoom);
                 }
             }
@@ -1117,6 +1118,8 @@
                     if (room.players[nextIndex].status === 'playing') {
                         room.players[nextIndex].isActive = true;
                         room.currentPlayerIndex = nextIndex;
+                        // Ajout du timestamp de début de tour
+                        room.playerTurnStart = Date.now();
                         await this.updateRoom(roomCode, room);
                         return;
                     }
@@ -1128,6 +1131,7 @@
                 if (room.dealerCards && room.dealerCards.length > 1 && room.dealerCards[1].hidden) {
                     room.dealerCards[1].hidden = false;
                 }
+                room.playerTurnStart = null;
                 await this.updateRoom(roomCode, room);
             }
 
@@ -1606,10 +1610,21 @@
                 status.className = 'player-status';
                 // Réinitialiser les cartes
                 let cardsArea = spot.querySelector('.player-cards-area');
-                if (cardsArea) cardsArea.innerHTML = '';
+                if (!cardsArea) {
+                    cardsArea = document.createElement('div');
+                    cardsArea.className = 'player-cards-area';
+                    cardsArea.style.display = 'flex';
+                    cardsArea.style.gap = '4px';
+                    cardsArea.style.justifyContent = 'center';
+                    spot.insertBefore(cardsArea, score); // avant le score
+                }
+                cardsArea.innerHTML = '';
                 // Réinitialiser la streak
                 const streakEl = spot.querySelector('.player-streak span');
                 if (streakEl) streakEl.textContent = '0';
+                // Supprimer le timer global s'il existe
+                let timerDiv = spot.querySelector('.global-timer');
+                if (timerDiv) timerDiv.remove();
             }
             // Placer les joueurs
             room.players.forEach((player, idx) => {
@@ -1666,6 +1681,71 @@
                         cardsArea.appendChild(el);
                     });
                 }
+                // Affichage du timer global sous l'avatar du joueur actif
+                if (player.isActive && room.playerTurnStart && room.gameState === 'playing') {
+                    let timerDiv = spot.querySelector('.global-timer');
+                    if (!timerDiv) {
+                        timerDiv = document.createElement('div');
+                        timerDiv.className = 'global-timer';
+                        timerDiv.style.width = '90%';
+                        timerDiv.style.margin = '6px auto 0 auto';
+                        timerDiv.style.height = '10px';
+                        timerDiv.style.background = '#333';
+                        timerDiv.style.borderRadius = '6px';
+                        timerDiv.style.position = 'relative';
+                        spot.appendChild(timerDiv);
+                        // Texte
+                        const timerText = document.createElement('div');
+                        timerText.className = 'global-timer-text';
+                        timerText.style.position = 'absolute';
+                        timerText.style.top = '-22px';
+                        timerText.style.left = '50%';
+                        timerText.style.transform = 'translateX(-50%)';
+                        timerText.style.color = '#FFD700';
+                        timerText.style.fontWeight = 'bold';
+                        timerText.style.fontSize = '13px';
+                        timerDiv.appendChild(timerText);
+                        // Barre
+                        const timerBar = document.createElement('div');
+                        timerBar.className = 'global-timer-bar';
+                        timerBar.style.height = '100%';
+                        timerBar.style.background = 'linear-gradient(90deg,#FFD700,#ff4b2b)';
+                        timerBar.style.borderRadius = '6px';
+                        timerBar.style.transition = 'width 0.3s';
+                        timerDiv.appendChild(timerBar);
+                    }
+                    // Animation du timer (calcul du temps restant)
+                    const timerText = timerDiv.querySelector('.global-timer-text');
+                    const timerBar = timerDiv.querySelector('.global-timer-bar');
+                    const now = Date.now();
+                    const elapsed = Math.floor((now - room.playerTurnStart) / 1000);
+                    const timeLeft = Math.max(0, 15 - elapsed);
+                    timerText.textContent = `⏳ ${timeLeft}s pour jouer...`;
+                    timerBar.style.width = (100 * timeLeft / 15) + '%';
+                    timerDiv.style.display = 'block';
+                    // Rafraîchir le timer toutes les 300ms
+                    if (!timerDiv._interval) {
+                        timerDiv._interval = setInterval(() => {
+                            updatePlayerPositions(room);
+                        }, 300);
+                    }
+                    // Si le temps est écoulé, masquer le timer
+                    if (timeLeft <= 0) {
+                        timerDiv.style.display = 'none';
+                        clearInterval(timerDiv._interval);
+                        timerDiv._interval = null;
+                    }
+                } else {
+                    // Supprimer le timer si ce n'est pas le joueur actif
+                    let timerDiv = spot.querySelector('.global-timer');
+                    if (timerDiv) {
+                        timerDiv.style.display = 'none';
+                        if (timerDiv._interval) {
+                            clearInterval(timerDiv._interval);
+                            timerDiv._interval = null;
+                        }
+                    }
+                }
             });
         }
 
@@ -1673,6 +1753,11 @@
             const container = document.getElementById('dealerCards');
             if (!container) return;
             container.innerHTML = '';
+            // Affichage du nom du croupier
+            const dealerNameEl = document.querySelector('.dealer-position .player-name');
+            if (dealerNameEl) {
+                dealerNameEl.textContent = room.dealer || 'Croupier';
+            }
             if (room.dealerCards && room.dealerCards.length > 0) {
                 // Si phase playing et la 2ème carte est cachée, n'afficher que la première
                 if (room.gameState === 'playing' && room.dealerCards.length > 1 && room.dealerCards[1].hidden) {
@@ -1687,7 +1772,7 @@
                     hidden.innerHTML = `<div class='card-value'>?</div><div class='card-suit'>🂠</div>`;
                     container.appendChild(hidden);
                 } else {
-                    // Afficher toutes les cartes
+                    // Afficher toutes les cartes (même si certaines sont cachées)
                     room.dealerCards.forEach(card => {
                         const el = document.createElement('div');
                         if (card.hidden) {
@@ -2138,6 +2223,68 @@
                 if (room.chat.length > 50) room.chat = room.chat.slice(-50);
                 await gameServer.updateRoom(currentRoom, room);
             };
+        }
+
+        // === TIMER DE TOUR DE JEU ===
+        let playerTurnTimer = null;
+        let playerTurnTimeLeft = 15;
+
+        function startPlayerTurnTimer() {
+            clearPlayerTurnTimer();
+            playerTurnTimeLeft = 15;
+            updatePlayerTimerUI(playerTurnTimeLeft);
+            playerTurnTimer = setInterval(async () => {
+                playerTurnTimeLeft--;
+                updatePlayerTimerUI(playerTurnTimeLeft);
+                if (playerTurnTimeLeft <= 0) {
+                    clearPlayerTurnTimer();
+                    await stand(); // Action auto
+                }
+            }, 1000);
+        }
+
+        function clearPlayerTurnTimer() {
+            if (playerTurnTimer) {
+                clearInterval(playerTurnTimer);
+                playerTurnTimer = null;
+            }
+            updatePlayerTimerUI(null);
+        }
+
+        function updatePlayerTimerUI(timeLeft) {
+            let timerBar = document.getElementById('playerTimerBar');
+            let timerText = document.getElementById('playerTimerText');
+            if (!timerBar) {
+                const controls = document.getElementById('playerControls');
+                if (controls) {
+                    timerBar = document.createElement('div');
+                    timerBar.id = 'playerTimerBar';
+                    timerBar.style.height = '8px';
+                    timerBar.style.background = 'linear-gradient(90deg,#FFD700,#ff4b2b)';
+                    timerBar.style.borderRadius = '6px';
+                    timerBar.style.margin = '8px 0 0 0';
+                    timerBar.style.transition = 'width 0.3s';
+                    controls.appendChild(timerBar);
+                    timerText = document.createElement('div');
+                    timerText.id = 'playerTimerText';
+                    timerText.style.textAlign = 'center';
+                    timerText.style.color = '#FFD700';
+                    timerText.style.fontWeight = 'bold';
+                    timerText.style.marginTop = '2px';
+                    controls.appendChild(timerText);
+                }
+            }
+            if (timerBar && timerText) {
+                if (typeof timeLeft === 'number' && timeLeft > 0) {
+                    timerBar.style.width = (100 * timeLeft / 15) + '%';
+                    timerBar.style.display = 'block';
+                    timerText.textContent = `⏳ ${timeLeft}s pour jouer...`;
+                    timerText.style.display = 'block';
+                } else {
+                    timerBar.style.display = 'none';
+                    timerText.style.display = 'none';
+                }
+            }
         }
     </script>
 </body>
