@@ -8,6 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
     <style>
         * {
             margin: 0;
@@ -728,26 +729,29 @@
     </div>
 
     <script>
-        // Configuration Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyBlF0Rv-vaLHlopMYNbs7JnLyiqi-HUnn4",
-            authDomain: "blackjack-casino-royal.firebaseapp.com",
-            databaseURL: "https://blackjack-casino-royal-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "blackjack-casino-royal",
-            storageBucket: "blackjack-casino-royal.firebasestorage.app",
-            messagingSenderId: "554706185893",
-            appId: "1:554706185893:web:847eefcd131c6a929f674c",
-            measurementId: "G-8XTRFPR9VQ"
-        };
-
-        // Initialisation Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const database = firebase.database();
+        // Utilisation de Firebase Manager
+        let auth, database;
 
         // État du formulaire
         let currentStep = 1;
         const formData = {};
+
+        // Initialisation après chargement de firebase-config.js
+        document.addEventListener('DOMContentLoaded', () => {
+            const firebaseManager = window.FirebaseManager.initializeFirebase();
+            auth = firebaseManager.auth;
+            database = firebaseManager.database;
+            
+            // Vérifier si l'utilisateur est déjà connecté
+            auth.onAuthStateChanged((user) => {
+                if (user && !window.location.search.includes('force=true')) {
+                    window.location.href = 'dashboard.html';
+                }
+            });
+            
+            // Initialiser l'interface
+            init();
+        });
 
         // Éléments DOM
         const elements = {
@@ -768,7 +772,73 @@
             successMessage: document.getElementById('successMessage')
         };
 
-        // Animation de fond
+        // Gestion des erreurs Firebase
+        function showFirebaseError(message) {
+            const firebaseError = document.getElementById('firebaseError');
+            const firebaseErrorText = document.getElementById('firebaseErrorText');
+            firebaseErrorText.textContent = message;
+            firebaseError.style.display = 'block';
+        }
+
+        function hideFirebaseError() {
+            const firebaseError = document.getElementById('firebaseError');
+            firebaseError.style.display = 'none';
+        }
+
+        function showFirebaseHelp() {
+            const helpText = `
+🔧 GUIDE DE CONFIGURATION FIREBASE
+
+1. 📝 Créer un projet Firebase :
+   • Aller sur https://console.firebase.google.com
+   • Cliquer "Ajouter un projet"
+   • Suivre les étapes
+
+2. 🔐 Activer Authentication :
+   • Dans votre projet > Authentication
+   • Onglet "Sign-in method"
+   • Activer "Email/Password"
+
+3. 💾 Créer Realtime Database :
+   • Dans votre projet > Realtime Database
+   • Cliquer "Créer une base de données"
+   • Choisir "Démarrer en mode test"
+
+4. ⚙️ Récupérer la configuration :
+   • Project Settings > Your apps
+   • Cliquer sur l'icône Web </> 
+   • Copier l'objet firebaseConfig
+
+5. 🔄 Remplacer dans le code :
+   • Remplacer la configuration dans tous les fichiers HTML
+   • Vérifier que les URLs correspondent
+
+❓ Besoin d'aide ? Voir le README.md pour plus de détails !
+            `;
+            
+            alert(helpText);
+        }
+
+        // Mode démo (sans Firebase)
+        function enableDemoMode() {
+            if (confirm('Activer le mode démo sans Firebase ?\n\nVos données ne seront pas sauvegardées.')) {
+                // Simulation d'inscription réussie
+                const guestUser = {
+                    uid: 'demo_' + Date.now(),
+                    displayName: 'Joueur Démo',
+                    email: 'demo@example.com',
+                    balance: 1000,
+                    isDemo: true
+                };
+                
+                sessionStorage.setItem('demoUser', JSON.stringify(guestUser));
+                showSuccess('Mode démo activé ! Redirection...');
+                
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1500);
+            }
+        }
         function createFloatingIcons() {
             const icons = ['🎰', '🃏', '💎', '🎲', '🎯', '💰', '⭐', '🔥'];
             const container = document.getElementById('backgroundAnimation');
@@ -1177,9 +1247,13 @@
                 });
 
                 // Envoyer email de vérification
-                await user.sendEmailVerification();
+                try {
+                    await user.sendEmailVerification();
+                } catch (emailError) {
+                    console.warn('Email de vérification non envoyé:', emailError);
+                }
 
-                showSuccess('Compte créé avec succès ! Vérifiez votre email. Redirection...');
+                showSuccess('Compte créé avec succès ! Redirection...');
                 
                 setTimeout(() => {
                     window.location.href = 'dashboard.html';
@@ -1187,7 +1261,8 @@
 
             } catch (error) {
                 showLoading(false);
-                handleAuthError(error);
+                const errorMessage = window.FirebaseManager.handleAuthError(error);
+                showError(errorMessage);
             }
         }
 
@@ -1234,7 +1309,8 @@
 
             } catch (error) {
                 showLoading(false);
-                handleAuthError(error);
+                const errorMessage = window.FirebaseManager.handleAuthError(error);
+                showError(errorMessage);
             }
         }
 
@@ -1267,32 +1343,6 @@
                 showLoading(false);
                 handleAuthError(error);
             }
-        }
-
-        // Gestion des erreurs
-        function handleAuthError(error) {
-            console.error('Erreur auth:', error);
-            
-            let message = 'Une erreur est survenue';
-            
-            switch (error.code) {
-                case 'auth/email-already-in-use':
-                    message = 'Cet email est déjà utilisé';
-                    break;
-                case 'auth/invalid-email':
-                    message = 'Format d\'email invalide';
-                    break;
-                case 'auth/weak-password':
-                    message = 'Mot de passe trop faible';
-                    break;
-                case 'auth/network-request-failed':
-                    message = 'Erreur de connexion';
-                    break;
-                default:
-                    message = error.message;
-            }
-            
-            showError(message);
         }
 
         // Gestion du formulaire

@@ -8,6 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
     <style>
         * {
             margin: 0;
@@ -514,15 +515,6 @@
                 </button>
             </div>
 
-            <!-- Guest Login -->
-            <div class="guest-login">
-                <h4>Mode Démo</h4>
-                <p>Testez le casino sans créer de compte</p>
-                <button class="btn btn-secondary" onclick="loginAsGuest()">
-                    Jouer en tant qu'invité
-                </button>
-            </div>
-
             <!-- Register Link -->
             <div class="register-link">
                 <p>Pas encore de compte ? <a href="register.html">Créer un compte</a></p>
@@ -531,22 +523,26 @@
     </div>
 
     <script>
-        // Configuration Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyBlF0Rv-vaLHlopMYNbs7JnLyiqi-HUnn4",
-            authDomain: "blackjack-casino-royal.firebaseapp.com",
-            databaseURL: "https://blackjack-casino-royal-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "blackjack-casino-royal",
-            storageBucket: "blackjack-casino-royal.firebasestorage.app",
-            messagingSenderId: "554706185893",
-            appId: "1:554706185893:web:847eefcd131c6a929f674c",
-            measurementId: "G-8XTRFPR9VQ"
-        };
+        // Utilisation de Firebase Manager
+        let auth, database;
 
-        // Initialisation Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const database = firebase.database();
+        // Initialisation après chargement de firebase-config.js
+        document.addEventListener('DOMContentLoaded', () => {
+            const firebaseManager = window.FirebaseManager.initializeFirebase();
+            auth = firebaseManager.auth;
+            database = firebaseManager.database;
+            
+            // Vérifier si l'utilisateur est déjà connecté
+            auth.onAuthStateChanged((user) => {
+                if (user && !window.location.search.includes('force=true')) {
+                    // Utilisateur déjà connecté, rediriger
+                    window.location.href = 'dashboard.html';
+                }
+            });
+            
+            // Initialiser l'interface
+            init();
+        });
 
         // Éléments DOM
         const elements = {
@@ -668,7 +664,8 @@
 
             } catch (error) {
                 showLoading(false);
-                handleAuthError(error);
+                const errorMessage = window.FirebaseManager.handleAuthError(error);
+                showError(errorMessage);
             }
         }
 
@@ -712,7 +709,8 @@
 
             } catch (error) {
                 showLoading(false);
-                handleAuthError(error);
+                const errorMessage = window.FirebaseManager.handleAuthError(error);
+                showError(errorMessage);
             }
         }
 
@@ -779,40 +777,9 @@
                 await auth.sendPasswordResetEmail(email);
                 showSuccess('Email de réinitialisation envoyé ! Vérifiez votre boîte mail.');
             } catch (error) {
-                handleAuthError(error);
+                const errorMessage = window.FirebaseManager.handleAuthError(error);
+                showError(errorMessage);
             }
-        }
-
-        // Gestion des erreurs d'authentification
-        function handleAuthError(error) {
-            console.error('Erreur auth:', error);
-            
-            let message = 'Une erreur est survenue';
-            
-            switch (error.code) {
-                case 'auth/user-not-found':
-                    message = 'Aucun compte trouvé avec cet email';
-                    break;
-                case 'auth/wrong-password':
-                    message = 'Mot de passe incorrect';
-                    break;
-                case 'auth/invalid-email':
-                    message = 'Format d\'email invalide';
-                    break;
-                case 'auth/too-many-requests':
-                    message = 'Trop de tentatives. Réessayez plus tard.';
-                    break;
-                case 'auth/network-request-failed':
-                    message = 'Erreur de connexion. Vérifiez votre internet.';
-                    break;
-                case 'auth/popup-closed-by-user':
-                    message = 'Connexion annulée';
-                    break;
-                default:
-                    message = error.message || 'Erreur de connexion';
-            }
-            
-            showError(message);
         }
 
         // Gestion du formulaire

@@ -8,6 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
     <style>
         * {
             margin: 0;
@@ -845,27 +846,35 @@
     </main>
 
     <script>
-        // Configuration Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyBlF0Rv-vaLHlopMYNbs7JnLyiqi-HUnn4",
-            authDomain: "blackjack-casino-royal.firebaseapp.com",
-            databaseURL: "https://blackjack-casino-royal-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "blackjack-casino-royal",
-            storageBucket: "blackjack-casino-royal.firebasestorage.app",
-            messagingSenderId: "554706185893",
-            appId: "1:554706185893:web:847eefcd131c6a929f674c",
-            measurementId: "G-8XTRFPR9VQ"
-        };
-
-        // Initialisation Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const database = firebase.database();
+        // Utilisation de Firebase Manager
+        let auth, database;
 
         // État de l'application
         let currentUser = null;
         let userData = null;
         let userStats = null;
+
+        // Initialisation après chargement de firebase-config.js
+        document.addEventListener('DOMContentLoaded', () => {
+            const firebaseManager = window.FirebaseManager.initializeFirebase();
+            auth = firebaseManager.auth;
+            database = firebaseManager.database;
+            
+            // Gestion de l'authentification
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    currentUser = user;
+                    await loadUserData();
+                    await loadUserStats();
+                    await loadRecentGames();
+                    updateUI();
+                    hideLoading();
+                } else {
+                    // Utilisateur non connecté, rediriger vers login
+                    window.location.href = 'login.html';
+                }
+            });
+        });
 
         // Éléments DOM
         const elements = {
@@ -910,22 +919,11 @@
                 
                 if (!userData) {
                     // Créer un profil par défaut si inexistant
-                    userData = {
-                        displayName: currentUser.displayName || 'Joueur',
-                        email: currentUser.email,
-                        balance: 1000,
-                        level: 1,
-                        experience: 0,
-                        gamesPlayed: 0,
-                        totalWinnings: 0,
-                        createdAt: firebase.database.ServerValue.TIMESTAMP,
-                        lastLogin: firebase.database.ServerValue.TIMESTAMP
-                    };
-                    
+                    userData = window.FirebaseManager.UserUtils.createDefaultProfile(currentUser);
                     await database.ref('users/' + currentUser.uid).set(userData);
                 } else {
                     // Mettre à jour la dernière connexion
-                    await database.ref('users/' + currentUser.uid + '/lastLogin').set(firebase.database.ServerValue.TIMESTAMP);
+                    await window.FirebaseManager.UserUtils.updateLastLogin(currentUser.uid);
                 }
 
                 // Écouter les changements en temps réel
@@ -1139,11 +1137,10 @@
             if (amount && !isNaN(amount) && amount > 0) {
                 // Simulation de dépôt
                 const newBalance = userData.balance + parseInt(amount);
-                database.ref('users/' + currentUser.uid + '/balance').set(newBalance);
+                window.FirebaseManager.UserUtils.updateBalance(currentUser.uid, newBalance);
                 
                 // Ajouter de l'expérience
-                const newXP = (userData.experience || 0) + Math.floor(amount / 10);
-                database.ref('users/' + currentUser.uid + '/experience').set(newXP);
+                window.FirebaseManager.UserUtils.addExperience(currentUser.uid, Math.floor(amount / 10));
                 
                 alert(`Dépôt de ${amount}€ effectué avec succès !`);
             }
@@ -1157,7 +1154,7 @@
                 if (parseInt(amount) <= maxAmount) {
                     // Simulation de retrait
                     const newBalance = userData.balance - parseInt(amount);
-                    database.ref('users/' + currentUser.uid + '/balance').set(newBalance);
+                    window.FirebaseManager.UserUtils.updateBalance(currentUser.uid, newBalance);
                     alert(`Retrait de ${amount}€ effectué avec succès !`);
                 } else {
                     alert('Solde insuffisant !');

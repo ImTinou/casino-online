@@ -8,6 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="firebase-config.js"></script>
     <style>
         * {
             margin: 0;
@@ -838,31 +839,36 @@
             }, 1000);
         }
 
-        // Gestion des utilisateurs
-        function initUser() {
-            // Simulation d'utilisateur pour la démo
-            const savedUser = sessionStorage.getItem('currentUser');
-            if (savedUser) {
-                currentUser = JSON.parse(savedUser);
+        // Gestion des utilisateurs - Firebase uniquement
+        let currentUser = null;
+        
+        // Vérifier l'état d'authentification
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUser = user;
+                
+                // Charger les données utilisateur depuis Firebase
+                try {
+                    const userSnapshot = await database.ref('users/' + user.uid).once('value');
+                    const userData = userSnapshot.val();
+                    
+                    if (userData) {
+                        elements.userName.textContent = userData.displayName || 'Joueur';
+                        elements.userBalance.textContent = userData.balance || 1000;
+                        
+                        // Mettre à jour la dernière activité
+                        await database.ref('users/' + user.uid + '/lastActivity').set(firebase.database.ServerValue.TIMESTAMP);
+                    }
+                } catch (error) {
+                    console.error('Erreur chargement utilisateur:', error);
+                }
+                
+                hideLoading();
             } else {
-                currentUser = {
-                    id: 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-                    name: 'Joueur_' + Math.floor(Math.random() * 1000),
-                    balance: 1000
-                };
-                sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                // Rediriger vers la page de connexion
+                window.location.href = 'login.html?redirect=blackjack.html';
             }
-            
-            elements.userName.textContent = currentUser.name;
-            elements.userBalance.textContent = currentUser.balance;
-
-            // Sauvegarder dans Firebase
-            database.ref('users/' + currentUser.id).set({
-                name: currentUser.name,
-                balance: currentUser.balance,
-                lastActive: firebase.database.ServerValue.TIMESTAMP
-            });
-        }
+        });
 
         // Générer code room
         function generateRoomCode() {
@@ -871,7 +877,7 @@
 
         // Créer une room
         async function createRoom() {
-            if (!isConnected) {
+            if (!isConnected || !currentUser) {
                 alert('Connexion Firebase requise !');
                 return;
             }
@@ -879,14 +885,18 @@
             const roomCode = generateRoomCode();
             currentRoom = roomCode;
 
+            // Récupérer les données utilisateur actuelles
+            const userSnapshot = await database.ref('users/' + currentUser.uid).once('value');
+            const userData = userSnapshot.val();
+
             const roomData = {
                 id: roomCode,
-                host: currentUser.id,
+                host: currentUser.uid,
                 players: {
-                    [currentUser.id]: {
-                        id: currentUser.id,
-                        name: currentUser.name,
-                        balance: currentUser.balance,
+                    [currentUser.uid]: {
+                        id: currentUser.uid,
+                        name: userData.displayName || 'Joueur',
+                        balance: userData.balance || 1000,
                         cards: [],
                         bet: 0,
                         score: 0,
@@ -916,7 +926,7 @@
 
         // Rejoindre une room
         async function joinRoom(roomCode = null) {
-            if (!isConnected) {
+            if (!isConnected || !currentUser) {
                 alert('Connexion Firebase requise !');
                 return;
             }
@@ -943,18 +953,22 @@
                     return;
                 }
 
-                if (roomData.players && roomData.players[currentUser.id]) {
+                if (roomData.players && roomData.players[currentUser.uid]) {
                     alert('Vous êtes déjà dans cette room');
                     return;
                 }
 
                 currentRoom = code;
 
+                // Récupérer les données utilisateur actuelles
+                const userSnapshot = await database.ref('users/' + currentUser.uid).once('value');
+                const userData = userSnapshot.val();
+
                 // Ajouter le joueur à la room
-                await database.ref('rooms/' + code + '/players/' + currentUser.id).set({
-                    id: currentUser.id,
-                    name: currentUser.name,
-                    balance: currentUser.balance,
+                await database.ref('rooms/' + code + '/players/' + currentUser.uid).set({
+                    id: currentUser.uid,
+                    name: userData.displayName || 'Joueur',
+                    balance: userData.balance || 1000,
                     cards: [],
                     bet: 0,
                     score: 0,
@@ -1151,7 +1165,7 @@
             if (!currentRoom) return;
             
             try {
-                const deck = createDeck();
+                const deck = window.FirebaseManager.GameUtils.createDeck();
                 const updates = {
                     'gamePhase': 'betting',
                     'deck': deck,
@@ -1300,8 +1314,6 @@
 
         // Initialisation
         function init() {
-            initUser();
-            
             // Vérifier si on rejoint une room via URL
             const urlParams = new URLSearchParams(window.location.search);
             const roomId = urlParams.get('roomid');
@@ -1310,7 +1322,7 @@
                 elements.roomInput.value = roomId;
             }
             
-            // Nettoyage périodique
+            // Nettoyage périodique des rooms inactives
             setInterval(cleanupOldRooms, 10 * 60 * 1000); // Toutes les 10 minutes
         }
 
@@ -1321,8 +1333,8 @@
             }
         });
 
-        // Lancement
-        document.addEventListener('DOMContentLoaded', init);
+        // Lancement de l'application
+        // L'initialisation se fait dans DOMContentLoaded ci-dessus
     </script>
 </body>
 </html>
