@@ -729,8 +729,32 @@
     </div>
 
     <script>
-        // Utilisation de Firebase Manager (configuration dans firebase-config.js)
-        let auth, database;
+        // Initialisation des instances Firebase globales
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // Gestion des erreurs d'authentification (accessible partout)
+        function handleAuthError(error) {
+            console.error('Erreur auth:', error);
+            let message = 'Une erreur est survenue';
+            switch (error.code) {
+                case 'auth/email-already-in-use':
+                    message = 'Cet email est déjà utilisé';
+                    break;
+                case 'auth/invalid-email':
+                    message = 'Format d\'email invalide';
+                    break;
+                case 'auth/weak-password':
+                    message = 'Mot de passe trop faible';
+                    break;
+                case 'auth/network-request-failed':
+                    message = 'Erreur de connexion';
+                    break;
+                default:
+                    message = error.message;
+            }
+            return message;
+        }
 
         // État du formulaire
         let currentStep = 1;
@@ -738,10 +762,6 @@
 
         // Initialisation après chargement de firebase-config.js
         document.addEventListener('DOMContentLoaded', () => {
-            // Firebase est déjà initialisé par firebase-config.js
-            auth = firebase.auth();
-            database = firebase.database();
-            
             // Vérifier si l'utilisateur est déjà connecté
             auth.onAuthStateChanged((user) => {
                 if (user && !window.location.search.includes('force=true')) {
@@ -771,53 +791,6 @@
             errorMessage: document.getElementById('errorMessage'),
             successMessage: document.getElementById('successMessage')
         };
-
-        // Gestion des erreurs Firebase
-        function showFirebaseError(message) {
-            const firebaseError = document.getElementById('firebaseError');
-            const firebaseErrorText = document.getElementById('firebaseErrorText');
-            firebaseErrorText.textContent = message;
-            firebaseError.style.display = 'block';
-        }
-
-        function hideFirebaseError() {
-            const firebaseError = document.getElementById('firebaseError');
-            firebaseError.style.display = 'none';
-        }
-
-        function showFirebaseHelp() {
-            const helpText = `
-🔧 GUIDE DE CONFIGURATION FIREBASE
-
-1. 📝 Créer un projet Firebase :
-   • Aller sur https://console.firebase.google.com
-   • Cliquer "Ajouter un projet"
-   • Suivre les étapes
-
-2. 🔐 Activer Authentication :
-   • Dans votre projet > Authentication
-   • Onglet "Sign-in method"
-   • Activer "Email/Password"
-
-3. 💾 Créer Realtime Database :
-   • Dans votre projet > Realtime Database
-   • Cliquer "Créer une base de données"
-   • Choisir "Démarrer en mode test"
-
-4. ⚙️ Récupérer la configuration :
-   • Project Settings > Your apps
-   • Cliquer sur l'icône Web </> 
-   • Copier l'objet firebaseConfig
-
-5. 🔄 Remplacer dans le code :
-   • Remplacer la configuration dans tous les fichiers HTML
-   • Vérifier que les URLs correspondent
-
-❓ Besoin d'aide ? Voir le README.md pour plus de détails !
-            `;
-            
-            alert(helpText);
-        }
 
         // Mode démo (sans Firebase)
         function enableDemoMode() {
@@ -1258,32 +1231,6 @@
                 setTimeout(() => {
                     window.location.href = 'dashboard.html';
                 }, 2000);
-
-        // Gestion des erreurs d'authentification
-        function handleAuthError(error) {
-            console.error('Erreur auth:', error);
-            
-            let message = 'Une erreur est survenue';
-            
-            switch (error.code) {
-                case 'auth/email-already-in-use':
-                    message = 'Cet email est déjà utilisé';
-                    break;
-                case 'auth/invalid-email':
-                    message = 'Format d\'email invalide';
-                    break;
-                case 'auth/weak-password':
-                    message = 'Mot de passe trop faible';
-                    break;
-                case 'auth/network-request-failed':
-                    message = 'Erreur de connexion';
-                    break;
-                default:
-                    message = error.message;
-            }
-            
-            return message;
-        }
 
             } catch (error) {
                 showLoading(false);
