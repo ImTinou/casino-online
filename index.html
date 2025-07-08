@@ -1,12 +1,13 @@
+<!-- Fichier: index.html -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎰 SIO Casino Royal 🎰</title>
-    <!-- Firebase SDK v9 Compat pour ton projet -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.2/firebase-app-compat.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.2/firebase-database-compat.min.js"></script>
+    <title>SIO Casino - Le Casino en Ligne Nouvelle Génération</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <style>
         * {
             margin: 0;
@@ -16,18 +17,15 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: 
-                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3), transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3), transparent 50%),
-                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2), transparent 50%),
-                linear-gradient(135deg, #0c0c0c, #1a1a2e, #16213e);
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 25%, #16213e 50%, #0f1f1a 75%, #0a0a1a 100%);
             color: white;
             min-height: 100vh;
             overflow-x: hidden;
+            position: relative;
         }
 
-        /* Particules d'ambiance */
-        .particles {
+        /* Animations de fond */
+        .background-animation {
             position: fixed;
             top: 0;
             left: 0;
@@ -37,441 +35,125 @@
             z-index: 1;
         }
 
-        .particle {
+        .floating-icon {
             position: absolute;
-            width: 2px;
-            height: 2px;
-            background: rgba(255, 215, 0, 0.5);
-            border-radius: 50%;
-            animation: float 6s infinite linear;
+            font-size: 2rem;
+            opacity: 0.1;
+            animation: float 15s infinite linear;
+            color: #00d4ff;
         }
 
         @keyframes float {
-            0% { transform: translateY(100vh) translateX(0px); opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { transform: translateY(-10px) translateX(100px); opacity: 0; }
+            0% { transform: translateY(100vh) rotate(0deg); }
+            100% { transform: translateY(-100px) rotate(360deg); }
         }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-            position: relative;
-            z-index: 10;
+        .floating-icon:nth-child(odd) {
+            color: #ff00d4;
+            animation-duration: 20s;
         }
 
-        /* ========== LOBBY STYLES ========== */
-        .lobby {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            text-align: center;
+        .floating-icon:nth-child(3n) {
+            color: #00ff88;
+            animation-duration: 18s;
         }
 
-        .casino-logo {
-            font-size: 4em;
-            margin-bottom: 20px;
-            background: linear-gradient(45deg, #FFD700, #FFA500, #FF6B6B, #4ECDC4);
-            background-size: 400% 400%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: logoShine 4s ease infinite;
-            text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
-            font-weight: bold;
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+            transition: all 0.3s ease;
         }
 
-        @keyframes logoShine {
-            0%, 100% { background-position: 0% 50%; transform: scale(1); }
-            25% { background-position: 100% 50%; }
-            50% { background-position: 50% 100%; transform: scale(1.05); }
-            75% { background-position: 100% 0%; }
-        }
-
-        .lobby-card {
+        .header.scrolled {
             background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(20px);
-            border-radius: 25px;
-            padding: 50px;
-            margin: 20px;
-            border: 2px solid rgba(255, 215, 0, 0.3);
-            box-shadow: 
-                0 0 50px rgba(255, 215, 0, 0.2),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            transform: perspective(1000px) rotateX(2deg);
-            transition: all 0.3s ease;
         }
 
-        .lobby-card:hover {
-            transform: perspective(1000px) rotateX(0deg) translateY(-10px);
-            box-shadow: 
-                0 20px 60px rgba(255, 215, 0, 0.3),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2);
-        }
-
-        /* ========== GAME INTERFACE ========== */
-        .game-interface {
-            display: none;
-            min-height: 100vh;
-        }
-
-        .casino-table {
-            width: 95%;
-            max-width: 1200px;
-            height: 600px;
-            margin: 50px auto;
-            background: 
-                radial-gradient(ellipse at center, #1B5E20, #2E7D32, #1B5E20),
-                linear-gradient(45deg, #0D4F11 0%, #1B5E20 25%, #2E7D32 50%, #1B5E20 75%, #0D4F11 100%);
-            border-radius: 50% 50% 45% 45%;
-            border: 8px solid #8D6E63;
-            box-shadow: 
-                0 0 50px rgba(0, 0, 0, 0.8),
-                inset 0 0 100px rgba(0, 0, 0, 0.3),
-                0 0 100px rgba(255, 215, 0, 0.1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .table-felt {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 90%;
-            height: 85%;
-            background: 
-                repeating-linear-gradient(
-                    45deg,
-                    transparent,
-                    transparent 2px,
-                    rgba(255, 255, 255, 0.02) 2px,
-                    rgba(255, 255, 255, 0.02) 4px
-                );
-            border-radius: inherit;
-        }
-
-        /* ========== POSITIONS SUR LA TABLE ========== */
-        .dealer-position {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            text-align: center;
-            z-index: 20;
-        }
-
-        .dealer-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #FFD700, #FFA500);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2em;
-            margin: 0 auto 15px;
-            border: 4px solid #8D6E63;
-            box-shadow: 
-                0 0 30px rgba(255, 215, 0, 0.5),
-                inset 0 0 20px rgba(0, 0, 0, 0.2);
-            animation: dealerGlow 3s ease-in-out infinite;
-        }
-
-        @keyframes dealerGlow {
-            0%, 100% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.5), inset 0 0 20px rgba(0, 0, 0, 0.2); }
-            50% { box-shadow: 0 0 50px rgba(255, 215, 0, 0.8), inset 0 0 20px rgba(0, 0, 0, 0.2); }
-        }
-
-        .deck-position {
-            position: absolute;
-            top: 50%;
-            left: 30px;
-            transform: translateY(-50%);
-            z-index: 15;
-        }
-
-        .deck-stack {
-            width: 60px;
-            height: 90px;
-            position: relative;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .deck-stack:hover {
-            transform: scale(1.1);
-        }
-
-        .deck-card {
-            position: absolute;
-            width: 60px;
-            height: 90px;
-            background: linear-gradient(135deg, #1a237e, #3949ab);
-            border-radius: 8px;
-            border: 2px solid #FFD700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #FFD700;
-            font-size: 20px;
-            font-weight: bold;
-        }
-
-        .deck-card:nth-child(1) { transform: rotate(-2deg) translate(2px, 2px); }
-        .deck-card:nth-child(2) { transform: rotate(-1deg) translate(1px, 1px); }
-        .deck-card:nth-child(3) { transform: rotate(0deg); }
-        .deck-card:nth-child(4) { transform: rotate(1deg) translate(-1px, -1px); }
-        .deck-card:nth-child(5) { transform: rotate(2deg) translate(-2px, -2px); }
-
-        /* Positions des joueurs autour de la table */
-        .player-positions {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-        }
-
-        .player-spot {
-            position: absolute;
-            width: 150px;
-            height: 180px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            z-index: 20;
-        }
-
-        .player-spot.spot-1 { bottom: 20px; left: 15%; }
-        .player-spot.spot-2 { bottom: 20px; left: 32%; }
-        .player-spot.spot-3 { bottom: 20px; left: 50%; transform: translateX(-50%); }
-        .player-spot.spot-4 { bottom: 20px; right: 32%; }
-        .player-spot.spot-5 { bottom: 20px; right: 15%; }
-
-        .player-avatar {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.4em;
-            font-weight: bold;
-            border: 3px solid transparent;
-            transition: all 0.3s ease;
-            margin-bottom: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        .player-spot.active .player-avatar {
-            border-color: #00ff88;
-            box-shadow: 
-                0 0 30px rgba(0, 255, 136, 0.6),
-                0 5px 15px rgba(0, 0, 0, 0.3);
-            animation: activePlayer 2s ease-in-out infinite;
-        }
-
-        @keyframes activePlayer {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-
-        .player-name {
-            font-size: 14px;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 5px;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-        }
-
-        .player-score {
-            font-size: 18px;
-            font-weight: bold;
-            background: rgba(0, 0, 0, 0.6);
-            padding: 5px 12px;
-            border-radius: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            margin-bottom: 5px;
-        }
-
-        .player-status {
-            font-size: 12px;
-            padding: 3px 8px;
-            border-radius: 10px;
-            text-align: center;
-        }
-
-        .player-status.win { background: rgba(0, 255, 0, 0.3); }
-        .player-status.lose { background: rgba(255, 0, 0, 0.3); }
-        .player-status.tie { background: rgba(255, 255, 0, 0.3); }
-
-        /* ========== CARTES ET ANIMATIONS ========== */
-        .card {
-            position: absolute;
-            width: 60px;
-            height: 90px;
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            padding: 8px 6px;
-            font-weight: bold;
-            font-size: 12px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
-            cursor: pointer;
-            transform-style: preserve-3d;
-            transition: all 0.3s ease;
-            z-index: 10;
-        }
-
-        .card:hover {
-            transform: translateY(-5px) scale(1.05);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
-        }
-
-        .card.red {
-            background: linear-gradient(135deg, #ffffff, #f8f8f8);
-            color: #d32f2f;
-            border: 2px solid #ffcdd2;
-        }
-
-        .card.black {
-            background: linear-gradient(135deg, #ffffff, #f8f8f8);
-            color: #1a1a1a;
-            border: 2px solid #e0e0e0;
-        }
-
-        .card.hidden {
-            background: linear-gradient(135deg, #1a237e, #3949ab);
-            color: #FFD700;
-            font-size: 18px;
-            border: 2px solid #FFD700;
-        }
-
-        .card-value {
-            font-size: 14px;
-            font-weight: bold;
-        }
-
-        .card-suit {
-            font-size: 16px;
-        }
-
-        /* Animation de distribution des cartes */
-        @keyframes dealCard {
-            0% {
-                transform: translateX(0) translateY(0) rotate(0deg) scale(0.8);
-                opacity: 0;
-            }
-            20% {
-                opacity: 1;
-                transform: scale(0.9) rotate(180deg);
-            }
-            80% {
-                transform: scale(1) rotate(340deg);
-            }
-            100% {
-                transform: translateX(var(--target-x)) translateY(var(--target-y)) rotate(360deg) scale(1);
-                opacity: 1;
-            }
-        }
-
-        .card.dealing {
-            animation: dealCard 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-        }
-
-        /* Animation de retournement */
-        @keyframes flipCard {
-            0% { transform: rotateY(0deg); }
-            50% { transform: rotateY(90deg); }
-            100% { transform: rotateY(0deg); }
-        }
-
-        .card.flipping {
-            animation: flipCard 0.6s ease-in-out;
-        }
-
-        /* ========== INTERFACE DE CONTRÔLE ========== */
-        .game-header {
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(15px);
-            padding: 20px 30px;
-            border-radius: 20px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(255, 215, 0, 0.3);
+            padding: 1rem 2rem;
         }
 
-        .room-info {
+        .logo {
             display: flex;
             align-items: center;
-            gap: 30px;
-        }
-
-        .room-code-display {
-            font-family: 'Courier New', monospace;
-            font-size: 24px;
+            gap: 0.5rem;
+            font-size: 2rem;
             font-weight: bold;
-            letter-spacing: 4px;
-            background: linear-gradient(135deg, #FFD700, #FFA500);
+            background: linear-gradient(45deg, #00d4ff, #ff00d4, #00ff88);
+            background-size: 300% 300%;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            padding: 10px 20px;
-            border: 2px dashed rgba(255, 215, 0, 0.5);
-            border-radius: 10px;
+            background-clip: text;
+            animation: gradient-shift 3s ease-in-out infinite;
         }
 
-        .connection-status {
+        @keyframes gradient-shift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .nav-menu {
             display: flex;
+            gap: 2rem;
+            list-style: none;
             align-items: center;
-            gap: 10px;
-            padding: 10px 15px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
         }
 
-        .status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            padding: 0.5rem 0;
         }
 
-        .status-dot.connected { background: #00ff88; }
-        .status-dot.waiting { background: #ffaa00; }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.7; transform: scale(1.2); }
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(45deg, #00d4ff, #ff00d4);
+            transition: width 0.3s ease;
         }
 
-        /* ========== BOUTONS ET CONTRÔLES ========== */
-        .game-controls {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
+        .nav-link:hover::before {
+            width: 100%;
+        }
+
+        .nav-link:hover {
+            color: #00d4ff;
+            transform: translateY(-2px);
+        }
+
+        .auth-buttons {
             display: flex;
-            gap: 15px;
-            z-index: 50;
+            gap: 1rem;
         }
 
         .btn {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
+            padding: 10px 20px;
             border: none;
-            padding: 15px 30px;
             border-radius: 25px;
+            font-weight: bold;
             cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
             transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
             position: relative;
             overflow: hidden;
         }
@@ -479,305 +161,698 @@
         .btn::before {
             content: '';
             position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            transition: width 0.3s, height 0.3s;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
         }
 
         .btn:hover::before {
-            width: 300px;
-            height: 300px;
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #00d4ff, #0099cc);
+            color: white;
+            border: 1px solid rgba(0, 212, 255, 0.5);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: #00d4ff;
+            border: 2px solid #00d4ff;
         }
 
         .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 212, 255, 0.3);
         }
 
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+            background: radial-gradient(ellipse at center, rgba(0, 212, 255, 0.1) 0%, transparent 70%);
         }
 
-        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); }
-        .btn-success { background: linear-gradient(135deg, #11998e, #38ef7d); }
-        .btn-danger { background: linear-gradient(135deg, #ff416c, #ff4b2b); }
-        .btn-warning { background: linear-gradient(135deg, #f093fb, #f5576c); }
-        .btn-gold { background: linear-gradient(135deg, #FFD700, #FFA500); color: #000; }
-
-        /* ========== INPUTS ========== */
-        .input-group {
-            margin: 20px 0;
-            text-align: left;
+        .hero-content {
+            max-width: 1000px;
+            padding: 0 2rem;
         }
 
-        .input-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #FFD700;
+        .hero h1 {
+            font-size: clamp(3rem, 8vw, 6rem);
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #00d4ff, #ff00d4, #00ff88, #ffaa00);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: rainbow 4s ease-in-out infinite;
+            text-shadow: 0 0 50px rgba(0, 212, 255, 0.5);
         }
 
-        .input-group input {
-            width: 100%;
-            padding: 15px 20px;
-            border: 2px solid rgba(255, 215, 0, 0.3);
-            border-radius: 15px;
-            background: rgba(0, 0, 0, 0.6);
-            color: white;
-            font-size: 16px;
+        @keyframes rainbow {
+            0%, 100% { background-position: 0% 50%; }
+            25% { background-position: 100% 50%; }
+            50% { background-position: 100% 100%; }
+            75% { background-position: 0% 100%; }
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1.2rem, 3vw, 2rem);
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .hero-description {
+            font-size: 1.2rem;
+            margin-bottom: 3rem;
+            opacity: 0.8;
+            line-height: 1.6;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-hero {
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-glow {
+            background: linear-gradient(45deg, #00d4ff, #0099cc);
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 30px rgba(0, 212, 255, 0.5); }
+            50% { box-shadow: 0 0 50px rgba(0, 212, 255, 0.8); }
+        }
+
+        /* Stats Section */
+        .stats-section {
+            padding: 4rem 2rem;
+            background: rgba(0, 0, 0, 0.3);
             backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 2;
+        }
+
+        .stats-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
             transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
 
-        .input-group input:focus {
-            outline: none;
-            border-color: #FFD700;
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
-        }
-
-        .input-group input::placeholder {
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        /* ========== NOTIFICATIONS ========== */
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 20px 25px;
-            border-radius: 15px;
-            color: white;
-            font-weight: bold;
-            z-index: 1000;
-            transform: translateX(400px);
-            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(15px);
-        }
-
-        .notification.show {
-            transform: translateX(0);
-        }
-
-        .notification.success { background: linear-gradient(135deg, #11998e, #38ef7d); }
-        .notification.error { background: linear-gradient(135deg, #ff416c, #ff4b2b); }
-        .notification.info { background: linear-gradient(135deg, #667eea, #764ba2); }
-
-        /* ========== RESPONSIVE ========== */
-        @media (max-width: 768px) {
-            .casino-table {
-                width: 98%;
-                height: 450px;
-                margin: 20px auto;
-            }
-            
-            .player-spot {
-                width: 100px;
-                height: 140px;
-            }
-            
-            .player-avatar {
-                width: 45px;
-                height: 45px;
-                font-size: 1.1em;
-            }
-            
-            .card {
-                width: 45px;
-                height: 65px;
-                font-size: 10px;
-            }
-            
-            .dealer-avatar {
-                width: 60px;
-                height: 60px;
-                font-size: 1.5em;
-            }
-            
-            .game-controls {
-                bottom: 10px;
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .casino-logo {
-                font-size: 2.5em;
-            }
-            
-            .lobby-card {
-                padding: 30px 20px;
-                margin: 10px;
-            }
-        }
-
-        /* ========== LOADING ========== */
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: #FFD700;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Effets de brillance sur la table */
-        .table-shine {
+        .stat-card::before {
+            content: '';
             position: absolute;
             top: 0;
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-            animation: tableShine 8s infinite;
+            background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.1), transparent);
+            transition: left 1s;
         }
 
-        @keyframes tableShine {
-            0% { left: -100%; }
-            50% { left: 100%; }
-            100% { left: 100%; }
+        .stat-card:hover::before {
+            left: 100%;
         }
 
-        /* Animation sparkle */
-        @keyframes sparkle {
-            0% { transform: scale(0) rotate(0deg); opacity: 1; }
-            50% { transform: scale(2) rotate(180deg); opacity: 0.8; }
-            100% { transform: scale(0) rotate(360deg); opacity: 0; }
+        .stat-card:hover {
+            transform: translateY(-10px);
+            border-color: rgba(0, 212, 255, 0.5);
+            box-shadow: 0 20px 40px rgba(0, 212, 255, 0.2);
+        }
+
+        .stat-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #00d4ff;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #00ff88;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 1.1rem;
+            opacity: 0.8;
+        }
+
+        /* Games Section */
+        .games-section {
+            padding: 6rem 2rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 3rem;
+            margin-bottom: 3rem;
+            background: linear-gradient(45deg, #00d4ff, #ff00d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .games-grid {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+        }
+
+        .game-card {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s ease;
+            position: relative;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+        }
+
+        .game-card:hover {
+            transform: translateY(-15px) scale(1.02);
+            border-color: rgba(0, 212, 255, 0.5);
+            box-shadow: 0 25px 50px rgba(0, 212, 255, 0.3);
+        }
+
+        .game-image {
+            height: 200px;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-image::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent, rgba(0, 212, 255, 0.1), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.8s;
+        }
+
+        .game-card:hover .game-image::before {
+            transform: translateX(100%);
+        }
+
+        .game-icon {
+            font-size: 4rem;
+            color: #00d4ff;
+            z-index: 1;
+            position: relative;
+        }
+
+        .game-content {
+            padding: 2rem;
+        }
+
+        .game-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: #00d4ff;
+        }
+
+        .game-description {
+            opacity: 0.8;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .game-features {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+
+        .game-features li {
+            padding: 0.3rem 0;
+            color: #00ff88;
+        }
+
+        .game-features li::before {
+            content: '✓ ';
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .game-status {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .status-available {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .status-coming-soon {
+            background: rgba(255, 170, 0, 0.2);
+            color: #ffaa00;
+            border: 1px solid rgba(255, 170, 0, 0.3);
+        }
+
+        /* Footer */
+        .footer {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 3rem 2rem 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 2;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .footer-section h3 {
+            color: #00d4ff;
+            margin-bottom: 1rem;
+        }
+
+        .footer-section a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            display: block;
+            padding: 0.3rem 0;
+            transition: color 0.3s ease;
+        }
+
+        .footer-section a:hover {
+            color: #00d4ff;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0.7;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-menu {
+                display: none;
+            }
+            
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn-hero {
+                width: 250px;
+            }
+            
+            .games-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a1a, #1a0a2e);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(0, 212, 255, 0.3);
+            border-top: 3px solid #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* User Panel */
+        .user-panel {
+            position: fixed;
+            top: 80px;
+            right: 2rem;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 1rem;
+            border-radius: 15px;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            backdrop-filter: blur(10px);
+            display: none;
+            z-index: 999;
+        }
+
+        .user-panel.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .balance-display {
+            color: #00ff88;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
         }
     </style>
 </head>
 <body>
-    <!-- Particules d'ambiance -->
-    <div class="particles" id="particles"></div>
-
-    <!-- Lobby Screen -->
-    <div id="lobby" class="lobby">
-        <div class="casino-logo">🎰 CASINO ROYAL 🎰</div>
-        <div class="lobby-card">
-            <h2>🃏 Table de Blackjack Exclusive</h2>
-            <p style="margin: 20px 0; opacity: 0.9;">Rejoignez la plus prestigieuse table de blackjack en ligne. Maximum 5 joueurs par partie.</p>
-            
-            <div class="input-group">
-                <label for="playerName">👤 Votre nom de joueur :</label>
-                <input type="text" id="playerName" placeholder="Entrez votre nom..." maxlength="12">
-            </div>
-
-            <div style="display: flex; gap: 20px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
-                <button class="btn btn-gold" onclick="createRoom()">
-                    🎯 Ouvrir une table (Croupier)
-                </button>
-                <button class="btn btn-primary" onclick="showJoinRoom()">
-                    🎲 Rejoindre une table
-                </button>
-            </div>
-        </div>
-
-        <div id="joinRoomCard" class="lobby-card" style="display: none;">
-            <h3>🎫 Rejoindre une table</h3>
-            <div class="input-group">
-                <label for="roomCode">Code de la table :</label>
-                <input type="text" id="roomCode" placeholder="Code à 6 lettres..." maxlength="6" style="text-transform: uppercase;">
-            </div>
-            <button class="btn btn-success" onclick="joinRoom()">Entrer à la table</button>
-            <button class="btn" onclick="hideJoinRoom()">Annuler</button>
-        </div>
+    <!-- Loading Screen -->
+    <div class="loading" id="loading">
+        <div class="loading-spinner"></div>
     </div>
 
-    <!-- Game Interface -->
-    <div id="gameInterface" class="game-interface">
-        <div class="container">
-            <div class="game-header">
-                <div class="room-info">
-                    <div class="connection-status">
-                        <div class="status-dot connected" id="connectionDot"></div>
-                        <span id="connectionStatus">Connecté</span>
-                    </div>
-                    <div class="room-code-display" id="gameRoomCode">ABC123</div>
-                    <div style="color: #FFD700;">
-                        <span id="playerCount">1</span>/5 joueurs
-                    </div>
+    <!-- Background Animation -->
+    <div class="background-animation" id="backgroundAnimation"></div>
+
+    <!-- Header -->
+    <header class="header" id="header">
+        <nav class="nav-container">
+            <div class="logo">
+                🎰 SIO Casino
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#home" class="nav-link">Accueil</a></li>
+                <li><a href="#games" class="nav-link">Jeux</a></li>
+                <li><a href="#tournaments" class="nav-link">Tournois</a></li>
+                <li><a href="#promotions" class="nav-link">Promotions</a></li>
+                <li><a href="#support" class="nav-link">Support</a></li>
+            </ul>
+            <div class="auth-buttons">
+                <div id="authButtons">
+                    <button class="btn btn-outline" onclick="showAuth('login')">Connexion</button>
+                    <button class="btn btn-primary" onclick="showAuth('register')">S'inscrire</button>
                 </div>
-                <div>
-                    <button class="btn btn-danger" onclick="leaveGame()">🚪 Quitter</button>
+                <div id="userInfo" style="display: none;">
+                    <span id="userBalance" class="balance-display">1000€</span>
+                    <button class="btn btn-outline" onclick="logout()">Déconnexion</button>
                 </div>
             </div>
+        </nav>
+    </header>
 
-            <!-- Table de Casino -->
-            <div class="casino-table">
-                <div class="table-felt"></div>
-                <div class="table-shine"></div>
-                
-                <!-- Position du croupier -->
-                <div class="dealer-position">
-                    <div class="dealer-avatar">🎩</div>
-                    <div class="player-name">Croupier</div>
-                    <div class="player-score" id="dealerScore">--</div>
-                    <div id="dealerCards" class="cards-area"></div>
-                </div>
-
-                <!-- Paquet de cartes -->
-                <div class="deck-position">
-                    <div class="deck-stack" id="deckStack">
-                        <div class="deck-card">🂠</div>
-                        <div class="deck-card">🂠</div>
-                        <div class="deck-card">🂠</div>
-                        <div class="deck-card">🂠</div>
-                        <div class="deck-card">🂠</div>
-                    </div>
-                </div>
-
-
-                <div class="player-positions" id="playerPositions">
-
-                </div>
-            </div>
-
-            <!-- Contrôles de jeu -->
-            <div class="game-controls">
-                <div id="dealerControls" style="display: none;">
-                    <button class="btn btn-gold" onclick="startNewHand()">🎴 Nouvelle main</button>
-                    <button class="btn btn-primary" onclick="distribuerCarteTour()" id="distribuerCarteTourBtn" style="margin-left:10px;">🃏 Distribuer carte</button>
-                    <button class="btn btn-danger" onclick="finishGame()" id="finishGameBtn" style="margin-left:10px;">🏁 Finir la partie</button>
-                </div>
-                
-                <div id="playerControls" style="display: none;">
-                    <div style="color:#FFD700; font-weight:bold;">En attente du croupier...</div>
-                </div>
-                
-                <div id="waitingControls" style="display: none;">
-                    <div style="text-align: center; color: #FFD700;">
-                        <div class="loading"></div>
-                        <p style="margin-top: 10px;">En attente...</p>
-                    </div>
-                </div>
-            </div>
-            <!-- Zone cartes de tous les joueurs -->
-            <div id="allPlayersCardsArea" style="margin:30px auto 0 auto; max-width:900px; text-align:center;"></div>
-        </div>
+    <!-- User Panel -->
+    <div class="user-panel" id="userPanel">
+        <div class="balance-display" id="userPanelBalance">Balance: 1000€</div>
+        <button class="btn btn-primary" style="width: 100%; margin-bottom: 0.5rem;">Dépôt</button>
+        <button class="btn btn-outline" style="width: 100%;">Retrait</button>
     </div>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="hero-content">
+            <h1>SIO CASINO</h1>
+            <p class="hero-subtitle">L'Expérience Casino Nouvelle Génération</p>
+            <p class="hero-description">
+                Découvrez l'avenir du jeu en ligne avec des graphismes époustouflants, 
+                des parties multijoueurs en temps réel et des gains crypto instantanés.
+            </p>
+            <div class="hero-buttons">
+                <button class="btn btn-hero btn-glow" onclick="startPlaying()">
+                    🚀 Commencer à Jouer
+                </button>
+                <button class="btn btn-hero btn-outline" onclick="scrollToGames()">
+                    🎮 Découvrir les Jeux
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-number" id="playersOnline">247</div>
+                <div class="stat-label">Joueurs en ligne</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">💰</div>
+                <div class="stat-number">€2.4M</div>
+                <div class="stat-label">Gains distribués</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🎯</div>
+                <div class="stat-number">98.7%</div>
+                <div class="stat-label">Taux de retour</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⚡</div>
+                <div class="stat-number">< 1s</div>
+                <div class="stat-label">Retraits instantanés</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Games Section -->
+    <section class="games-section" id="games">
+        <h2 class="section-title">🎮 Nos Jeux</h2>
+        <div class="games-grid">
+            <div class="game-card" onclick="playGame('blackjack')">
+                <div class="game-image">
+                    <div class="game-icon">🃏</div>
+                </div>
+                <div class="game-content">
+                    <div class="game-status status-available">Disponible</div>
+                    <h3 class="game-title">Blackjack Multijoueur</h3>
+                    <p class="game-description">
+                        Affrontez le croupier avec jusqu'à 5 joueurs simultanément. 
+                        Stratégie, chance et adrénaline garanties !
+                    </p>
+                    <ul class="game-features">
+                        <li>Parties en temps réel</li>
+                        <li>Jusqu'à 5 joueurs</li>
+                        <li>Système de rooms privées</li>
+                        <li>Interface moderne</li>
+                    </ul>
+                    <button class="btn btn-primary" style="width: 100%;">Jouer Maintenant</button>
+                </div>
+            </div>
+
+            <div class="game-card">
+                <div class="game-image">
+                    <div class="game-icon">🎰</div>
+                </div>
+                <div class="game-content">
+                    <div class="game-status status-coming-soon">Bientôt</div>
+                    <h3 class="game-title">Machines à Sous</h3>
+                    <p class="game-description">
+                        Des slots modernes avec des jackpots progressifs 
+                        et des animations 3D époustouflantes.
+                    </p>
+                    <ul class="game-features">
+                        <li>Jackpots progressifs</li>
+                        <li>Animations 3D</li>
+                        <li>Bonus multiples</li>
+                        <li>Thèmes variés</li>
+                    </ul>
+                    <button class="btn btn-outline" style="width: 100%;" disabled>Bientôt disponible</button>
+                </div>
+            </div>
+
+            <div class="game-card">
+                <div class="game-image">
+                    <div class="game-icon">🎲</div>
+                </div>
+                <div class="game-content">
+                    <div class="game-status status-coming-soon">Bientôt</div>
+                    <h3 class="game-title">Roulette Live</h3>
+                    <p class="game-description">
+                        Roulette européenne en direct avec croupiers réels 
+                        et diffusion HD 24h/24.
+                    </p>
+                    <ul class="game-features">
+                        <li>Croupiers en direct</li>
+                        <li>Diffusion HD</li>
+                        <li>Chat en temps réel</li>
+                        <li>Statistiques avancées</li>
+                    </ul>
+                    <button class="btn btn-outline" style="width: 100%;" disabled>Bientôt disponible</button>
+                </div>
+            </div>
+
+            <div class="game-card">
+                <div class="game-image">
+                    <div class="game-icon">🂡</div>
+                </div>
+                <div class="game-content">
+                    <div class="game-status status-coming-soon">Bientôt</div>
+                    <h3 class="game-title">Poker Texas Hold'em</h3>
+                    <p class="game-description">
+                        Tournois de poker multijoueurs avec des buy-ins 
+                        pour tous les niveaux.
+                    </p>
+                    <ul class="game-features">
+                        <li>Tournois quotidiens</li>
+                        <li>Cash games</li>
+                        <li>Classements</li>
+                        <li>Replay des mains</li>
+                    </ul>
+                    <button class="btn btn-outline" style="width: 100%;" disabled>Bientôt disponible</button>
+                </div>
+            </div>
+
+            <div class="game-card">
+                <div class="game-image">
+                    <div class="game-icon">💎</div>
+                </div>
+                <div class="game-content">
+                    <div class="game-status status-coming-soon">Bientôt</div>
+                    <h3 class="game-title">Crash</h3>
+                    <p class="game-description">
+                        Le jeu de crypto le plus addictif ! Misez et encaissez 
+                        avant que le multiplicateur crash.
+                    </p>
+                    <ul class="game-features">
+                        <li>Multiplicateurs jusqu'à 1000x</li>
+                        <li>Auto cash-out</li>
+                        <li>Historique détaillé</li>
+                        <li>Mode rapide</li>
+                    </ul>
+                    <button class="btn btn-outline" style="width: 100%;" disabled>Bientôt disponible</button>
+                </div>
+            </div>
+
+            <div class="game-card">
+                <div class="game-image">
+                    <div class="game-icon">🎯</div>
+                </div>
+                <div class="game-content">
+                    <div class="game-status status-coming-soon">Bientôt</div>
+                    <h3 class="game-title">Plinko</h3>
+                    <p class="game-description">
+                        Laissez tomber la bille et regardez-la rebondir 
+                        vers la fortune dans ce jeu hypnotisant.
+                    </p>
+                    <ul class="game-features">
+                        <li>Physique réaliste</li>
+                        <li>Multiplicateurs variables</li>
+                        <li>Mode automatique</li>
+                        <li>Graphismes 3D</li>
+                    </ul>
+                    <button class="btn btn-outline" style="width: 100%;" disabled>Bientôt disponible</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>SIO Casino</h3>
+                <p>L'expérience casino nouvelle génération avec la technologie blockchain.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Jeux</h3>
+                <a href="blackjack.html">Blackjack</a>
+                <a href="#" onclick="alert('Bientôt disponible!')">Machines à Sous</a>
+                <a href="#" onclick="alert('Bientôt disponible!')">Roulette</a>
+                <a href="#" onclick="alert('Bientôt disponible!')">Poker</a>
+            </div>
+            <div class="footer-section">
+                <h3>Compte</h3>
+                <a href="login.html">Connexion</a>
+                <a href="register.html">Inscription</a>
+                <a href="dashboard.html">Dashboard</a>
+                <a href="#" onclick="alert('Bientôt disponible!')">Profil</a>
+            </div>
+            <div class="footer-section">
+                <h3>Support</h3>
+                <a href="#" onclick="alert('Bientôt disponible!')">Centre d'aide</a>
+                <a href="#" onclick="alert('Bientôt disponible!')">Chat en direct</a>
+                <a href="#" onclick="alert('Bientôt disponible!')">Contactez-nous</a>
+                <a href="#" onclick="alert('Bientôt disponible!')">FAQ</a>
+            </div>
+            <div class="footer-section">
+                <h3>Légal</h3>
+                <a href="#">Conditions d'utilisation</a>
+                <a href="#">Politique de confidentialité</a>
+                <a href="#">Jeu responsable</a>
+                <a href="#">Licences</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 SIO Casino. Tous droits réservés. | Jeu responsable +18 ans</p>
+        </div>
+    </footer>
 
     <script>
-        let gameServer;
-        let currentRoom = null;
-        let playerName = '';
-        let isDealer = false;
-        let gameUpdateInterval = null;
-        let animationQueue = [];
-        let isAnimating = false;
-        let database = null;
-
-
+        // Configuration Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyBlF0Rv-vaLHlopMYNbs7JnLyiqi-HUnn4",
             authDomain: "blackjack-casino-royal.firebaseapp.com",
@@ -785,1372 +860,188 @@
             projectId: "blackjack-casino-royal",
             storageBucket: "blackjack-casino-royal.firebasestorage.app",
             messagingSenderId: "554706185893",
-            appId: "1:554706185893:web:847eefcd131c6a929f674c"
+            appId: "1:554706185893:web:847eefcd131c6a929f674c",
+            measurementId: "G-8XTRFPR9VQ"
         };
 
-        // Système de backend intelligent (Firebase + localStorage)
-        class OnlineGameServer {
-            constructor() {
-                this.useLocalStorage = true; // Mode localStorage par défaut pour Claude.ai
-                this.initFirebase();
-            }
-            async initFirebase() {
-                // Détecter l'environnement Claude.ai
-                const isClaudeArtifact = window.location.hostname.includes('claudeusercontent.com') || 
-                                        window.location.hostname.includes('claude.ai');
+        // Initialisation Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+
+        // État de l'application
+        let currentUser = null;
+        let userBalance = 1000;
+
+        // Animation de fond
+        function createFloatingIcons() {
+            const icons = ['🎰', '🃏', '💎', '🎲', '🎯', '💰', '⭐', '🔥'];
+            const container = document.getElementById('backgroundAnimation');
+            
+            setInterval(() => {
+                const icon = document.createElement('div');
+                icon.className = 'floating-icon';
+                icon.textContent = icons[Math.floor(Math.random() * icons.length)];
+                icon.style.left = Math.random() * 100 + '%';
+                icon.style.animationDelay = Math.random() * 2 + 's';
                 
-                if (isClaudeArtifact) {
-                    console.log("🎮 Mode DEMO activé (localStorage)");
-                    console.log("ℹ️ Pour le multijoueur en ligne, hébergez ce code sur votre serveur");
-                    this.useLocalStorage = true;
-                    database = null;
-                    return;
-                }
-
-                try {
-                    // Utiliser Firebase seulement sur ton propre hébergement
-                    firebase.initializeApp(firebaseConfig);
-                    database = firebase.database();
-                    console.log("🔥 Firebase connecté avec succès!");
-                    this.useLocalStorage = false;
-                    
-                } catch (error) {
-                    console.log("🔄 Fallback vers localStorage");
-                    this.useLocalStorage = true;
-                    database = null;
-                }
-            }
-
-            generateRoomCode() {
-                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-                let code = '';
-                for (let i = 0; i < 6; i++) {
-                    code += chars.charAt(Math.floor(Math.random() * chars.length));
-                }
-                return code;
-            }
-
-            async createRoom(dealerName) {
-                const code = this.generateRoomCode();
-                const room = {
-                    code: code,
-                    dealer: dealerName,
-                    players: [],
-                    gameState: 'waiting',
-                    deck: this.createDeck(),
-                    dealerCards: [],
-                    dealerScore: 0,
-                    currentPlayerIndex: 0,
-                    created: Date.now(),
-                    lastUpdate: Date.now()
-                };
-                
-                try {
-                    if (database) {
-                        await database.ref(`rooms/${code}`).set(room);
-                        console.log(`✅ Room ${code} créée dans Firebase`);
-                    } else {
-                        localStorage.setItem(`blackjack_room_${code}`, JSON.stringify(room));
-                        console.log(`✅ Room ${code} créée dans localStorage`);
-                    }
-                    
-                    window.history.pushState({}, '', `?roomid=${code}`);
-                    return code;
-                } catch (error) {
-                    console.error("❌ Erreur création room:", error);
-                    return null;
-                }
-            }
-
-            async joinRoom(code, playerName) {
-                try {
-                    let room;
-                    
-                    if (database) {
-                        const snapshot = await database.ref(`rooms/${code}`).once('value');
-                        room = snapshot.val();
-                        console.log(`🔍 Room ${code} trouvée dans Firebase:`, room ? 'Oui' : 'Non');
-                    } else {
-                        room = JSON.parse(localStorage.getItem(`blackjack_room_${code}`) || 'null');
-                        console.log(`🔍 Room ${code} trouvée dans localStorage:`, room ? 'Oui' : 'Non');
-                    }
-                    
-                    if (!room) {
-                        console.log(`❌ Room ${code} n'existe pas`);
-                        return false;
-                    }
-                    
-                    if (!Array.isArray(room.players)) {
-                        room.players = [];
-                    }
-                    if (room.players.find(p => p.name === playerName)) {
-                        console.log(`❌ Nom ${playerName} déjà pris`);
-                        return false;
-                    }
-                    
-                    if (room.players.length >= 5) {
-                        console.log(`❌ Room ${code} pleine`);
-                        return false;
-                    }
-
-                    room.players.push({
-                        name: playerName,
-                        cards: [],
-                        score: 0,
-                        status: 'waiting',
-                        isActive: false,
-                        position: room.players.length + 1,
-                        joinedAt: Date.now(),
-                        actionDemandee: null, // Ajout du champ pour la demande d'action
-                        streak: 0 // Streak de victoires
-                    });
-
-                    room.lastUpdate = Date.now();
-                    
-                    if (database) {
-                        await database.ref(`rooms/${code}`).set(room);
-                        console.log(`✅ ${playerName} a rejoint la room ${code} (Firebase)`);
-                    } else {
-                        localStorage.setItem(`blackjack_room_${code}`, JSON.stringify(room));
-                        console.log(`✅ ${playerName} a rejoint la room ${code} (localStorage)`);
-                    }
-                    
-                    window.history.pushState({}, '', `?roomid=${code}`);
-                    return true;
-                } catch (error) {
-                    console.error("❌ Erreur rejoindre room:", error);
-                    return false;
-                }
-            }
-
-            createDeck() {
-                const suits = ['♠', '♥', '♦', '♣'];
-                const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-                const deck = [];
-
-                for (let suit of suits) {
-                    for (let value of values) {
-                        deck.push({
-                            suit: suit,
-                            value: value,
-                            numValue: this.getCardValue(value),
-                            isRed: suit === '♥' || suit === '♦',
-                            id: `${suit}-${value}-${Date.now()}-${Math.random()}`
-                        });
-                    }
-                }
-
-                return this.shuffleDeck(deck);
-            }
-
-            shuffleDeck(deck) {
-                for (let i = deck.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [deck[i], deck[j]] = [deck[j], deck[i]];
-                }
-                return deck;
-            }
-
-            getCardValue(value) {
-                if (value === 'A') return 1;
-                if (['J', 'Q', 'K'].includes(value)) return 10;
-                return parseInt(value);
-            }
-
-            calculateScore(cards) {
-                let score = 0;
-                let aces = 0;
-
-                for (let card of cards) {
-                    if (card.value === 'A') {
-                        aces++;
-                        score += 11;
-                    } else {
-                        score += card.numValue;
-                    }
-                }
-
-                while (score > 21 && aces > 0) {
-                    score -= 10;
-                    aces--;
-                }
-
-                return score;
-            }
-
-            async updateRoom(roomCode, room) {
-                try {
-                    room.lastUpdate = Date.now();
-                    
-                    if (database) {
-                        await database.ref(`rooms/${roomCode}`).set(room);
-                    } else {
-                        localStorage.setItem(`blackjack_room_${roomCode}`, JSON.stringify(room));
-                    }
-                    return true;
-                } catch (error) {
-                    console.error("❌ Erreur mise à jour room:", error);
-                    return false;
-                }
-            }
-
-            async dealCard(roomCode, target) {
-                const room = await this.getRoom(roomCode);
-                if (!room || room.deck.length === 0) return null;
-
-                // Vérifier et initialiser players si nécessaire
-                if (!room.players || !Array.isArray(room.players)) {
-                    room.players = [];
-                }
-
-                const card = room.deck.pop();
-                
-                if (target === 'dealer') {
-                    room.dealerCards = room.dealerCards || [];
-                    room.dealerCards.push(card);
-                    room.dealerScore = this.calculateScore(room.dealerCards);
-                } else {
-                    const player = room.players[target];
-                    if (player) {
-                        player.cards = player.cards || [];
-                        player.cards.push(card);
-                        player.score = this.calculateScore(player.cards);
-                    }
-                }
-
-                await this.updateRoom(roomCode, room);
-                return card;
-            }
-
-            async startNewHand(roomCode) {
-                const room = await this.getRoom(roomCode);
-                if (!room) return false;
-
-                // Vérifier et initialiser players si nécessaire
-                if (!room.players || !Array.isArray(room.players)) {
-                    room.players = [];
-                }
-
-                // Reset complet
-                room.players.forEach(player => {
-                    player.cards = [];
-                    player.score = 0;
-                    player.status = 'playing';
-                    player.isActive = false;
-                    delete player.result;
-                });
-
-                room.dealerCards = [];
-                room.dealerScore = 0;
-                room.deck = this.createDeck();
-                room.currentPlayerIndex = 0;
-                room.gameState = 'dealing';
-
-                await this.updateRoom(roomCode, room);
-
-                // Simulation de distribution avec délai
-                setTimeout(() => {
-                    this.distributeCards(roomCode);
-                }, 500);
-
-                return true;
-            }
-
-            async distributeCards(roomCode) {
-                const room = await this.getRoom(roomCode);
-                if (!room) return;
-
-                // Distribuer 2 cartes à chaque joueur et au croupier
-                for (let round = 0; round < 2; round++) {
-                    for (let index = 0; index < room.players.length; index++) {
-                        await this.dealCard(roomCode, index);
-                    }
-                    await this.dealCard(roomCode, 'dealer');
-                }
-
-                // Activer le premier joueur
-                if (room.players.length > 0) {
-                    const updatedRoom = await this.getRoom(roomCode);
-                    updatedRoom.players[0].isActive = true;
-                    updatedRoom.gameState = 'playing';
-                    await this.updateRoom(roomCode, updatedRoom);
-                }
-            }
-
-            async playerAction(roomCode, playerName, action) {
-                const room = await this.getRoom(roomCode);
-                if (!room) return false;
-                if (!room.players || !Array.isArray(room.players)) room.players = [];
-                const playerIndex = room.players.findIndex(p => p.name === playerName);
-                const player = room.players[playerIndex];
-                if (!player || !player.isActive || room.gameState !== 'playing') return false;
-
-                // Nouvelle gestion : le joueur ne tire plus lui-même, il demande une action
-                if (action === 'demander_carte') {
-                    player.actionDemandee = 'carte';
-                    await this.updateRoom(roomCode, room);
-                    return true;
-                } else if (action === 'stand') {
-                    player.actionDemandee = 'stand';
-                    await this.updateRoom(roomCode, room);
-                    return true;
-                } else if (action === 'demander_split') {
-                    // Vérifier si le split est possible
-                    if (player.cards && player.cards.length === 2 && player.cards[0].value === player.cards[1].value && !player.isSplit) {
-                        player.actionDemandee = 'split';
-                        await this.updateRoom(roomCode, room);
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
-
-                // Gestion du split
-                if (action === 'split') {
-                    return await this.splitHand(roomCode, playerName);
-                }
-
-                // Si le joueur a split, il joue sur la main active
-                if (player.isSplit && player.hands && player.activeHandIndex !== undefined) {
-                    const handIdx = player.activeHandIndex;
-                    if (action === 'hit') {
-                        const card = room.deck.pop();
-                        player.hands[handIdx].push(card);
-                        player.scores[handIdx] = this.calculateScore(player.hands[handIdx]);
-                        if (player.scores[handIdx] > 21) {
-                            player.statuses[handIdx] = 'bust';
-                            // Passer à la main suivante ou finir
-                            if (handIdx === 0 && player.statuses[1] === 'playing') {
-                                player.activeHandIndex = 1;
-                            } else {
-                                player.isActive = false;
-                                await this.nextPlayer(roomCode);
-                            }
-                        } else if (player.scores[handIdx] === 21) {
-                            player.statuses[handIdx] = 'stand';
-                            if (handIdx === 0 && player.statuses[1] === 'playing') {
-                                player.activeHandIndex = 1;
-                            } else {
-                                player.isActive = false;
-                                await this.nextPlayer(roomCode);
-                            }
-                        }
-                        await this.updateRoom(roomCode, room);
-                        return true;
-                    } else if (action === 'stand') {
-                        player.statuses[handIdx] = 'stand';
-                        if (handIdx === 0 && player.statuses[1] === 'playing') {
-                            player.activeHandIndex = 1;
-                        } else {
-                            player.isActive = false;
-                            await this.updateRoom(roomCode, room);
-                            await this.nextPlayer(roomCode);
-                        }
-                        await this.updateRoom(roomCode, room);
-                        return true;
-                    }
-                    return false;
-                }
-
-                // Cas normal (pas split)
-                if (action === 'hit') {
-                    await this.dealCard(roomCode, playerIndex);
-                    const updatedRoom = await this.getRoom(roomCode);
-                    const updatedPlayer = updatedRoom.players[playerIndex];
-                    if (updatedPlayer.score > 21) {
-                        updatedPlayer.status = 'bust';
-                        await this.nextPlayer(roomCode);
-                    } else if (updatedPlayer.score === 21) {
-                        updatedPlayer.status = 'stand';
-                        await this.nextPlayer(roomCode);
-                    } else {
-                        await this.updateRoom(roomCode, updatedRoom);
-                    }
-                } else if (action === 'stand') {
-                    player.status = 'stand';
-                    await this.updateRoom(roomCode, room);
-                    await this.nextPlayer(roomCode);
-                }
-                return true;
-            }
-
-            async nextPlayer(roomCode) {
-                const room = await this.getRoom(roomCode);
-                if (!room) return;
-
-                room.players[room.currentPlayerIndex].isActive = false;
-
-                let nextIndex = room.currentPlayerIndex + 1;
-                while (nextIndex < room.players.length) {
-                    if (room.players[nextIndex].status === 'playing') {
-                        room.players[nextIndex].isActive = true;
-                        room.currentPlayerIndex = nextIndex;
-                        await this.updateRoom(roomCode, room);
-                        return;
-                    }
-                    nextIndex++;
-                }
-
-                room.gameState = 'dealer_turn';
-                await this.updateRoom(roomCode, room);
-                // Lancer automatiquement le tour du croupier
-                this.dealerPlay(roomCode);
-            }
-
-            async dealerPlay(roomCode) {
-                const room = await this.getRoom(roomCode);
-                if (!room) return false;
-
-                room.gameState = 'dealer_playing';
-                await this.updateRoom(roomCode, room);
-                
-                // Simulation du jeu du croupier avec délais
-                const dealerPlayInterval = setInterval(async () => {
-                    const currentRoom = await this.getRoom(roomCode);
-                    if (currentRoom.dealerScore < 17) {
-                        await this.dealCard(roomCode, 'dealer');
-                    } else {
-                        clearInterval(dealerPlayInterval);
-                        await this.finishGame(roomCode);
-                    }
-                }, 1000);
-
-                return true;
-            }
-
-            async finishGame(roomCode) {
-                const room = await this.getRoom(roomCode);
-                if (!room) return;
-                if (!room.players || !Array.isArray(room.players)) room.players = [];
-                room.players.forEach(player => {
-                    let isWin = false;
-                    let isLose = false;
-                    if (player.isSplit && player.hands) {
-                        player.results = [null, null];
-                        for (let i = 0; i < 2; i++) {
-                            if (player.statuses[i] === 'bust') {
-                                player.results[i] = 'lose';
-                            } else if (room.dealerScore > 21) {
-                                player.results[i] = 'win';
-                            } else if (player.scores[i] > room.dealerScore) {
-                                player.results[i] = 'win';
-                            } else if (player.scores[i] === room.dealerScore) {
-                                player.results[i] = 'tie';
-                            } else {
-                                player.results[i] = 'lose';
-                            }
-                        }
-                        // Si les deux mains sont gagnantes, streak++
-                        isWin = player.results.every(r => r === 'win');
-                        isLose = player.results.every(r => r === 'lose');
-                    } else {
-                        if (player.status === 'bust') {
-                            player.result = 'lose';
-                        } else if (room.dealerScore > 21) {
-                            player.result = 'win';
-                        } else if (player.score > room.dealerScore) {
-                            player.result = 'win';
-                        } else if (player.score === room.dealerScore) {
-                            player.result = 'tie';
-                        } else {
-                            player.result = 'lose';
-                        }
-                        isWin = player.result === 'win';
-                        isLose = player.result === 'lose';
-                    }
-                    // Gestion de la streak :
-                    // - victoire : +1
-                    // - égalité : inchangé
-                    // - défaite : 0
-                    if (isWin) {
-                        player.streak = (player.streak || 0) + 1;
-                    } else if (isLose) {
-                        player.streak = 0;
-                    } // sinon (égalité), on ne change pas la streak
-                });
-                room.gameState = 'finished';
-                await this.updateRoom(roomCode, room);
-            }
-
-            async getRoom(code) {
-                try {
-                    if (database) {
-                        const snapshot = await database.ref(`rooms/${code}`).once('value');
-                        return snapshot.val();
-                    } else {
-                        return JSON.parse(localStorage.getItem(`blackjack_room_${code}`) || 'null');
-                    }
-                } catch (error) {
-                    console.error("❌ Erreur récupération room:", error);
-                    return null;
-                }
-            }
-
-            async leaveRoom(code, playerName) {
-                try {
-                    const room = await this.getRoom(code);
-                    if (!room) return false;
-
-                    // Si le croupier quitte, supprimer la room et notifier tout le monde
-                    if (room.dealer === playerName) {
-                        if (database) {
-                            await database.ref(`rooms/${code}`).remove();
-                        } else {
-                            localStorage.removeItem(`blackjack_room_${code}`);
-                        }
-                        // Notifier tous les clients via localStorage (pour le mode local)
-                        localStorage.setItem(`blackjack_room_closed_${code}`, Date.now());
-                        return 'dealer_left';
-                    }
-
-                    room.players = room.players.filter(p => p.name !== playerName);
-                    
-                    if (room.players.length === 0) {
-                        if (database) {
-                            await database.ref(`rooms/${code}`).remove();
-                        } else {
-                            localStorage.removeItem(`blackjack_room_${code}`);
-                        }
-                    } else {
-                        // Réorganiser les positions
-                        room.players.forEach((player, index) => {
-                            player.position = index + 1;
-                        });
-                        await this.updateRoom(code, room);
-                    }
-
-                    return true;
-                } catch (error) {
-                    console.error("❌ Erreur quitter room:", error);
-                    return false;
-                }
-            }
-
-            // Listener en temps réel pour les changements
-            setupRoomListener(roomCode, callback) {
-                if (database && !this.useLocalStorage) {
-                    database.ref(`rooms/${roomCode}`).on('value', (snapshot) => {
-                        const room = snapshot.val();
-                        callback(room);
-                    });
-                } else {
-                    // Mode localStorage avec simulation temps réel
-                    const pollInterval = setInterval(async () => {
-                        const room = await this.getRoom(roomCode);
-                        callback(room);
-                    }, 500); // Plus fréquent pour une meilleure réactivité
-                    this.pollInterval = pollInterval;
-                }
-            }
-
-            removeRoomListener(roomCode) {
-                if (database && !this.useLocalStorage) {
-                    database.ref(`rooms/${roomCode}`).off();
-                } else if (this.pollInterval) {
-                    clearInterval(this.pollInterval);
-                }
-            }
-
-            async splitHand(roomCode, playerName) {
-                const room = await this.getRoom(roomCode);
-                if (!room) return false;
-                if (!room.players || !Array.isArray(room.players)) room.players = [];
-                const playerIndex = room.players.findIndex(p => p.name === playerName);
-                const player = room.players[playerIndex];
-                if (!player || !player.cards || player.cards.length !== 2) return false;
-                if (player.cards[0].value !== player.cards[1].value) return false;
-                if (player.hands && player.hands.length > 1) return false; // déjà split
-
-                // Créer deux mains à partir des deux cartes
-                player.hands = [
-                    [player.cards[0]],
-                    [player.cards[1]]
-                ];
-                player.activeHandIndex = 0;
-                player.scores = [this.calculateScore([player.cards[0]]), this.calculateScore([player.cards[1]])];
-                player.statuses = ['playing', 'playing'];
-                player.cards = undefined; // On n'utilise plus cards
-                player.score = undefined;
-                player.status = undefined;
-                player.isSplit = true;
-
-                // Donner une carte à chaque main
-                for (let i = 0; i < 2; i++) {
-                    const card = room.deck.pop();
-                    player.hands[i].push(card);
-                    player.scores[i] = this.calculateScore(player.hands[i]);
-                }
-                await this.updateRoom(roomCode, room);
-                return true;
-            }
-        }
-
-        // Fonctions de l'interface
-        async function createRoom() {
-            const nameInput = document.getElementById('playerName');
-            if (!nameInput) return;
-            
-            const name = nameInput.value.trim();
-            if (!name) {
-                showNotification('Veuillez entrer votre nom', 'error');
-                return;
-            }
-
-            if (name.length > 12) {
-                showNotification('Le nom ne peut pas dépasser 12 caractères', 'error');
-                return;
-            }
-
-            showNotification('🔄 Création de la table...', 'info');
-
-            playerName = name;
-            isDealer = true;
-            currentRoom = await gameServer.createRoom(name);
-            
-            if (currentRoom) {
-                showNotification('🎰 Table créée! Partagez ce lien:', 'success');
-                showShareableLink();
-                showGameInterface();
-                setupRoomListener();
-            } else {
-                showNotification('❌ Erreur lors de la création', 'error');
-            }
-        }
-
-        function showShareableLink() {
-            const url = `${window.location.origin}${window.location.pathname}?roomid=${currentRoom}`;
-            
-            const linkPopup = document.createElement('div');
-            linkPopup.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: rgba(0, 0, 0, 0.95);
-                color: white;
-                padding: 30px;
-                border-radius: 15px;
-                z-index: 10000;
-                text-align: center;
-                border: 2px solid #FFD700;
-                max-width: 500px;
-                max-height: 80vh;
-                overflow-y: auto;
-            `;
-            
-            const isDemo = gameServer.useLocalStorage;
-            
-            linkPopup.innerHTML = `
-                <h3>🎉 Table créée!</h3>
-                <p style="margin: 15px 0; color: #FFD700;">Code: <strong>${currentRoom}</strong></p>
-                
-                ${isDemo ? `
-                    <div style="background: rgba(255, 165, 0, 0.2); padding: 15px; border-radius: 10px; margin: 15px 0;">
-                        <h4>🎮 Mode DEMO</h4>
-                        <p style="font-size: 14px; margin: 10px 0;">
-                            Actuellement en mode local. Pour un vrai multijoueur en ligne :
-                        </p>
-                        <ol style="text-align: left; font-size: 13px; margin: 10px 0;">
-                            <li>Héberge-le sur ton serveur/GitHub Pages</li>
-                            <li>Firebase fonctionnera automatiquement !</li>
-                        </ol>
-                    </div>
-                ` : ''}
-                
-                <p style="margin: 10px 0;">Lien de la table :</p>
-                <input type="text" value="${url}" style="width: 100%; padding: 10px; border: none; border-radius: 5px; margin: 10px 0; font-family: monospace; font-size: 12px;" readonly onclick="this.select()">
-                
-                <div style="margin-top: 20px;">
-                    <button onclick="copyToClipboard('${url}'); this.parentElement.parentElement.remove();" style="background: #FFD700; color: black; border: none; padding: 10px 20px; border-radius: 5px; margin: 5px; cursor: pointer;">📋 Copier le lien</button>
-                    <button onclick="this.parentElement.parentElement.remove();" style="background: #666; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin: 5px; cursor: pointer;">Fermer</button>
-                </div>
-            `;
-            
-            document.body.appendChild(linkPopup);
-            
-            setTimeout(() => {
-                if (linkPopup.parentElement) {
-                    linkPopup.remove();
-                }
-            }, 15000);
-        }
-
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                showNotification('📋 Lien copié!', 'success');
-            }).catch(() => {
-                showNotification('❌ Erreur copie', 'error');
-            });
-        }
-
-        function showJoinRoom() {
-            document.getElementById('joinRoomCard').style.display = 'block';
-        }
-
-        function hideJoinRoom() {
-            document.getElementById('joinRoomCard').style.display = 'none';
-        }
-
-        async function joinRoom() {
-            const nameInput = document.getElementById('playerName');
-            const codeInput = document.getElementById('roomCode');
-            
-            if (!nameInput || !codeInput) return;
-            
-            const name = nameInput.value.trim();
-            const code = codeInput.value.trim().toUpperCase();
-            
-            if (!name || !code) {
-                showNotification('Veuillez remplir tous les champs', 'error');
-                return;
-            }
-
-            if (name.length > 12) {
-                showNotification('Le nom ne peut pas dépasser 12 caractères', 'error');
-                return;
-            }
-
-            if (code.length !== 6) {
-                showNotification('Le code doit faire 6 caractères', 'error');
-                return;
-            }
-
-            showNotification('🔄 Connexion à la table...', 'info');
-
-            const success = await gameServer.joinRoom(code, name);
-            
-            if (!success) {
-                showNotification('❌ Impossible de rejoindre cette table', 'error');
-                return;
-            }
-
-            playerName = name;
-            isDealer = false;
-            currentRoom = code;
-            
-            showNotification('🎉 Bienvenue à la table!', 'success');
-            showGameInterface();
-            setupRoomListener();
-        }
-
-        // Ajout d'un listener pour détecter la fermeture de la room côté client
-        function setupRoomListener() {
-            if (currentRoom) {
-                // Pour le mode localStorage, on écoute aussi la fermeture de la room
-                if (gameServer.useLocalStorage) {
-                    window.addEventListener('storage', (e) => {
-                        if (e.key === `blackjack_room_closed_${currentRoom}`) {
-                            showNotification('🚪 Le croupier a quitté la table. Salle fermée.', 'error');
-                            setTimeout(() => leaveGame(), 1500);
-                        }
-                    });
-                }
-                gameServer.setupRoomListener(currentRoom, (room) => {
-                    if (!room) {
-                        // La room a été supprimée (croupier parti)
-                        showNotification('🚪 Le croupier a quitté la table. Salle fermée.', 'error');
-                        setTimeout(() => leaveGame(), 1500);
-                        return;
-                    }
-                    updateGameDisplay(room);
-                });
-            }
-        }
-
-        async function joinFromURL() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const roomId = urlParams.get('roomid');
-            
-            if (roomId && roomId.length === 6) {
-                const codeInput = document.getElementById('roomCode');
-                if (codeInput) {
-                    codeInput.value = roomId.toUpperCase();
-                    showJoinRoom();
-                    
-                    const nameInput = document.getElementById('playerName');
-                    if (nameInput && !nameInput.value.trim()) {
-                        nameInput.focus();
-                    }
-                }
-                
-                showNotification('🎯 Code de table détecté!', 'info');
-            }
-        }
-
-        function showGameInterface() {
-            document.getElementById('lobby').style.display = 'none';
-            document.getElementById('gameInterface').style.display = 'block';
-            document.getElementById('gameRoomCode').textContent = currentRoom;
-            
-            if (isDealer) {
-                document.getElementById('dealerControls').style.display = 'flex';
-            } else {
-                document.getElementById('waitingControls').style.display = 'flex';
-            }
-
-            setupPlayerPositions();
-        }
-
-        function setupPlayerPositions() {
-            const container = document.getElementById('playerPositions');
-            if (!container) return;
-            
-            container.innerHTML = '';
-            
-            for (let i = 1; i <= 5; i++) {
-                const spot = document.createElement('div');
-                spot.className = `player-spot spot-${i}`;
-                spot.id = `spot-${i}`;
-                spot.innerHTML = `
-                    <div class="player-avatar"></div>
-                    <div class="player-name">Position ${i}</div>
-                    <div class="player-score">--</div>
-                    <div class="player-status"></div>
-                `;
-                container.appendChild(spot);
-            }
-        }
-
-        function updateGameDisplay(room) {
-            if (!room) return;
-
-            // Vérifier et initialiser la structure de la room si nécessaire
-            if (!room.players || !Array.isArray(room.players)) {
-                room.players = [];
-            }
-
-            updatePlayerCount(room);
-            updatePlayerPositions(room);
-            updateDealerDisplay(room);
-            updateControls(room);
-            updateAllPlayersCards(room);
-        }
-
-        function updatePlayerCount(room) {
-            const playerCountElement = document.getElementById('playerCount');
-            if (playerCountElement) {
-                playerCountElement.textContent = room.players.length;
-            }
-        }
-
-        function updatePlayerPositions(room) {
-            // Réinitialiser toutes les positions
-            for (let i = 1; i <= 5; i++) {
-                const spot = document.getElementById(`spot-${i}`);
-                if (!spot) continue;
-                
-                const avatar = spot.querySelector('.player-avatar');
-                const name = spot.querySelector('.player-name');
-                const score = spot.querySelector('.player-score');
-                const status = spot.querySelector('.player-status');
-                
-                if (!avatar || !name || !score || !status) continue;
-                
-                spot.className = `player-spot spot-${i}`;
-                avatar.textContent = '';
-                name.textContent = `Position ${i}`;
-                score.textContent = '--';
-                status.textContent = '';
-                status.className = 'player-status';
-            }
-
-            // Placer les joueurs et afficher leurs cartes
-            room.players.forEach((player, index) => {
-                const position = index + 1;
-                const spot = document.getElementById(`spot-${position}`);
-                if (!spot) return;
-                const avatar = spot.querySelector('.player-avatar');
-                const name = spot.querySelector('.player-name');
-                const score = spot.querySelector('.player-score');
-                const status = spot.querySelector('.player-status');
-                if (!avatar || !name || !score || !status) return;
-                if (player.isActive) {
-                    spot.classList.add('active');
-                }
-                avatar.textContent = player.name.charAt(0).toUpperCase();
-                name.innerHTML = `${player.name} <span style='color:#FFD700;font-size:13px;' title='Streak'>🔥${player.streak || 0}</span>`;
-                // Affichage split
-                if (player.isSplit && player.hands) {
-                    score.innerHTML =
-                        `<span style='color:#FFD700'>Main 1: ${player.scores[0] || '--'}</span><br>` +
-                        `<span style='color:#4ECDC4'>Main 2: ${player.scores[1] || '--'}</span>`;
-                } else {
-                    score.textContent = player.score || '--';
-                }
-                // Affichage des cartes du joueur
-                let cardsHtml = '';
-                if (player.cards && player.cards.length > 0) {
-                    cardsHtml = player.cards.map(card => `<span class="card ${card.isRed ? 'red' : 'black'}" style="display:inline-block;width:30px;height:45px;margin:2px;font-size:12px;border-radius:5px;border:1px solid #FFD700;background:#fff;color:${card.isRed ? '#d32f2f' : '#1a1a1a'};text-align:center;line-height:45px;">${card.value}${card.suit}</span>`).join('');
-                }
-                // Pour le split, afficher les deux mains
-                if (player.isSplit && player.hands) {
-                    cardsHtml = '';
-                    for (let h = 0; h < player.hands.length; h++) {
-                        cardsHtml += `<div style='margin-bottom:2px;'>Main ${h+1}: ` +
-                            player.hands[h].map(card => `<span class="card ${card.isRed ? 'red' : 'black'}" style="display:inline-block;width:30px;height:45px;margin:2px;font-size:12px;border-radius:5px;border:1px solid #FFD700;background:#fff;color:${card.isRed ? '#d32f2f' : '#1a1a1a'};text-align:center;line-height:45px;">${card.value}${card.suit}</span>`).join('') +
-                            `</div>`;
-                    }
-                }
-                // Ajout des cartes sous le score
-                if (cardsHtml) {
-                    score.innerHTML += `<div style='margin-top:4px;'>${cardsHtml}</div>`;
-                }
-                // Statut
-                if (player.result) {
-                    status.textContent = player.result === 'win' ? '🎉 Gagne' : 
-                                       player.result === 'lose' ? '💀 Perd' : '🤝 Égalité';
-                    status.className = `player-status ${player.result}`;
-                } else if (player.status === 'bust') {
-                    status.textContent = '💥 Bust';
-                    status.className = 'player-status lose';
-                } else if (player.status === 'stand') {
-                    status.textContent = '✋ Reste';
-                } else if (player.isActive) {
-                    status.textContent = '▶️ Joue';
-                }
-            });
-        }
-
-        function updateDealerDisplay(room) {
-            const scoreElement = document.getElementById('dealerScore');
-            if (!scoreElement) return;
-            if (room.gameState === 'playing' && room.dealerCards.length > 0) {
-                scoreElement.textContent = '?';
-            } else {
-                scoreElement.textContent = room.dealerScore || '--';
-            }
-            // Afficher le nom du croupier
-            const dealerNameDiv = document.querySelector('.dealer-position .player-name');
-            if (dealerNameDiv) {
-                dealerNameDiv.textContent = room.dealer || 'Croupier';
-            }
-            renderDealerCards(room);
-        }
-
-        function renderDealerCards(room) {
-            const dealerCardsDiv = document.getElementById('dealerCards');
-            if (!dealerCardsDiv) return;
-            dealerCardsDiv.innerHTML = '';
-            if (!room.dealerCards) return;
-            dealerCardsDiv.style.display = 'flex';
-            dealerCardsDiv.style.flexDirection = 'row';
-            dealerCardsDiv.style.gap = '0px';
-            room.dealerCards.forEach((card, idx) => {
-                const cardDiv = document.createElement('div');
-                cardDiv.className = 'card ' + (card.isRed ? 'red' : 'black');
-                cardDiv.style.position = 'relative';
-                cardDiv.style.marginLeft = idx === 0 ? '0' : '-30px';
-                if ((room.gameState === 'playing' || room.gameState === 'dealing') && idx === 0) {
-                    // Première carte cachée pendant le tour des joueurs
-                    cardDiv.className = 'card hidden';
-                    cardDiv.innerHTML = `<div class="card-value">?</div><div class="card-suit">🂠</div>`;
-                } else {
-                    cardDiv.innerHTML = `<div class="card-value">${card.value}</div><div class="card-suit">${card.suit}</div>`;
-                }
-                dealerCardsDiv.appendChild(cardDiv);
-            });
-        }
-
-        function updateControls(room) {
-            const dealerControls = document.getElementById('dealerControls');
-            const playerControls = document.getElementById('playerControls');
-            const waitingControls = document.getElementById('waitingControls');
-            const dealerPlayBtn = document.getElementById('dealerPlayBtn');
-            const distribuerCarteTourBtn = document.getElementById('distribuerCarteTourBtn');
-            // Cacher tous les contrôles
-            if (dealerControls) dealerControls.style.display = 'none';
-            if (playerControls) playerControls.style.display = 'none';
-            if (waitingControls) waitingControls.style.display = 'none';
-            if (dealerPlayBtn) dealerPlayBtn.style.display = 'none';
-            if (distribuerCarteTourBtn) distribuerCarteTourBtn.style.display = 'none';
-
-            // Vérifier et initialiser players si nécessaire
-            if (!room.players || !Array.isArray(room.players)) {
-                room.players = [];
-            }
-
-            if (isDealer) {
-                if (dealerControls) dealerControls.style.display = 'flex';
-                // Le bouton 'Tour croupier' ne s'affiche que si tous les joueurs ont fini
-                let allPlayersDone = true;
-                if (room.players && Array.isArray(room.players)) {
-                    for (const p of room.players) {
-                        if (p.isSplit && p.statuses) {
-                            if (p.statuses.some(s => s === 'playing')) {
-                                allPlayersDone = false;
-                                break;
-                            }
-                        } else {
-                            if (p.status === 'playing') {
-                                allPlayersDone = false;
-                                break;
-                            }
-                        }
-                    }
-                }
-                if (room.gameState === 'dealer_turn' && dealerPlayBtn) {
-                    dealerPlayBtn.style.display = allPlayersDone ? 'inline-block' : 'none';
-                }
-                // Affichage du bouton Distribuer carte joueur
-                const distribuerBtn = document.getElementById('distribuerCarteJoueurBtn');
-                if (distribuerBtn) {
-                    // Trouver le joueur actif
-                    const joueurActif = room.players.find(p => p.isActive);
-                    if (room.gameState === 'playing' && joueurActif && joueurActif.actionDemandee === 'carte') {
-                        distribuerBtn.style.display = 'inline-block';
-                    } else {
-                        distribuerBtn.style.display = 'none';
-                    }
-                }
-                // Affichage du bouton Valider le split
-                const validerSplitBtn = document.getElementById('validerSplitJoueurBtn');
-                if (validerSplitBtn) {
-                    const joueurActif = room.players.find(p => p.isActive);
-                    if (room.gameState === 'playing' && joueurActif && joueurActif.actionDemandee === 'split') {
-                        validerSplitBtn.style.display = 'inline-block';
-                    } else {
-                        validerSplitBtn.style.display = 'none';
-                    }
-                }
-                // Affichage de l'action demandée par le joueur actif
-                const infoActionDiv = document.getElementById('infoActionJoueur');
-                if (infoActionDiv) {
-                    const joueurActif = room.players.find(p => p.isActive);
-                    if (joueurActif && joueurActif.actionDemandee) {
-                        let actionText = '';
-                        if (joueurActif.actionDemandee === 'carte') actionText = 'Le joueur demande une carte';
-                        else if (joueurActif.actionDemandee === 'stand') actionText = 'Le joueur souhaite rester';
-                        else if (joueurActif.actionDemandee === 'split') actionText = 'Le joueur demande un split';
-                        infoActionDiv.textContent = `Action demandée : ${actionText}`;
-                    } else {
-                        infoActionDiv.textContent = '';
-                    }
-                }
-            } else {
-                const player = room.players.find(p => p.name === playerName);
-                if (player && player.isActive && room.gameState === 'playing') {
-                    if (playerControls) {
-                        playerControls.style.display = 'flex';
-                        playerControls.innerHTML = `
-                            <button class="btn btn-success" onclick="hit()">⬆️ Carte</button>
-                            <button class="btn btn-danger" onclick="stand()">✋ Rester</button>
-                            <button class="btn btn-warning" onclick="demanderDouble()">💰 Doubler</button>
-                            <button class="btn btn-gold" onclick="demanderSplit()">🪓 Split</button>
-                        `;
-                    }
-                } else {
-                    if (playerControls) playerControls.style.display = 'none';
-                    if (waitingControls) waitingControls.style.display = 'flex';
-                }
-            }
-        }
-
-        // Nouvelle main : ne pas distribuer les cartes ici, c'est déjà fait côté serveur
-        async function startNewHand() {
-            if (!isDealer) return;
-            // Nettoyer les cartes existantes
-            const casinoTable = document.querySelector('.casino-table');
-            if (casinoTable) {
-                const existingCards = casinoTable.querySelectorAll('.card:not(.deck-card)');
-                existingCards.forEach(card => card.remove());
-            }
-            const success = await gameServer.startNewHand(currentRoom);
-            if (success) {
-                showNotification('🎴 Nouvelle main en cours...', 'info');
-                // Animation du deck
-                const deckStack = document.getElementById('deckStack');
-                if (deckStack) {
-                    deckStack.style.animation = 'dealerGlow 0.5s ease-in-out';
-                    setTimeout(() => {
-                        deckStack.style.animation = '';
-                    }, 500);
-                }
-            }
-        }
-
-        async function dealerPlay() {
-            if (!isDealer) return;
-            
-            const success = await gameServer.dealerPlay(currentRoom);
-            if (success) {
-                showNotification('🎲 Tour du croupier...', 'info');
-            }
-        }
-
-        // Adapter leaveGame pour gérer le cas où la room est supprimée
-        async function leaveGame() {
-            if (currentRoom) {
-                const result = await gameServer.leaveRoom(currentRoom, playerName);
-                gameServer.removeRoomListener(currentRoom);
-            }
-            if (gameUpdateInterval) {
-                clearInterval(gameUpdateInterval);
-            }
-            // Nettoyer les cartes
-            const casinoTable = document.querySelector('.casino-table');
-            if (casinoTable) {
-                const existingCards = casinoTable.querySelectorAll('.card:not(.deck-card)');
-                existingCards.forEach(card => card.remove());
-            }
-            const lobby = document.getElementById('lobby');
-            const gameInterface = document.getElementById('gameInterface');
-            if (lobby) lobby.style.display = 'flex';
-            if (gameInterface) gameInterface.style.display = 'none';
-            window.history.pushState({}, '', window.location.pathname);
-            currentRoom = null;
-            playerName = '';
-            isDealer = false;
-            showNotification('👋 Vous avez quitté la table', 'info');
-        }
-
-        function createCard(card, startPos, endPos, delay = 0) {
-            return new Promise((resolve) => {
-                setTimeout(() => {
-                    const cardElement = document.createElement('div');
-                    cardElement.className = `card ${card.isRed ? 'red' : 'black'} dealing`;
-                    cardElement.style.left = startPos.x + 'px';
-                    cardElement.style.top = startPos.y + 'px';
-                    cardElement.style.setProperty('--target-x', (endPos.x - startPos.x) + 'px');
-                    cardElement.style.setProperty('--target-y', (endPos.y - startPos.y) + 'px');
-                    
-                    if (card.hidden) {
-                        cardElement.className = 'card hidden dealing';
-                        cardElement.innerHTML = `
-                            <div class="card-value">?</div>
-                            <div class="card-suit">🂠</div>
-                        `;
-                    } else {
-                        cardElement.innerHTML = `
-                            <div class="card-value">${card.value}</div>
-                            <div class="card-suit">${card.suit}</div>
-                        `;
-                    }
-                    
-                    const casinoTable = document.querySelector('.casino-table');
-                    if (casinoTable) {
-                        casinoTable.appendChild(cardElement);
-                        
-                        // Effet sonore visuel
-                        createSparkle(startPos.x, startPos.y);
-                        
-                        setTimeout(() => {
-                            cardElement.classList.remove('dealing');
-                            resolve(cardElement);
-                        }, 1000);
-                    } else {
-                        resolve(null);
-                    }
-                }, delay);
-            });
-        }
-
-        function createSparkle(x, y) {
-            const sparkle = document.createElement('div');
-            sparkle.style.position = 'absolute';
-            sparkle.style.left = x + 'px';
-            sparkle.style.top = y + 'px';
-            sparkle.style.width = '4px';
-            sparkle.style.height = '4px';
-            sparkle.style.background = '#FFD700';
-            sparkle.style.borderRadius = '50%';
-            sparkle.style.animation = 'sparkle 0.5s ease-out forwards';
-            sparkle.style.zIndex = '100';
-            
-            const casinoTable = document.querySelector('.casino-table');
-            if (casinoTable) {
-                casinoTable.appendChild(sparkle);
+                container.appendChild(icon);
                 
                 setTimeout(() => {
-                    sparkle.remove();
-                }, 500);
-            }
-        }
-
-        function showNotification(message, type = 'info') {
-            const existing = document.querySelector('.notification');
-            if (existing) {
-                existing.remove();
-            }
-
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.textContent = message;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => notification.classList.add('show'), 100);
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => notification.remove(), 400);
+                    if (icon.parentNode) {
+                        icon.parentNode.removeChild(icon);
+                    }
+                }, 20000);
             }, 3000);
         }
 
-        // Création des particules d'ambiance
-        function createParticles() {
-            const particlesContainer = document.getElementById('particles');
-            if (!particlesContainer) return;
+        // Effet de scroll sur le header
+        function initScrollEffects() {
+            const header = document.getElementById('header');
             
-            setInterval(() => {
-                const existingParticles = document.querySelectorAll('.particle');
-                if (existingParticles.length < 20) {
-                    const particle = document.createElement('div');
-                    particle.className = 'particle';
-                    particle.style.left = Math.random() * 100 + 'vw';
-                    particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
-                    particle.style.animationDelay = Math.random() * 2 + 's';
-                    particlesContainer.appendChild(particle);
-                    
-                    setTimeout(() => {
-                        if (particle && particle.parentNode) {
-                            particle.remove();
-                        }
-                    }, 8000);
-                }
-            }, 500);
-        }
-
-        function setupEventListeners() {
-            const roomCodeInput = document.getElementById('roomCode');
-            const playerNameInput = document.getElementById('playerName');
-            
-            if (roomCodeInput) {
-                roomCodeInput.addEventListener('input', function(e) {
-                    e.target.value = e.target.value.toUpperCase();
-                });
-                
-                roomCodeInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        joinRoom();
-                    }
-                });
-            }
-
-            if (playerNameInput) {
-                playerNameInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        createRoom();
-                    }
-                });
-                
-                playerNameInput.focus();
-            }
-
-            window.addEventListener('beforeunload', function() {
-                if (currentRoom) {
-                    gameServer.leaveRoom(currentRoom, playerName);
-                }
-            });
-        }
-
-        // Initialisation sécurisée
-        async function initializeGame() {
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initializeGame);
-                return;
-            }
-            
-            console.log("🎮 Initialisation du SIO Casino Royal...");
-            
-            gameServer = new OnlineGameServer();
-            
-            // Attendre l'initialisation
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            createParticles();
-            setupEventListeners();
-            joinFromURL();
-            
-            // Afficher le mode de fonctionnement
-            if (gameServer.useLocalStorage) {
-                console.log("✅ Jeu initialisé en mode DEMO (localStorage)");
-                showNotification('🎮 Mode DEMO - Multijoueur local uniquement', 'info');
-            } else {
-                console.log("✅ Jeu initialisé avec Firebase (multijoueur en ligne)");
-                showNotification('🔥 Multijoueur en ligne activé!', 'success');
-            }
-        }
-
-        // Démarrer l'initialisation
-        initializeGame();
-
-        async function finishGame() {
-            if (!isDealer || !currentRoom) return;
-            await gameServer.finishGame(currentRoom);
-            showNotification('🏁 Partie terminée, résultats affichés !', 'info');
-        }
-
-        async function distribuerCarteJoueur() {
-            // Trouver le joueur actif
-            const room = await gameServer.getRoom(currentRoom);
-            if (!room || !room.players) return;
-            const joueurActifIndex = room.players.findIndex(p => p.isActive);
-            if (joueurActifIndex === -1) return;
-            // Distribuer une carte au joueur actif
-            await gameServer.dealCard(currentRoom, joueurActifIndex);
-            // Réinitialiser la demande
-            room.players[joueurActifIndex].actionDemandee = null;
-            await gameServer.updateRoom(currentRoom, room);
-            showNotification('🃏 Carte distribuée au joueur', 'success');
-        }
-
-        async function validerSplitJoueur() {
-            // Trouver le joueur actif
-            const room = await gameServer.getRoom(currentRoom);
-            if (!room || !room.players) return;
-            const joueurActif = room.players.find(p => p.isActive);
-            if (!joueurActif || joueurActif.actionDemandee !== 'split') return;
-            // Effectuer le split
-            await gameServer.splitHand(currentRoom, joueurActif.name);
-            // Réinitialiser la demande
-            joueurActif.actionDemandee = null;
-            await gameServer.updateRoom(currentRoom, room);
-            showNotification('🪓 Split validé pour le joueur', 'success');
-        }
-
-        function updateAllPlayersCards(room) {
-            const allDiv = document.getElementById('allPlayersCardsArea');
-            if (!allDiv) return;
-            let html = '<div style="font-weight:bold;color:#FFD700;margin-bottom:8px;">Cartes des joueurs :</div>';
-            if (!room.players || room.players.length === 0) {
-                html += '<span style="color:#fff;">Aucun joueur</span>';
-                allDiv.innerHTML = html;
-                return;
-            }
-            html += '<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:24px;">';
-            room.players.forEach(player => {
-                html += `<div style='min-width:120px;padding:10px 16px;background:rgba(0,0,0,0.7);border-radius:12px;margin-bottom:10px;'>`;
-                html += `<div style='font-weight:bold;color:#FFD700;margin-bottom:4px;'>${player.name} <span style='color:#FFD700;font-size:13px;' title='Streak'>🔥${player.streak || 0}</span></div>`;
-                if (player.isSplit && player.hands) {
-                    for (let h = 0; h < player.hands.length; h++) {
-                        html += `<div style='margin-bottom:2px;'>Main ${h+1}: ` +
-                            player.hands[h].map(card => `<span class=\"card ${card.isRed ? 'red' : 'black'}\" style=\"display:inline-block;width:32px;height:48px;margin:1px;font-size:15px;border-radius:5px;border:1.5px solid #FFD700;background:#fff;color:${card.isRed ? '#d32f2f' : '#1a1a1a'};text-align:center;line-height:48px;\">${card.value}${card.suit}</span>`).join('') +
-                            `</div>`;
-                    }
-                } else if (player.cards && player.cards.length > 0) {
-                    html += player.cards.map(card => `<span class=\"card ${card.isRed ? 'red' : 'black'}\" style=\"display:inline-block;width:32px;height:48px;margin:1px;font-size:15px;border-radius:5px;border:1.5px solid #FFD700;background:#fff;color:${card.isRed ? '#d32f2f' : '#1a1a1a'};text-align:center;line-height:48px;\">${card.value}${card.suit}</span>`).join('');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 100) {
+                    header.classList.add('scrolled');
                 } else {
-                    html += '<span style="color:#fff;">Aucune carte</span>';
+                    header.classList.remove('scrolled');
                 }
-                html += '</div>';
             });
-            html += '</div>';
-            allDiv.innerHTML = html;
         }
 
-        // Désactiver les fonctions hit et stand (elles ne font plus rien)
-        async function hit() {
-            showNotification('Action désactivée : le jeu est automatique.', 'info');
+        // Navigation smooth
+        function scrollToGames() {
+            document.getElementById('games').scrollIntoView({ 
+                behavior: 'smooth' 
+            });
         }
-        async function stand() {
-            showNotification('Action désactivée : le jeu est automatique.', 'info');
+
+        // Commencer à jouer
+        function startPlaying() {
+            if (currentUser) {
+                window.location.href = 'dashboard.html';
+            } else {
+                window.location.href = 'login.html';
+            }
         }
-        async function demanderDouble() {
-            showNotification('Fonctionnalité "Double" à implémenter.', 'info');
+
+        // Jouer à un jeu
+        function playGame(gameType) {
+            switch(gameType) {
+                case 'blackjack':
+                    if (currentUser) {
+                        window.location.href = 'blackjack.html';
+                    } else {
+                        window.location.href = 'login.html?redirect=blackjack.html';
+                    }
+                    break;
+                default:
+                    alert('Ce jeu sera bientôt disponible ! 🚀');
+            }
         }
-        async function demanderSplit() {
-            await gameServer.playerAction(currentRoom, playerName, 'demander_split');
+
+        // Authentification
+        function showAuth(type) {
+            if (type === 'login') {
+                window.location.href = 'login.html';
+            } else {
+                window.location.href = 'register.html';
+            }
         }
+
+        // Déconnexion
+        async function logout() {
+            if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+                try {
+                    await auth.signOut();
+                    currentUser = null;
+                    updateUserInterface();
+                } catch (error) {
+                    console.error('Erreur déconnexion:', error);
+                }
+            }
+        }
+
+        // Mettre à jour l'interface utilisateur
+        function updateUserInterface() {
+            const authButtons = document.getElementById('authButtons');
+            const userInfo = document.getElementById('userInfo');
+            const userBalance = document.getElementById('userBalance');
+            
+            if (currentUser) {
+                authButtons.style.display = 'none';
+                userInfo.style.display = 'flex';
+                userBalance.textContent = (currentUser.balance || 1000) + '€';
+            } else {
+                authButtons.style.display = 'flex';
+                userInfo.style.display = 'none';
+            }
+        }
+
+        // Sauvegarder l'utilisateur dans Firebase
+        function saveUserToFirebase() {
+            if (currentUser) {
+                database.ref('users/' + currentUser.uid).set({
+                    displayName: currentUser.displayName,
+                    balance: currentUser.balance,
+                    lastLogin: firebase.database.ServerValue.TIMESTAMP
+                });
+            }
+        }
+
+        // Mettre à jour les statistiques en temps réel
+        function updateStats() {
+            // Simulation de joueurs en ligne
+            const playersElement = document.getElementById('playersOnline');
+            const baseCount = 200;
+            const variation = Math.floor(Math.random() * 100);
+            playersElement.textContent = baseCount + variation;
+        }
+
+        // Animation de chargement
+        function hideLoading() {
+            setTimeout(() => {
+                document.getElementById('loading').classList.add('hidden');
+            }, 1500);
+        }
+
+        // Initialisation
+        function init() {
+            hideLoading();
+            createFloatingIcons();
+            initScrollEffects();
+            updateStats();
+            
+            // Mettre à jour les stats toutes les 10 secondes
+            setInterval(updateStats, 10000);
+            
+            // Connexion automatique pour la démo (à supprimer en production)
+            setTimeout(() => {
+                const savedUser = localStorage.getItem('demoUser');
+                if (savedUser) {
+                    currentUser = JSON.parse(savedUser);
+                    updateUserInterface();
+                }
+            }, 2000);
+        }
+
+        // Sauvegarde automatique pour la démo
+        setInterval(() => {
+            if (currentUser) {
+                localStorage.setItem('demoUser', JSON.stringify(currentUser));
+            }
+        }, 5000);
+
+        // Lancement de l'application
+        document.addEventListener('DOMContentLoaded', init);
+
+        // Gestion des erreurs Firebase
+        database.ref('.info/connected').on('value', (snapshot) => {
+            if (snapshot.val() === true) {
+                console.log('✅ Connecté à Firebase');
+            } else {
+                console.log('❌ Déconnecté de Firebase');
+            }
+        });
     </script>
 </body>
 </html>
