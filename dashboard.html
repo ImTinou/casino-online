@@ -846,7 +846,7 @@
     </main>
 
     <script>
-        // Utilisation de Firebase Manager
+        // Utilisation de Firebase Manager (configuration dans firebase-config.js)
         let auth, database;
 
         // État de l'application
@@ -856,9 +856,9 @@
 
         // Initialisation après chargement de firebase-config.js
         document.addEventListener('DOMContentLoaded', () => {
-            const firebaseManager = window.FirebaseManager.initializeFirebase();
-            auth = firebaseManager.auth;
-            database = firebaseManager.database;
+            // Firebase est déjà initialisé par firebase-config.js
+            auth = firebase.auth();
+            database = firebase.database();
             
             // Gestion de l'authentification
             auth.onAuthStateChanged(async (user) => {
@@ -919,11 +919,21 @@
                 
                 if (!userData) {
                     // Créer un profil par défaut si inexistant
-                    userData = window.FirebaseManager.UserUtils.createDefaultProfile(currentUser);
+                    userData = {
+                        displayName: currentUser.displayName || 'Joueur',
+                        email: currentUser.email,
+                        balance: 1000,
+                        level: 1,
+                        experience: 0,
+                        gamesPlayed: 0,
+                        totalWinnings: 0,
+                        createdAt: firebase.database.ServerValue.TIMESTAMP,
+                        lastLogin: firebase.database.ServerValue.TIMESTAMP
+                    };
                     await database.ref('users/' + currentUser.uid).set(userData);
                 } else {
                     // Mettre à jour la dernière connexion
-                    await window.FirebaseManager.UserUtils.updateLastLogin(currentUser.uid);
+                    await database.ref('users/' + currentUser.uid + '/lastLogin').set(firebase.database.ServerValue.TIMESTAMP);
                 }
 
                 // Écouter les changements en temps réel
@@ -1137,10 +1147,11 @@
             if (amount && !isNaN(amount) && amount > 0) {
                 // Simulation de dépôt
                 const newBalance = userData.balance + parseInt(amount);
-                window.FirebaseManager.UserUtils.updateBalance(currentUser.uid, newBalance);
+                database.ref('users/' + currentUser.uid + '/balance').set(newBalance);
                 
                 // Ajouter de l'expérience
-                window.FirebaseManager.UserUtils.addExperience(currentUser.uid, Math.floor(amount / 10));
+                const newXP = (userData.experience || 0) + Math.floor(amount / 10);
+                database.ref('users/' + currentUser.uid + '/experience').set(newXP);
                 
                 alert(`Dépôt de ${amount}€ effectué avec succès !`);
             }
@@ -1154,7 +1165,7 @@
                 if (parseInt(amount) <= maxAmount) {
                     // Simulation de retrait
                     const newBalance = userData.balance - parseInt(amount);
-                    window.FirebaseManager.UserUtils.updateBalance(currentUser.uid, newBalance);
+                    database.ref('users/' + currentUser.uid + '/balance').set(newBalance);
                     alert(`Retrait de ${amount}€ effectué avec succès !`);
                 } else {
                     alert('Solde insuffisant !');

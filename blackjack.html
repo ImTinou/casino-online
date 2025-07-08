@@ -1165,7 +1165,21 @@
             if (!currentRoom) return;
             
             try {
-                const deck = window.FirebaseManager.GameUtils.createDeck();
+                // Créer et mélanger le deck
+                const suits = ['♠', '♥', '♦', '♣'];
+                const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+                const deck = [];
+                for (let suit of suits) {
+                    for (let value of values) {
+                        deck.push({ suit, value });
+                    }
+                }
+                // Mélanger
+                for (let i = deck.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [deck[i], deck[j]] = [deck[j], deck[i]];
+                }
+                
                 const updates = {
                     'gamePhase': 'betting',
                     'deck': deck,

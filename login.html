@@ -523,14 +523,14 @@
     </div>
 
     <script>
-        // Utilisation de Firebase Manager
+        // Utilisation de Firebase Manager (configuration dans firebase-config.js)
         let auth, database;
 
         // Initialisation après chargement de firebase-config.js
         document.addEventListener('DOMContentLoaded', () => {
-            const firebaseManager = window.FirebaseManager.initializeFirebase();
-            auth = firebaseManager.auth;
-            database = firebaseManager.database;
+            // Firebase est déjà initialisé par firebase-config.js
+            auth = firebase.auth();
+            database = firebase.database();
             
             // Vérifier si l'utilisateur est déjà connecté
             auth.onAuthStateChanged((user) => {
@@ -662,9 +662,41 @@
                     window.location.href = redirect;
                 }, 1500);
 
+        // Gestion des erreurs d'authentification
+        function handleAuthError(error) {
+            console.error('Erreur auth:', error);
+            
+            let message = 'Une erreur est survenue';
+            
+            switch (error.code) {
+                case 'auth/user-not-found':
+                    message = 'Aucun compte trouvé avec cet email';
+                    break;
+                case 'auth/wrong-password':
+                    message = 'Mot de passe incorrect';
+                    break;
+                case 'auth/invalid-email':
+                    message = 'Format d\'email invalide';
+                    break;
+                case 'auth/too-many-requests':
+                    message = 'Trop de tentatives. Réessayez plus tard.';
+                    break;
+                case 'auth/network-request-failed':
+                    message = 'Erreur de connexion. Vérifiez votre internet.';
+                    break;
+                case 'auth/popup-closed-by-user':
+                    message = 'Connexion annulée';
+                    break;
+                default:
+                    message = error.message || 'Erreur de connexion';
+            }
+            
+            return message;
+        }
+
             } catch (error) {
                 showLoading(false);
-                const errorMessage = window.FirebaseManager.handleAuthError(error);
+                const errorMessage = handleAuthError(error);
                 showError(errorMessage);
             }
         }
@@ -709,7 +741,7 @@
 
             } catch (error) {
                 showLoading(false);
-                const errorMessage = window.FirebaseManager.handleAuthError(error);
+                const errorMessage = handleAuthError(error);
                 showError(errorMessage);
             }
         }
@@ -777,7 +809,7 @@
                 await auth.sendPasswordResetEmail(email);
                 showSuccess('Email de réinitialisation envoyé ! Vérifiez votre boîte mail.');
             } catch (error) {
-                const errorMessage = window.FirebaseManager.handleAuthError(error);
+                const errorMessage = handleAuthError(error);
                 showError(errorMessage);
             }
         }
