@@ -901,7 +901,8 @@
                         isActive: false,
                         position: room.players.length + 1,
                         joinedAt: Date.now(),
-                        actionDemandee: null // Ajout du champ pour la demande d'action
+                        actionDemandee: null, // Ajout du champ pour la demande d'action
+                        streak: 0 // Streak de victoires
                     });
 
                     room.lastUpdate = Date.now();
@@ -1220,6 +1221,8 @@
                 if (!room) return;
                 if (!room.players || !Array.isArray(room.players)) room.players = [];
                 room.players.forEach(player => {
+                    let isWin = false;
+                    let isLose = false;
                     if (player.isSplit && player.hands) {
                         player.results = [null, null];
                         for (let i = 0; i < 2; i++) {
@@ -1235,6 +1238,9 @@
                                 player.results[i] = 'lose';
                             }
                         }
+                        // Si les deux mains sont gagnantes, streak++
+                        isWin = player.results.every(r => r === 'win');
+                        isLose = player.results.every(r => r === 'lose');
                     } else {
                         if (player.status === 'bust') {
                             player.result = 'lose';
@@ -1247,7 +1253,18 @@
                         } else {
                             player.result = 'lose';
                         }
+                        isWin = player.result === 'win';
+                        isLose = player.result === 'lose';
                     }
+                    // Gestion de la streak :
+                    // - victoire : +1
+                    // - égalité : inchangé
+                    // - défaite : 0
+                    if (isWin) {
+                        player.streak = (player.streak || 0) + 1;
+                    } else if (isLose) {
+                        player.streak = 0;
+                    } // sinon (égalité), on ne change pas la streak
                 });
                 room.gameState = 'finished';
                 await this.updateRoom(roomCode, room);
@@ -1623,7 +1640,7 @@
                     spot.classList.add('active');
                 }
                 avatar.textContent = player.name.charAt(0).toUpperCase();
-                name.textContent = player.name;
+                name.innerHTML = `${player.name} <span style='color:#FFD700;font-size:13px;' title='Streak'>🔥${player.streak || 0}</span>`;
                 // Affichage split
                 if (player.isSplit && player.hands) {
                     score.innerHTML =
@@ -2105,7 +2122,7 @@
             html += '<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:24px;">';
             room.players.forEach(player => {
                 html += `<div style='min-width:120px;padding:10px 16px;background:rgba(0,0,0,0.7);border-radius:12px;margin-bottom:10px;'>`;
-                html += `<div style='font-weight:bold;color:#FFD700;margin-bottom:4px;'>${player.name}</div>`;
+                html += `<div style='font-weight:bold;color:#FFD700;margin-bottom:4px;'>${player.name} <span style='color:#FFD700;font-size:13px;' title='Streak'>🔥${player.streak || 0}</span></div>`;
                 if (player.isSplit && player.hands) {
                     for (let h = 0; h < player.hands.length; h++) {
                         html += `<div style='margin-bottom:2px;'>Main ${h+1}: ` +
