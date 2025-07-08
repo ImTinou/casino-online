@@ -762,8 +762,8 @@
                     </div>
                 </div>
             </div>
-            <!-- Zone cartes du joueur -->
-            <div id="myCardsArea" style="display:none; margin:30px auto 0 auto; max-width:400px; text-align:center;"></div>
+            <!-- Zone cartes de tous les joueurs -->
+            <div id="allPlayersCardsArea" style="margin:30px auto 0 auto; max-width:900px; text-align:center;"></div>
         </div>
     </div>
 
@@ -1578,7 +1578,7 @@
             updatePlayerPositions(room);
             updateDealerDisplay(room);
             updateControls(room);
-            updateMyCards(room);
+            updateAllPlayersCards(room);
         }
 
         function updatePlayerCount(room) {
@@ -1695,7 +1695,7 @@
                 cardDiv.className = 'card ' + (card.isRed ? 'red' : 'black');
                 cardDiv.style.position = 'relative';
                 cardDiv.style.marginLeft = idx === 0 ? '0' : '-30px';
-                if (room.gameState === 'playing' && idx === 0) {
+                if ((room.gameState === 'playing' || room.gameState === 'dealing') && idx === 0) {
                     // Première carte cachée pendant le tour des joueurs
                     cardDiv.className = 'card hidden';
                     cardDiv.innerHTML = `<div class="card-value">?</div><div class="card-suit">🂠</div>`;
@@ -1783,28 +1783,15 @@
             } else {
                 const player = room.players.find(p => p.name === playerName);
                 if (player && player.isActive && room.gameState === 'playing') {
-                    if (playerControls) playerControls.style.display = 'flex';
-                    // Afficher le bouton Split si possible
-                    let splitBtn = document.getElementById('splitBtn');
-                    if (!splitBtn) {
-                        splitBtn = document.createElement('button');
-                        splitBtn.className = 'btn btn-warning';
-                        splitBtn.id = 'splitBtn';
-                        splitBtn.textContent = '🪓 Split';
-                        splitBtn.onclick = split;
-                        playerControls.appendChild(splitBtn);
-                    }
-                    // Afficher seulement si possible
-                    if (
-                        player.cards && player.cards.length === 2 &&
-                        player.cards[0].value === player.cards[1].value &&
-                        !player.isSplit
-                    ) {
-                        splitBtn.style.display = 'inline-block';
-                    } else {
-                        splitBtn.style.display = 'none';
+                    if (playerControls) {
+                        playerControls.style.display = 'flex';
+                        playerControls.innerHTML = `
+                            <button class="btn btn-success" onclick="hit()">⬆️ Carte</button>
+                            <button class="btn btn-danger" onclick="stand()">✋ Rester</button>
+                        `;
                     }
                 } else {
+                    if (playerControls) playerControls.style.display = 'none';
                     if (waitingControls) waitingControls.style.display = 'flex';
                 }
             }
@@ -2106,30 +2093,34 @@
             // ... le reste de la fonction startNewHand existante ...
         }
 
-        function updateMyCards(room) {
-            const myCardsDiv = document.getElementById('myCardsArea');
-            if (!myCardsDiv) return;
-            // Trouver le joueur courant
-            const me = room.players.find(p => p.name === playerName);
-            if (!me) {
-                myCardsDiv.style.display = 'none';
-                myCardsDiv.innerHTML = '';
+        function updateAllPlayersCards(room) {
+            const allDiv = document.getElementById('allPlayersCardsArea');
+            if (!allDiv) return;
+            let html = '<div style="font-weight:bold;color:#FFD700;margin-bottom:8px;">Cartes des joueurs :</div>';
+            if (!room.players || room.players.length === 0) {
+                html += '<span style="color:#fff;">Aucun joueur</span>';
+                allDiv.innerHTML = html;
                 return;
             }
-            myCardsDiv.style.display = 'block';
-            let html = '<div style="font-weight:bold;color:#FFD700;margin-bottom:8px;">Mes cartes :</div>';
-            if (me.isSplit && me.hands) {
-                for (let h = 0; h < me.hands.length; h++) {
-                    html += `<div style='margin-bottom:4px;'>Main ${h+1}: ` +
-                        me.hands[h].map(card => `<span class=\"card ${card.isRed ? 'red' : 'black'}\" style=\"display:inline-block;width:40px;height:60px;margin:2px;font-size:18px;border-radius:7px;border:2px solid #FFD700;background:#fff;color:${card.isRed ? '#d32f2f' : '#1a1a1a'};text-align:center;line-height:60px;\">${card.value}${card.suit}</span>`).join('') +
-                        `</div>`;
+            html += '<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:24px;">';
+            room.players.forEach(player => {
+                html += `<div style='min-width:120px;padding:10px 16px;background:rgba(0,0,0,0.7);border-radius:12px;margin-bottom:10px;'>`;
+                html += `<div style='font-weight:bold;color:#FFD700;margin-bottom:4px;'>${player.name}</div>`;
+                if (player.isSplit && player.hands) {
+                    for (let h = 0; h < player.hands.length; h++) {
+                        html += `<div style='margin-bottom:2px;'>Main ${h+1}: ` +
+                            player.hands[h].map(card => `<span class=\"card ${card.isRed ? 'red' : 'black'}\" style=\"display:inline-block;width:32px;height:48px;margin:1px;font-size:15px;border-radius:5px;border:1.5px solid #FFD700;background:#fff;color:${card.isRed ? '#d32f2f' : '#1a1a1a'};text-align:center;line-height:48px;\">${card.value}${card.suit}</span>`).join('') +
+                            `</div>`;
+                    }
+                } else if (player.cards && player.cards.length > 0) {
+                    html += player.cards.map(card => `<span class=\"card ${card.isRed ? 'red' : 'black'}\" style=\"display:inline-block;width:32px;height:48px;margin:1px;font-size:15px;border-radius:5px;border:1.5px solid #FFD700;background:#fff;color:${card.isRed ? '#d32f2f' : '#1a1a1a'};text-align:center;line-height:48px;\">${card.value}${card.suit}</span>`).join('');
+                } else {
+                    html += '<span style="color:#fff;">Aucune carte</span>';
                 }
-            } else if (me.cards && me.cards.length > 0) {
-                html += me.cards.map(card => `<span class=\"card ${card.isRed ? 'red' : 'black'}\" style=\"display:inline-block;width:40px;height:60px;margin:2px;font-size:18px;border-radius:7px;border:2px solid #FFD700;background:#fff;color:${card.isRed ? '#d32f2f' : '#1a1a1a'};text-align:center;line-height:60px;\">${card.value}${card.suit}</span>`).join('');
-            } else {
-                html += '<span style="color:#fff;">Aucune carte</span>';
-            }
-            myCardsDiv.innerHTML = html;
+                html += '</div>';
+            });
+            html += '</div>';
+            allDiv.innerHTML = html;
         }
     </script>
 </body>
