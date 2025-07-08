@@ -536,7 +536,7 @@
             auth.onAuthStateChanged((user) => {
                 if (user && !window.location.search.includes('force=true')) {
                     // Utilisateur déjà connecté, rediriger
-                    window.location.href = 'index.html';
+                    window.location.href = 'dashboard.html';
                 }
             });
             
@@ -658,16 +658,9 @@
                 showSuccess('Connexion réussie ! Redirection...');
                 
                 setTimeout(() => {
-                    const redirect = new URLSearchParams(window.location.search).get('redirect') || 'index.html';
+                    const redirect = new URLSearchParams(window.location.search).get('redirect') || 'dashboard.html';
                     window.location.href = redirect;
                 }, 1500);
-
-            } catch (error) {
-                showLoading(false);
-                const errorMessage = handleAuthError(error);
-                showError(errorMessage);
-            }
-        }
 
         // Gestion des erreurs d'authentification
         function handleAuthError(error) {
@@ -699,6 +692,13 @@
             }
             
             return message;
+        }
+
+            } catch (error) {
+                showLoading(false);
+                const errorMessage = handleAuthError(error);
+                showError(errorMessage);
+            }
         }
 
         // Connexion avec Google
@@ -736,7 +736,7 @@
                 showSuccess('Connexion Google réussie ! Redirection...');
                 
                 setTimeout(() => {
-                    window.location.href = 'index.html';
+                    window.location.href = 'dashboard.html';
                 }, 1500);
 
             } catch (error) {
@@ -769,7 +769,7 @@
                 showSuccess('Connexion anonyme réussie ! Redirection...');
                 
                 setTimeout(() => {
-                    window.location.href = 'index.html';
+                    window.location.href = 'dashboard.html';
                 }, 1500);
 
             } catch (error) {
@@ -833,7 +833,7 @@
         auth.onAuthStateChanged((user) => {
             if (user && !window.location.search.includes('force=true')) {
                 // Utilisateur déjà connecté, rediriger
-                window.location.href = 'index.html';
+                window.location.href = 'dashboard.html';
             }
         });
 
