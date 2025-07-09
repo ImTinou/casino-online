@@ -1,0 +1,787 @@
+<!-- Fichier: admin.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administration - SIO Casino</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: white;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #ff6b6b, #ff4757);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-decoration: none;
+        }
+
+        .admin-info {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .status-badge {
+            background: rgba(255, 107, 107, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .admin-card {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .admin-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 107, 107, 0.5);
+            box-shadow: 0 15px 35px rgba(255, 107, 107, 0.2);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            color: #ff6b6b;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #00d4ff;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .card-subtitle {
+            opacity: 0.7;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .rooms-section {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            color: #ff6b6b;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 0.9rem;
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #ff6b6b, #ff4757);
+            color: white;
+            border: 1px solid rgba(255, 107, 107, 0.5);
+        }
+
+        .btn-warning {
+            background: linear-gradient(45deg, #fdcb6e, #e17055);
+            color: white;
+            border: 1px solid rgba(253, 203, 110, 0.5);
+        }
+
+        .btn-info {
+            background: linear-gradient(45deg, #74b9ff, #0984e3);
+            color: white;
+            border: 1px solid rgba(116, 185, 255, 0.5);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .rooms-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .rooms-table th {
+            background: rgba(255, 107, 107, 0.2);
+            padding: 1rem;
+            text-align: left;
+            font-weight: bold;
+            color: #ff6b6b;
+        }
+
+        .rooms-table td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .rooms-table tr:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .room-status {
+            padding: 0.3rem 0.8rem;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .status-active {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .status-waiting {
+            background: rgba(255, 170, 0, 0.2);
+            color: #ffaa00;
+            border: 1px solid rgba(255, 170, 0, 0.3);
+        }
+
+        .status-empty {
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
+            border: 1px solid rgba(255, 68, 68, 0.3);
+        }
+
+        .users-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .user-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .user-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-info h4 {
+            color: #00d4ff;
+            margin-bottom: 0.3rem;
+        }
+
+        .user-info p {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .logs-section {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+        }
+
+        .log-entry {
+            margin-bottom: 0.5rem;
+            padding: 0.3rem;
+            border-radius: 5px;
+        }
+
+        .log-info {
+            background: rgba(0, 212, 255, 0.1);
+            border-left: 3px solid #00d4ff;
+        }
+
+        .log-warning {
+            background: rgba(255, 170, 0, 0.1);
+            border-left: 3px solid #ffaa00;
+        }
+
+        .log-error {
+            background: rgba(255, 68, 68, 0.1);
+            border-left: 3px solid #ff4444;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(255, 107, 107, 0.3);
+            border-top: 3px solid #ff6b6b;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .refresh-indicator {
+            position: fixed;
+            top: 100px;
+            right: 2rem;
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            padding: 0.5rem 1rem;
+            border-radius: 15px;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            font-size: 0.8rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .refresh-indicator.show {
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .users-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .main-container {
+                padding: 0 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="dashboard.html" class="logo">🛠️ Admin Panel</a>
+            <div class="admin-info">
+                <div class="status-badge">👑 Administrateur</div>
+                <span id="adminName">Admin</span>
+                <a href="dashboard.html" class="btn btn-info">← Retour</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Refresh Indicator -->
+    <div class="refresh-indicator" id="refreshIndicator">
+        🔄 Actualisation automatique...
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Dashboard Stats -->
+        <div class="dashboard-grid">
+            <div class="admin-card">
+                <div class="card-header">
+                    <div class="card-title">🏠 Rooms Actives</div>
+                </div>
+                <div class="card-value" id="activeRoomsCount">0</div>
+                <div class="card-subtitle">Parties en cours</div>
+            </div>
+
+            <div class="admin-card">
+                <div class="card-header">
+                    <div class="card-title">👥 Joueurs Connectés</div>
+                </div>
+                <div class="card-value" id="onlinePlayersCount">0</div>
+                <div class="card-subtitle">En ligne maintenant</div>
+            </div>
+
+            <div class="admin-card">
+                <div class="card-header">
+                    <div class="card-title">💰 Volume Journalier</div>
+                </div>
+                <div class="card-value" id="dailyVolume">0€</div>
+                <div class="card-subtitle">Mises du jour</div>
+            </div>
+
+            <div class="admin-card">
+                <div class="card-header">
+                    <div class="card-title">📊 Performances</div>
+                </div>
+                <div class="card-value" id="serverLoad">Normal</div>
+                <div class="card-subtitle">État du serveur</div>
+            </div>
+        </div>
+
+        <!-- Rooms Management -->
+        <div class="rooms-section">
+            <div class="section-header">
+                <h2 class="section-title">🏠 Gestion des Rooms</h2>
+                <div>
+                    <button class="btn btn-warning" onclick="cleanupRooms()">🧹 Nettoyer</button>
+                    <button class="btn btn-danger" onclick="closeAllRooms()">🚫 Fermer Tout</button>
+                </div>
+            </div>
+            
+            <div id="roomsTableContainer">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <span>Chargement des rooms...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Management -->
+        <div class="users-section">
+            <div class="admin-card">
+                <div class="card-header">
+                    <div class="card-title">👤 Utilisateurs Récents</div>
+                </div>
+                <div class="user-list" id="recentUsersList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <span>Chargement...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="admin-card">
+                <div class="card-header">
+                    <div class="card-title">📝 Logs Système</div>
+                </div>
+                <div class="logs-section" id="systemLogs">
+                    <div class="log-entry log-info">
+                        [INFO] Panel d'administration initialisé
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase est déjà initialisé par firebase-config.js
+        const database = firebase.database();
+        const auth = firebase.auth();
+
+        // État global
+        let currentUser = null;
+        let roomsListener = null;
+        let usersListener = null;
+        let autoRefreshInterval = null;
+
+        // Éléments DOM
+        const elements = {
+            adminName: document.getElementById('adminName'),
+            activeRoomsCount: document.getElementById('activeRoomsCount'),
+            onlinePlayersCount: document.getElementById('onlinePlayersCount'),
+            dailyVolume: document.getElementById('dailyVolume'),
+            serverLoad: document.getElementById('serverLoad'),
+            roomsTableContainer: document.getElementById('roomsTableContainer'),
+            recentUsersList: document.getElementById('recentUsersList'),
+            systemLogs: document.getElementById('systemLogs'),
+            refreshIndicator: document.getElementById('refreshIndicator')
+        };
+
+        // Vérification des droits admin
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUser = user;
+                
+                // Vérifier les droits admin (simplifié pour la démo)
+                const isAdmin = await checkAdminRights(user);
+                if (!isAdmin) {
+                    alert('Accès refusé : Droits administrateur requis');
+                    window.location.href = 'dashboard.html';
+                    return;
+                }
+                
+                elements.adminName.textContent = user.displayName || 'Admin';
+                initializeAdmin();
+            } else {
+                window.location.href = 'login.html?redirect=admin.html';
+            }
+        });
+
+        // Vérification des droits admin (à adapter selon vos besoins)
+        async function checkAdminRights(user) {
+            try {
+                // Dans un vrai projet, vérifiez les droits dans Firebase
+                // Pour la démo, on accepte certains emails
+                const adminEmails = ['admin@siocasino.com', 'test@admin.com'];
+                return adminEmails.includes(user.email) || user.email?.includes('admin');
+            } catch (error) {
+                console.error('Erreur vérification admin:', error);
+                return false;
+            }
+        }
+
+        // Initialisation du panel admin
+        function initializeAdmin() {
+            addLog('Panel d\'administration initialisé', 'info');
+            loadDashboardStats();
+            loadRoomsData();
+            loadUsersData();
+            
+            // Auto-refresh toutes les 30 secondes
+            autoRefreshInterval = setInterval(() => {
+                showRefreshIndicator();
+                loadDashboardStats();
+                loadRoomsData();
+                loadUsersData();
+            }, 30000);
+        }
+
+        // Afficher l'indicateur de refresh
+        function showRefreshIndicator() {
+            elements.refreshIndicator.classList.add('show');
+            setTimeout(() => {
+                elements.refreshIndicator.classList.remove('show');
+            }, 2000);
+        }
+
+        // Charger les statistiques du dashboard
+        async function loadDashboardStats() {
+            try {
+                // Rooms actives
+                const roomsSnapshot = await database.ref('rooms').once('value');
+                const rooms = roomsSnapshot.val() || {};
+                const activeRooms = Object.values(rooms).filter(room => {
+                    const playerCount = Object.keys(room.players || {}).length;
+                    return playerCount > 0;
+                });
+                elements.activeRoomsCount.textContent = activeRooms.length;
+
+                // Joueurs connectés (approximation)
+                let totalPlayers = 0;
+                Object.values(rooms).forEach(room => {
+                    totalPlayers += Object.keys(room.players || {}).length;
+                });
+                elements.onlinePlayersCount.textContent = totalPlayers;
+
+                // Volume journalier (simulation)
+                const dailyVolume = Math.floor(Math.random() * 10000) + 5000;
+                elements.dailyVolume.textContent = dailyVolume + '€';
+
+                // État du serveur
+                const roomCount = Object.keys(rooms).length;
+                let serverStatus = 'Normal';
+                if (roomCount > 20) serverStatus = 'Chargé';
+                if (roomCount > 50) serverStatus = 'Surchargé';
+                elements.serverLoad.textContent = serverStatus;
+                
+            } catch (error) {
+                console.error('Erreur stats:', error);
+                addLog('Erreur chargement statistiques: ' + error.message, 'error');
+            }
+        }
+
+        // Charger les données des rooms
+        async function loadRoomsData() {
+            try {
+                const roomsSnapshot = await database.ref('rooms').once('value');
+                const rooms = roomsSnapshot.val() || {};
+                
+                let tableHtml = `
+                    <table class="rooms-table">
+                        <thead>
+                            <tr>
+                                <th>Room ID</th>
+                                <th>Hôte</th>
+                                <th>Joueurs</th>
+                                <th>Phase</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                if (Object.keys(rooms).length === 0) {
+                    tableHtml += `
+                        <tr>
+                            <td colspan="6" style="text-align: center; opacity: 0.6; padding: 2rem;">
+                                Aucune room active
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    Object.values(rooms).forEach(room => {
+                        const playerCount = Object.keys(room.players || {}).length;
+                        const maxPlayers = room.settings?.maxPlayers || 5;
+                        
+                        let statusClass = 'status-empty';
+                        let statusText = 'Vide';
+                        
+                        if (playerCount > 0) {
+                            if (room.gamePhase === 'waiting') {
+                                statusClass = 'status-waiting';
+                                statusText = 'En attente';
+                            } else {
+                                statusClass = 'status-active';
+                                statusText = 'Active';
+                            }
+                        }
+
+                        const lastActivity = room.lastActivity ? new Date(room.lastActivity).toLocaleTimeString() : 'Inconnue';
+
+                        tableHtml += `
+                            <tr>
+                                <td><strong>${room.id}</strong></td>
+                                <td>${room.hostName || 'Inconnu'}</td>
+                                <td>${playerCount}/${maxPlayers}</td>
+                                <td>${room.gamePhase || 'waiting'}</td>
+                                <td><span class="room-status ${statusClass}">${statusText}</span></td>
+                                <td>
+                                    <button class="btn btn-info" onclick="viewRoom('${room.id}')">👁️</button>
+                                    <button class="btn btn-danger" onclick="closeRoom('${room.id}')">🗑️</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                tableHtml += `
+                        </tbody>
+                    </table>
+                `;
+
+                elements.roomsTableContainer.innerHTML = tableHtml;
+                
+            } catch (error) {
+                console.error('Erreur rooms:', error);
+                addLog('Erreur chargement rooms: ' + error.message, 'error');
+            }
+        }
+
+        // Charger les données des utilisateurs
+        async function loadUsersData() {
+            try {
+                const usersSnapshot = await database.ref('users').limitToLast(10).once('value');
+                const users = usersSnapshot.val() || {};
+                
+                let usersHtml = '';
+                const usersList = Object.values(users).reverse();
+                
+                if (usersList.length === 0) {
+                    usersHtml = '<div style="text-align: center; opacity: 0.6; padding: 2rem;">Aucun utilisateur récent</div>';
+                } else {
+                    usersList.forEach(user => {
+                        const lastLogin = user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Jamais';
+                        const isOnline = user.lastActivity && (Date.now() - user.lastActivity < 5 * 60 * 1000);
+                        
+                        usersHtml += `
+                            <div class="user-item">
+                                <div class="user-info">
+                                    <h4>${user.displayName || 'Utilisateur'} ${isOnline ? '🟢' : '⚫'}</h4>
+                                    <p>Balance: ${user.balance || 0}€ | Dernière connexion: ${lastLogin}</p>
+                                </div>
+                                <div class="user-actions">
+                                    <button class="btn btn-warning" onclick="adjustBalance('${user.uid || 'unknown'}')">💰</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                
+                elements.recentUsersList.innerHTML = usersHtml;
+                
+            } catch (error) {
+                console.error('Erreur users:', error);
+                addLog('Erreur chargement utilisateurs: ' + error.message, 'error');
+            }
+        }
+
+        // Actions d'administration
+        async function cleanupRooms() {
+            if (!confirm('Nettoyer les rooms inactives ?')) return;
+            
+            try {
+                const roomsSnapshot = await database.ref('rooms').once('value');
+                const rooms = roomsSnapshot.val() || {};
+                const cutoff = Date.now() - (30 * 60 * 1000); // 30 minutes
+                
+                let cleanedCount = 0;
+                for (const [roomId, room] of Object.entries(rooms)) {
+                    const playerCount = Object.keys(room.players || {}).length;
+                    const lastActivity = room.lastActivity || 0;
+                    
+                    if (playerCount === 0 || lastActivity < cutoff) {
+                        await database.ref('rooms/' + roomId).remove();
+                        cleanedCount++;
+                    }
+                }
+                
+                addLog(`${cleanedCount} rooms nettoyées`, 'info');
+                loadRoomsData();
+                
+            } catch (error) {
+                console.error('Erreur cleanup:', error);
+                addLog('Erreur nettoyage: ' + error.message, 'error');
+            }
+        }
+
+        async function closeAllRooms() {
+            if (!confirm('⚠️ ATTENTION: Fermer TOUTES les rooms actives ? Cette action est irréversible !')) return;
+            
+            try {
+                await database.ref('rooms').remove();
+                addLog('Toutes les rooms ont été fermées', 'warning');
+                loadRoomsData();
+                
+            } catch (error) {
+                console.error('Erreur fermeture:', error);
+                addLog('Erreur fermeture rooms: ' + error.message, 'error');
+            }
+        }
+
+        async function closeRoom(roomId) {
+            if (!confirm(`Fermer la room ${roomId} ?`)) return;
+            
+            try {
+                await database.ref('rooms/' + roomId).remove();
+                addLog(`Room ${roomId} fermée`, 'warning');
+                loadRoomsData();
+                
+            } catch (error) {
+                console.error('Erreur fermeture room:', error);
+                addLog('Erreur fermeture room: ' + error.message, 'error');
+            }
+        }
+
+        function viewRoom(roomId) {
+            window.open(`blackjack.html?roomid=${roomId}`, '_blank');
+        }
+
+        async function adjustBalance(userId) {
+            const newBalance = prompt('Nouveau solde:');
+            if (!newBalance || isNaN(newBalance)) return;
+            
+            try {
+                await database.ref(`users/${userId}/balance`).set(parseFloat(newBalance));
+                addLog(`Solde utilisateur ${userId} ajusté à ${newBalance}€`, 'info');
+                loadUsersData();
+                
+            } catch (error) {
+                console.error('Erreur ajustement solde:', error);
+                addLog('Erreur ajustement solde: ' + error.message, 'error');
+            }
+        }
+
+        // Système de logs
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            
+            elements.systemLogs.insertBefore(logEntry, elements.systemLogs.firstChild);
+            
+            // Limiter à 50 logs
+            const logs = elements.systemLogs.querySelectorAll('.log-entry');
+            if (logs.length > 50) {
+                logs[logs.length - 1].remove();
+            }
+        }
+
+        // Nettoyage à la fermeture
+        window.addEventListener('beforeunload', () => {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+        });
+    </script>
+</body>
+</html>

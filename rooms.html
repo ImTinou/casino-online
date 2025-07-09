@@ -1,0 +1,1057 @@
+<!-- Fichier: rooms.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rooms Blackjack - SIO Casino</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Background Animation */
+        .background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .floating-icon {
+            position: absolute;
+            font-size: 2rem;
+            opacity: 0.1;
+            animation: float 20s infinite linear;
+            color: #00d4ff;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(100vh) rotate(0deg); }
+            100% { transform: translateY(-100px) rotate(360deg); }
+        }
+
+        .floating-icon:nth-child(odd) { color: #ff00d4; animation-duration: 25s; }
+        .floating-icon:nth-child(3n) { color: #00ff88; animation-duration: 22s; }
+
+        .header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #00d4ff, #ff00d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-decoration: none;
+        }
+
+        .user-info {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .balance {
+            background: rgba(0, 212, 255, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: #00d4ff;
+        }
+
+        .back-button {
+            background: rgba(255, 68, 68, 0.2);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            color: #ff4444;
+            padding: 8px 16px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 68, 68, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a1a, #1a0a2e);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(0, 212, 255, 0.3);
+            border-top: 3px solid #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .page-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .page-title h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #00d4ff, #ff00d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .page-title p {
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+
+        .rooms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .room-card {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .room-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #00d4ff, #ff00d4, #00ff88);
+            background-size: 300% 300%;
+            animation: rainbow 3s ease-in-out infinite;
+        }
+
+        @keyframes rainbow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .room-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(0, 212, 255, 0.5);
+            box-shadow: 0 15px 35px rgba(0, 212, 255, 0.2);
+        }
+
+        .room-card-icon {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .room-card h2 {
+            text-align: center;
+            margin-bottom: 1rem;
+            color: #00d4ff;
+            font-size: 1.5rem;
+        }
+
+        .room-card p {
+            text-align: center;
+            opacity: 0.8;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #00d4ff;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 18px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #00d4ff;
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 15px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #00d4ff, #0099cc);
+            color: white;
+            border: 1px solid rgba(0, 212, 255, 0.5);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 212, 255, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #00b894, #00a085);
+            color: white;
+            border: 1px solid rgba(0, 184, 148, 0.5);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 184, 148, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .available-rooms {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-top: 3rem;
+        }
+
+        .available-rooms h2 {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #00d4ff;
+        }
+
+        .rooms-list {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .room-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .room-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(0, 212, 255, 0.5);
+            transform: translateX(5px);
+        }
+
+        .room-info {
+            flex: 1;
+        }
+
+        .room-code {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ff00d4;
+            margin-bottom: 0.5rem;
+        }
+
+        .room-details {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .room-status {
+            padding: 0.3rem 0.8rem;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .status-waiting {
+            background: rgba(255, 170, 0, 0.2);
+            color: #ffaa00;
+            border: 1px solid rgba(255, 170, 0, 0.3);
+        }
+
+        .status-playing {
+            background: rgba(0, 212, 255, 0.2);
+            color: #00d4ff;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+        }
+
+        .status-full {
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
+            border: 1px solid rgba(255, 68, 68, 0.3);
+        }
+
+        .join-btn {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            border-radius: 10px;
+            min-width: 80px;
+        }
+
+        .error-message {
+            background: rgba(255, 68, 68, 0.2);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            color: #ff4444;
+            padding: 1rem;
+            border-radius: 15px;
+            margin-bottom: 1rem;
+            display: none;
+            text-align: center;
+        }
+
+        .error-message.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        .success-message {
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: #00ff88;
+            padding: 1rem;
+            border-radius: 15px;
+            margin-bottom: 1rem;
+            display: none;
+            text-align: center;
+        }
+
+        .success-message.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 90px;
+            right: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            z-index: 999;
+        }
+
+        .status-connected {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .status-disconnected {
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
+            border: 1px solid rgba(255, 68, 68, 0.3);
+        }
+
+        .room-settings {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .setting-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .setting-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .setting-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .setting-input {
+            width: 80px;
+            padding: 6px 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .rooms-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .main-container {
+                padding: 0 1rem;
+            }
+
+            .page-title h1 {
+                font-size: 2rem;
+            }
+
+            .room-item {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .room-details {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Animation -->
+    <div class="background-animation" id="backgroundAnimation"></div>
+
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="spinner"></div>
+        <div>Connexion en cours...</div>
+    </div>
+
+    <!-- Connection Status -->
+    <div class="connection-status status-disconnected" id="connectionStatus">
+        🔴 Déconnecté
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="dashboard.html" class="logo">🃏 Rooms Blackjack</a>
+            <div class="user-info">
+                <div class="balance">💰 <span id="userBalance">1000</span>€</div>
+                <span id="userName">Joueur</span>
+                <a href="dashboard.html" class="back-button">← Dashboard</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Page Title -->
+        <div class="page-title">
+            <h1>🃏 Blackjack Multijoueur</h1>
+            <p>Créez ou rejoignez une room pour jouer avec vos amis !</p>
+        </div>
+
+        <!-- Error/Success Messages -->
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+
+        <!-- Rooms Grid -->
+        <div class="rooms-grid">
+            <!-- Create Room Card -->
+            <div class="room-card">
+                <div class="room-card-icon">🆕</div>
+                <h2>Créer une Room</h2>
+                <p>Lancez une nouvelle partie et invitez jusqu'à 5 joueurs à vous rejoindre pour une session de blackjack intense !</p>
+                
+                <div class="room-settings">
+                    <div class="setting-group">
+                        <span class="setting-label">Mise minimum:</span>
+                        <input type="number" class="setting-input" id="minBet" value="5" min="1" max="100">
+                    </div>
+                    <div class="setting-group">
+                        <span class="setting-label">Mise maximum:</span>
+                        <input type="number" class="setting-input" id="maxBet" value="500" min="10" max="1000">
+                    </div>
+                    <div class="setting-group">
+                        <span class="setting-label">Joueurs max:</span>
+                        <input type="number" class="setting-input" id="maxPlayers" value="5" min="2" max="5">
+                    </div>
+                </div>
+                
+                <button class="btn btn-success" onclick="createRoom()" id="createRoomBtn">
+                    🚀 Créer ma Room
+                </button>
+            </div>
+
+            <!-- Join Room Card -->
+            <div class="room-card">
+                <div class="room-card-icon">🚪</div>
+                <h2>Rejoindre une Room</h2>
+                <p>Vous avez reçu un code de room de vos amis ? Entrez-le ici pour les rejoindre instantanément !</p>
+                
+                <div class="form-group">
+                    <label class="form-label" for="roomCodeInput">Code de la Room:</label>
+                    <input type="text" class="form-input" id="roomCodeInput" placeholder="Ex: ABC123" maxlength="6" 
+                           style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase()">
+                </div>
+                
+                <button class="btn btn-primary" onclick="joinRoomByCode()" id="joinRoomBtn">
+                    🎯 Rejoindre
+                </button>
+            </div>
+        </div>
+
+        <!-- Available Rooms -->
+        <div class="available-rooms">
+            <h2>🎮 Rooms Disponibles</h2>
+            <div class="rooms-list" id="roomsList">
+                <div style="text-align: center; opacity: 0.6; padding: 2rem;">
+                    <p>Recherche des rooms disponibles...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase est déjà initialisé par firebase-config.js
+        const database = firebase.database();
+        const auth = firebase.auth();
+
+        // État global
+        let currentUser = null;
+        let isConnected = false;
+        let roomsListener = null;
+
+        // Éléments DOM
+        const elements = {
+            loadingScreen: document.getElementById('loadingScreen'),
+            connectionStatus: document.getElementById('connectionStatus'),
+            userBalance: document.getElementById('userBalance'),
+            userName: document.getElementById('userName'),
+            errorMessage: document.getElementById('errorMessage'),
+            successMessage: document.getElementById('successMessage'),
+            roomCodeInput: document.getElementById('roomCodeInput'),
+            roomsList: document.getElementById('roomsList'),
+            createRoomBtn: document.getElementById('createRoomBtn'),
+            joinRoomBtn: document.getElementById('joinRoomBtn'),
+            minBet: document.getElementById('minBet'),
+            maxBet: document.getElementById('maxBet'),
+            maxPlayers: document.getElementById('maxPlayers')
+        };
+
+        // Animation de fond
+        function createFloatingIcons() {
+            const icons = ['🃏', '💎', '🎲', '🎯', '💰', '⭐', '🔥', '♠', '♥', '♦', '♣'];
+            const container = document.getElementById('backgroundAnimation');
+            
+            setInterval(() => {
+                const icon = document.createElement('div');
+                icon.className = 'floating-icon';
+                icon.textContent = icons[Math.floor(Math.random() * icons.length)];
+                icon.style.left = Math.random() * 100 + '%';
+                icon.style.animationDelay = Math.random() * 2 + 's';
+                
+                container.appendChild(icon);
+                
+                setTimeout(() => {
+                    if (icon.parentNode) {
+                        icon.parentNode.removeChild(icon);
+                    }
+                }, 25000);
+            }, 3000);
+        }
+
+        // Gestion de la connexion Firebase
+        database.ref('.info/connected').on('value', (snapshot) => {
+            isConnected = snapshot.val();
+            updateConnectionStatus();
+            if (isConnected) {
+                console.log('✅ Connecté à Firebase');
+                hideLoading();
+                listenToAvailableRooms();
+            } else {
+                console.log('❌ Déconnecté de Firebase');
+            }
+        });
+
+        function updateConnectionStatus() {
+            const status = elements.connectionStatus;
+            if (isConnected) {
+                status.className = 'connection-status status-connected';
+                status.textContent = '🟢 Connecté';
+            } else {
+                status.className = 'connection-status status-disconnected';
+                status.textContent = '🔴 Déconnecté';
+            }
+        }
+
+        function hideLoading() {
+            setTimeout(() => {
+                elements.loadingScreen.classList.add('hidden');
+            }, 1000);
+        }
+
+        // Gestion des utilisateurs
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUser = user;
+                
+                try {
+                    const userSnapshot = await database.ref('users/' + user.uid).once('value');
+                    const userData = userSnapshot.val();
+                    
+                    if (userData) {
+                        elements.userName.textContent = userData.displayName || 'Joueur';
+                        elements.userBalance.textContent = userData.balance || 1000;
+                        
+                        await database.ref('users/' + user.uid + '/lastActivity').set(firebase.database.ServerValue.TIMESTAMP);
+                    }
+                } catch (error) {
+                    console.error('Erreur chargement utilisateur:', error);
+                }
+                
+                hideLoading();
+            } else {
+                window.location.href = 'login.html?redirect=rooms.html';
+            }
+        });
+
+        // Messages
+        function showError(message) {
+            elements.errorMessage.textContent = message;
+            elements.errorMessage.classList.add('show');
+            elements.successMessage.classList.remove('show');
+            setTimeout(() => {
+                elements.errorMessage.classList.remove('show');
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            elements.successMessage.textContent = message;
+            elements.successMessage.classList.add('show');
+            elements.errorMessage.classList.remove('show');
+            setTimeout(() => {
+                elements.successMessage.classList.remove('show');
+            }, 3000);
+        }
+
+        // Générer code room
+        function generateRoomCode() {
+            return Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        // Créer une room
+        async function createRoom() {
+            if (!isConnected || !currentUser) {
+                showError('Connexion Firebase requise !');
+                return;
+            }
+
+            const minBet = parseInt(elements.minBet.value) || 5;
+            const maxBet = parseInt(elements.maxBet.value) || 500;
+            const maxPlayers = parseInt(elements.maxPlayers.value) || 5;
+
+            if (minBet >= maxBet) {
+                showError('La mise minimum doit être inférieure à la mise maximum');
+                return;
+            }
+
+            if (maxPlayers < 2 || maxPlayers > 5) {
+                showError('Le nombre de joueurs doit être entre 2 et 5');
+                return;
+            }
+
+            elements.createRoomBtn.disabled = true;
+            elements.createRoomBtn.textContent = 'Création...';
+
+            try {
+                const roomCode = generateRoomCode();
+                const userSnapshot = await database.ref('users/' + currentUser.uid).once('value');
+                const userData = userSnapshot.val();
+
+                const roomData = {
+                    id: roomCode,
+                    host: currentUser.uid,
+                    hostName: userData.displayName || 'Joueur',
+                    settings: {
+                        minBet: minBet,
+                        maxBet: maxBet,
+                        maxPlayers: maxPlayers
+                    },
+                    players: {
+                        [currentUser.uid]: {
+                            id: currentUser.uid,
+                            name: userData.displayName || 'Joueur',
+                            balance: userData.balance || 1000,
+                            cards: [],
+                            mainBet: 0,
+                            perfectPairsBet: 0,
+                            twentyOnePlusThreeBet: 0,
+                            totalBet: 0,
+                            score: 0,
+                            status: 'waiting',
+                            isReady: false,
+                            joinedAt: firebase.database.ServerValue.TIMESTAMP
+                        }
+                    },
+                    dealer: { cards: [], score: 0 },
+                    gamePhase: 'waiting',
+                    currentPlayerTurn: null,
+                    deck: [],
+                    round: 0,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP,
+                    lastActivity: firebase.database.ServerValue.TIMESTAMP
+                };
+
+                await database.ref('rooms/' + roomCode).set(roomData);
+                
+                showSuccess(`Room créée avec succès ! Code: ${roomCode}`);
+                
+                setTimeout(() => {
+                    window.location.href = `blackjack.html?roomid=${roomCode}`;
+                }, 1500);
+
+            } catch (error) {
+                console.error('Erreur création room:', error);
+                showError('Erreur lors de la création de la room');
+                elements.createRoomBtn.disabled = false;
+                elements.createRoomBtn.textContent = '🚀 Créer ma Room';
+            }
+        }
+
+        // Rejoindre une room par code
+        async function joinRoomByCode() {
+            if (!isConnected || !currentUser) {
+                showError('Connexion Firebase requise !');
+                return;
+            }
+            
+            const roomCode = elements.roomCodeInput.value.trim().toUpperCase();
+            if (!roomCode) {
+                showError('Veuillez entrer un code de room');
+                return;
+            }
+
+            if (roomCode.length !== 6) {
+                showError('Le code de room doit contenir 6 caractères');
+                return;
+            }
+            
+            elements.joinRoomBtn.disabled = true;
+            elements.joinRoomBtn.textContent = 'Connexion...';
+            
+            try {
+                await joinRoom(roomCode);
+            } catch (error) {
+                elements.joinRoomBtn.disabled = false;
+                elements.joinRoomBtn.textContent = '🎯 Rejoindre';
+            }
+        }
+
+        // Rejoindre une room
+        async function joinRoom(roomCode) {
+            try {
+                const roomSnapshot = await database.ref('rooms/' + roomCode).once('value');
+                const roomData = roomSnapshot.val();
+                
+                if (!roomData) {
+                    showError('Room non trouvée');
+                    return;
+                }
+                
+                const playerCount = Object.values(roomData.players || {}).length;
+                const maxPlayers = roomData.settings?.maxPlayers || 5;
+                
+                if (playerCount >= maxPlayers) {
+                    showError('Room complète');
+                    return;
+                }
+                
+                if (roomData.players && roomData.players[currentUser.uid]) {
+                    showSuccess('Reconnexion à la room...');
+                    setTimeout(() => {
+                        window.location.href = `blackjack.html?roomid=${roomCode}`;
+                    }, 1000);
+                    return;
+                }
+
+                if (roomData.gamePhase !== 'waiting') {
+                    showError('La partie a déjà commencé dans cette room');
+                    return;
+                }
+                
+                const userSnapshot = await database.ref('users/' + currentUser.uid).once('value');
+                const userData = userSnapshot.val();
+                
+                await database.ref('rooms/' + roomCode + '/players/' + currentUser.uid).set({
+                    id: currentUser.uid,
+                    name: userData.displayName || 'Joueur',
+                    balance: userData.balance || 1000,
+                    cards: [],
+                    mainBet: 0,
+                    perfectPairsBet: 0,
+                    twentyOnePlusThreeBet: 0,
+                    totalBet: 0,
+                    score: 0,
+                    status: 'waiting',
+                    isReady: false,
+                    joinedAt: firebase.database.ServerValue.TIMESTAMP
+                });
+                
+                showSuccess(`Connexion à la room ${roomCode} réussie !`);
+                
+                setTimeout(() => {
+                    window.location.href = `blackjack.html?roomid=${roomCode}`;
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Erreur joinRoom:', error);
+                showError('Erreur lors de la connexion à la room');
+            }
+        }
+
+        // Écouter les rooms disponibles
+        function listenToAvailableRooms() {
+            if (roomsListener) {
+                roomsListener.off();
+            }
+
+            roomsListener = database.ref('rooms');
+            roomsListener.on('value', (snapshot) => {
+                const rooms = snapshot.val() || {};
+                displayAvailableRooms(rooms);
+            });
+        }
+
+        // Afficher les rooms disponibles
+        function displayAvailableRooms(rooms) {
+            const roomsList = elements.roomsList;
+            
+            // Filtrer les rooms publiques et actives
+            const availableRooms = Object.values(rooms).filter(room => {
+                const playerCount = Object.keys(room.players || {}).length;
+                const maxPlayers = room.settings?.maxPlayers || 5;
+                const isRecent = Date.now() - (room.lastActivity || 0) < 30 * 60 * 1000; // 30 minutes
+                
+                return playerCount < maxPlayers && isRecent;
+            });
+
+            if (availableRooms.length === 0) {
+                roomsList.innerHTML = `
+                    <div style="text-align: center; opacity: 0.6; padding: 2rem;">
+                        <p>Aucune room disponible pour le moment</p>
+                        <p style="font-size: 0.9rem; margin-top: 0.5rem;">Créez votre propre room pour commencer !</p>
+                    </div>
+                `;
+                return;
+            }
+
+            roomsList.innerHTML = availableRooms.map(room => {
+                const playerCount = Object.keys(room.players || {}).length;
+                const maxPlayers = room.settings?.maxPlayers || 5;
+                const canJoin = playerCount < maxPlayers && room.gamePhase === 'waiting';
+                
+                let statusClass = 'status-waiting';
+                let statusText = 'En attente';
+                
+                if (room.gamePhase === 'playing' || room.gamePhase === 'betting') {
+                    statusClass = 'status-playing';
+                    statusText = 'En jeu';
+                } else if (playerCount >= maxPlayers) {
+                    statusClass = 'status-full';
+                    statusText = 'Complète';
+                }
+
+                return `
+                    <div class="room-item" ${canJoin ? `onclick="joinRoom('${room.id}')"` : ''} 
+                         style="${!canJoin ? 'opacity: 0.6; cursor: not-allowed;' : ''}">
+                        <div class="room-info">
+                            <div class="room-code">${room.id}</div>
+                            <div class="room-details">
+                                <span>👑 ${room.hostName}</span>
+                                <span>👥 ${playerCount}/${maxPlayers}</span>
+                                <span>💰 ${room.settings?.minBet || 5}€ - ${room.settings?.maxBet || 500}€</span>
+                            </div>
+                        </div>
+                        <div class="room-status ${statusClass}">${statusText}</div>
+                        ${canJoin ? `<button class="btn btn-primary join-btn" onclick="event.stopPropagation(); joinRoom('${room.id}')">Rejoindre</button>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Gestion des événements
+        elements.roomCodeInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                joinRoomByCode();
+            }
+        });
+
+        elements.roomCodeInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        });
+
+        // Validation des paramètres
+        elements.minBet.addEventListener('change', () => {
+            const minBet = parseInt(elements.minBet.value);
+            const maxBet = parseInt(elements.maxBet.value);
+            
+            if (minBet >= maxBet) {
+                elements.maxBet.value = minBet + 5;
+            }
+        });
+
+        elements.maxBet.addEventListener('change', () => {
+            const minBet = parseInt(elements.minBet.value);
+            const maxBet = parseInt(elements.maxBet.value);
+            
+            if (maxBet <= minBet) {
+                elements.minBet.value = Math.max(1, maxBet - 5);
+            }
+        });
+
+        // Nettoyage
+        window.addEventListener('beforeunload', () => {
+            if (roomsListener) {
+                roomsListener.off();
+            }
+        });
+
+        // Initialisation
+        function init() {
+            createFloatingIcons();
+            
+            // Auto-remplir le code de room si présent dans l'URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomId = urlParams.get('join');
+            
+            if (roomId) {
+                elements.roomCodeInput.value = roomId.toUpperCase();
+                elements.roomCodeInput.focus();
+            }
+        }
+
+        // Lancement de l'application
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
