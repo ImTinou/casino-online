@@ -1,5 +1,8 @@
-// Fichier: firebase-config-improved.js
-// Configuration Firebase améliorée avec gestion d'erreurs et fallbacks
+// Fichier: firebase-config.js
+// Configuration Firebase centralisée pour SIO Casino
+// Version complète avec gestion d'erreurs et fallbacks
+
+console.log('🔥 Chargement firebase-config.js...');
 
 // Protection contre la redéclaration
 if (typeof window !== 'undefined' && typeof window.firebaseConfig === 'undefined') {
@@ -15,106 +18,176 @@ if (typeof window !== 'undefined' && typeof window.firebaseConfig === 'undefined
     };
 }
 
-// État de connexion global
+// Configuration Firebase
+const firebaseConfig = window.firebaseConfig;
+
+// État global Firebase
 window.firebaseState = {
     initialized: false,
     connected: false,
     authReady: false,
     retryCount: 0,
     maxRetries: 3,
-    fallbackMode: false
+    fallbackMode: false,
+    lastError: null
 };
 
-const firebaseConfig = window.firebaseConfig;
-
-// Gestionnaire d'erreurs centralisé
-class FirebaseErrorHandler {
-    static logError(error, context, severity = 'error') {
+// Gestionnaire d'erreurs Firebase
+class FirebaseManager {
+    static logError(error, context = 'Firebase') {
         const timestamp = new Date().toISOString();
-        console[severity](`[Firebase ${context}] ${timestamp}:`, error);
+        const errorMsg = `[${context}] ${timestamp}: ${error.message || error}`;
         
-        // Stocker les erreurs pour debugging
-        if (!window.firebaseErrors) window.firebaseErrors = [];
-        window.firebaseErrors.push({
+        console.error(errorMsg);
+        
+        // Stocker l'erreur
+        window.firebaseState.lastError = {
             timestamp,
             context,
-            error: error.message || error,
-            code: error.code,
-            severity
-        });
+            message: error.message || error,
+            code: error.code
+        };
         
-        // Limiter le stockage à 50 erreurs
-        if (window.firebaseErrors.length > 50) {
-            window.firebaseErrors.shift();
+        // Notifier l'interface si possible
+        if (typeof window !== 'undefined' && window.dispatchEvent) {
+            window.dispatchEvent(new CustomEvent('firebaseError', { 
+                detail: { error, context } 
+            }));
         }
     }
     
-    static getErrorSummary() {
-        return window.firebaseErrors || [];
-    }
-}
-
-// Gestionnaire de fallback
-class FallbackManager {
-    static enable() {
-        console.warn('🔄 Mode fallback activé - Fonctionnalités limitées');
-        window.firebaseState.fallbackMode = true;
-        
-        // Créer un utilisateur local temporaire
-        const fallbackUser = {
-            uid: 'fallback_' + Date.now(),
-            displayName: 'Utilisateur Local',
-            email: 'local@fallback.com',
-            balance: 1000,
-            isFallback: true,
-            createdAt: Date.now()
-        };
-        
-        sessionStorage.setItem('fallbackUser', JSON.stringify(fallbackUser));
-        this.setupLocalStorage();
-        
-        // Notifier l'utilisateur
-        this.showFallbackNotification();
+    static async waitForFirebaseSDK(timeout = 10000) {
+        return new Promise((resolve, reject) => {
+            const startTime = Date.now();
+            
+            const checkFirebase = () => {
+                if (typeof firebase !== 'undefined') {
+                    resolve(true);
+                    return;
+                }
+                
+                if (Date.now() - startTime > timeout) {
+                    reject(new Error('Timeout: Firebase SDK non chargé'));
+                    return;
+                }
+                
+                setTimeout(checkFirebase, 100);
+            };
+            
+            checkFirebase();
+        });
     }
     
-    static setupLocalStorage() {
-        // Simuler les opérations Firebase avec localStorage
-        window.fallbackDB = {
-            ref: (path) => ({
-                set: (data) => {
-                    localStorage.setItem(`fb_${path}`, JSON.stringify(data));
+    static enableFallbackMode() {
+        console.warn('🔄 Mode fallback Firebase activé');
+        window.firebaseState.fallbackMode = true;
+        
+        // Créer un simulateur Firebase simple
+        window.firebase = {
+            apps: [{ name: 'fallback-app' }],
+            database: () => ({
+                ref: (path) => ({
+                    set: (data) => {
+                        localStorage.setItem(`fb_${path}`, JSON.stringify(data));
+                        return Promise.resolve();
+                    },
+                    once: (event) => {
+                        const data = localStorage.getItem(`fb_${path}`);
+                        return Promise.resolve({
+                            val: () => data ? JSON.parse(data) : null
+                        });
+                    },
+                    on: (event, callback) => {
+                        const data = localStorage.getItem(`fb_${path}`);
+                        setTimeout(() => callback({ val: () => data ? JSON.parse(data) : null }), 100);
+                        return { off: () => {} };
+                    },
+                    off: () => {},
+                    update: (data) => {
+                        const current = JSON.parse(localStorage.getItem(`fb_${path}`) || '{}');
+                        localStorage.setItem(`fb_${path}`, JSON.stringify({ ...current, ...data }));
+                        return Promise.resolve();
+                    },
+                    remove: () => {
+                        localStorage.removeItem(`fb_${path}`);
+                        return Promise.resolve();
+                    }
+                }),
+                ServerValue: { TIMESTAMP: Date.now() }
+            }),
+            auth: () => ({
+                currentUser: JSON.parse(sessionStorage.getItem('fallbackUser') || 'null'),
+                onAuthStateChanged: (callback) => {
+                    const user = JSON.parse(sessionStorage.getItem('fallbackUser') || 'null');
+                    setTimeout(() => callback(user), 100);
+                },
+                signInWithEmailAndPassword: (email, password) => {
+                    const user = {
+                        uid: 'fallback_' + Date.now(),
+                        email: email,
+                        displayName: email.split('@')[0]
+                    };
+                    sessionStorage.setItem('fallbackUser', JSON.stringify(user));
+                    return Promise.resolve({ user });
+                },
+                createUserWithEmailAndPassword: (email, password) => {
+                    const user = {
+                        uid: 'fallback_' + Date.now(),
+                        email: email,
+                        displayName: email.split('@')[0]
+                    };
+                    sessionStorage.setItem('fallbackUser', JSON.stringify(user));
+                    return Promise.resolve({ user });
+                },
+                signOut: () => {
+                    sessionStorage.removeItem('fallbackUser');
                     return Promise.resolve();
                 },
-                once: (event) => {
-                    const data = localStorage.getItem(`fb_${path}`);
-                    return Promise.resolve({
-                        val: () => data ? JSON.parse(data) : null
-                    });
-                },
-                on: (event, callback) => {
-                    // Simuler l'écoute en temps réel
-                    const data = localStorage.getItem(`fb_${path}`);
-                    callback({
-                        val: () => data ? JSON.parse(data) : null
-                    });
+                setPersistence: () => Promise.resolve(),
+                Auth: {
+                    Persistence: {
+                        LOCAL: 'local',
+                        SESSION: 'session'
+                    }
                 }
             })
         };
+        
+        // Créer un utilisateur de base
+        if (!sessionStorage.getItem('fallbackUser')) {
+            const fallbackUser = {
+                uid: 'fallback_' + Date.now(),
+                email: 'local@fallback.com',
+                displayName: 'Utilisateur Local'
+            };
+            sessionStorage.setItem('fallbackUser', JSON.stringify(fallbackUser));
+        }
+        
+        window.firebaseState.initialized = true;
+        window.firebaseState.connected = true;
+        window.firebaseState.authReady = true;
+        
+        this.showFallbackNotification();
     }
     
     static showFallbackNotification() {
+        if (typeof document === 'undefined') return;
+        
         const notification = document.createElement('div');
+        notification.id = 'fallback-notification';
         notification.style.cssText = `
             position: fixed;
             top: 20px;
             right: 20px;
-            background: rgba(255, 170, 0, 0.9);
+            background: rgba(255, 170, 0, 0.95);
             color: white;
             padding: 15px 20px;
             border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
             z-index: 10000;
             font-family: Arial, sans-serif;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            font-size: 14px;
+            max-width: 300px;
             animation: slideIn 0.3s ease;
         `;
         
@@ -122,164 +195,159 @@ class FallbackManager {
             <div style="display: flex; align-items: center; gap: 10px;">
                 <span style="font-size: 1.2em;">⚠️</span>
                 <div>
-                    <div style="font-weight: bold;">Mode Hors Ligne</div>
-                    <div style="font-size: 0.9em; opacity: 0.9;">Fonctionnalités limitées</div>
+                    <div style="font-weight: bold; margin-bottom: 5px;">Mode Hors Ligne</div>
+                    <div style="opacity: 0.9; font-size: 12px;">
+                        Connexion Firebase limitée.<br>
+                        Fonctionnalités réduites.
+                    </div>
                 </div>
                 <button onclick="this.parentElement.parentElement.remove()" 
-                        style="background: none; border: none; color: white; font-size: 1.2em; cursor: pointer;">×</button>
+                        style="background: none; border: none; color: white; font-size: 18px; cursor: pointer; padding: 0 5px;">×</button>
             </div>
         `;
         
+        // Ajouter le CSS de l'animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+        
         document.body.appendChild(notification);
         
-        // Auto-remove après 10 secondes
+        // Auto-suppression après 10 secondes
         setTimeout(() => {
             if (notification.parentElement) {
                 notification.remove();
             }
         }, 10000);
     }
-    
-    static isActive() {
-        return window.firebaseState.fallbackMode;
-    }
 }
 
-// Gestionnaire de retry intelligent
-class RetryManager {
-    static async executeWithRetry(operation, context, maxRetries = 3) {
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            try {
-                const result = await operation();
-                if (attempt > 1) {
-                    console.log(`✅ ${context} réussi après ${attempt} tentatives`);
-                }
-                return result;
-            } catch (error) {
-                FirebaseErrorHandler.logError(error, `${context} (tentative ${attempt}/${maxRetries})`);
-                
-                if (attempt === maxRetries) {
-                    throw error;
-                }
-                
-                // Délai exponentiel
-                const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
-                console.log(`🔄 Retry ${context} dans ${delay}ms...`);
-                await new Promise(resolve => setTimeout(resolve, delay));
-            }
-        }
-    }
-}
-
-// Initialisation Firebase avec gestion d'erreurs avancée
-async function initializeFirebaseAdvanced() {
-    if (window.firebaseState.initialized) {
-        console.log('ℹ️ Firebase déjà initialisé');
-        return;
-    }
+// Initialisation Firebase sécurisée avec retry
+async function initializeFirebaseSecure() {
+    console.log('🔥 Initialisation Firebase...');
     
     try {
-        // Vérifier que Firebase SDK est chargé
-        if (typeof firebase === 'undefined') {
-            throw new Error('Firebase SDK non chargé');
+        // Attendre que Firebase SDK soit chargé
+        await FirebaseManager.waitForFirebaseSDK();
+        
+        // Vérifier si Firebase est déjà initialisé
+        if (firebase.apps.length > 0) {
+            console.log('ℹ️ Firebase déjà initialisé');
+            window.firebaseState.initialized = true;
+            setupFirebaseListeners();
+            return;
         }
         
         // Initialiser Firebase
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-            console.log('✅ Firebase initialisé avec succès');
-        }
-        
-        // Configuration Auth avec gestion d'erreurs
-        await setupAuthentication();
-        
-        // Configuration Database avec retry
-        await setupDatabase();
+        firebase.initializeApp(firebaseConfig);
+        console.log('✅ Firebase initialisé avec succès');
         
         window.firebaseState.initialized = true;
+        window.firebaseState.retryCount = 0;
         
-        // Nettoyer les rooms inactives
+        // Configurer les écouteurs
+        setupFirebaseListeners();
+        
+        // Configurer l'authentification
+        setupAuthListeners();
+        
+        // Nettoyage automatique des rooms
         setupRoomCleanup();
         
-    } catch (error) {
-        FirebaseErrorHandler.logError(error, 'Initialisation');
+        // Événement personnalisé
+        if (typeof window !== 'undefined' && window.dispatchEvent) {
+            window.dispatchEvent(new CustomEvent('firebaseInitialized'));
+        }
         
-        // Si échec critique, activer le mode fallback
-        if (window.firebaseState.retryCount >= window.firebaseState.maxRetries) {
-            FallbackManager.enable();
-        } else {
+    } catch (error) {
+        FirebaseManager.logError(error, 'Initialisation');
+        
+        // Retry avec délai exponentiel
+        if (window.firebaseState.retryCount < window.firebaseState.maxRetries) {
             window.firebaseState.retryCount++;
-            const delay = 3000 * window.firebaseState.retryCount;
-            console.log(`🔄 Retry initialisation dans ${delay}ms...`);
-            setTimeout(initializeFirebaseAdvanced, delay);
+            const delay = Math.pow(2, window.firebaseState.retryCount) * 1000;
+            console.log(`🔄 Retry initialisation dans ${delay}ms (${window.firebaseState.retryCount}/${window.firebaseState.maxRetries})`);
+            setTimeout(initializeFirebaseSecure, delay);
+        } else {
+            console.error('❌ Échec initialisation Firebase après plusieurs tentatives');
+            FirebaseManager.enableFallbackMode();
         }
     }
 }
 
+// Configuration des écouteurs Firebase
+function setupFirebaseListeners() {
+    if (!firebase.apps.length) return;
+    
+    const database = firebase.database();
+    
+    // Vérifier la connexion à la base de données
+    database.ref('.info/connected').on('value', (snapshot) => {
+        const connected = snapshot.val();
+        window.firebaseState.connected = connected;
+        
+        if (connected) {
+            console.log('✅ Database connectée');
+            window.firebaseState.retryCount = 0;
+        } else {
+            console.log('❌ Database déconnectée');
+        }
+        
+        updateConnectionStatus(connected);
+        
+        // Émettre événement
+        if (typeof window !== 'undefined' && window.dispatchEvent) {
+            window.dispatchEvent(new CustomEvent('firebaseConnectionChanged', { 
+                detail: { connected } 
+            }));
+        }
+    });
+    
+    // Gestion des erreurs de permissions
+    database.ref('.info/connected').on('value', () => {}, (error) => {
+        if (error.code === 'PERMISSION_DENIED') {
+            FirebaseManager.logError(error, 'Permissions Database');
+            console.warn('⚠️ Permissions limitées - Vérifiez les règles Firebase');
+        }
+    });
+}
+
 // Configuration de l'authentification
-async function setupAuthentication() {
-    return RetryManager.executeWithRetry(async () => {
-        const auth = firebase.auth();
+function setupAuthListeners() {
+    if (!firebase.apps.length) return;
+    
+    const auth = firebase.auth();
+    
+    // Configurer la persistance
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(error => {
+        FirebaseManager.logError(error, 'Persistance Auth');
+    });
+    
+    // Écouter les changements d'état d'authentification
+    auth.onAuthStateChanged((user) => {
+        window.firebaseState.authReady = true;
         
-        // Configuration de la persistance
-        await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+        if (user) {
+            console.log('✅ Utilisateur connecté:', user.displayName || user.email);
+            
+            // Mettre à jour l'activité utilisateur
+            updateUserActivity(user.uid);
+        } else {
+            console.log('ℹ️ Aucun utilisateur connecté');
+        }
         
-        // Gestion des changements d'état auth
-        auth.onAuthStateChanged((user) => {
-            window.firebaseState.authReady = true;
-            
-            if (user) {
-                console.log('✅ Utilisateur connecté:', user.displayName || user.email);
-                // Mettre à jour l'activité utilisateur
-                updateUserActivity(user.uid);
-            } else {
-                console.log('ℹ️ Aucun utilisateur connecté');
-            }
-            
-            // Émettre événement personnalisé
+        // Émettre événement
+        if (typeof window !== 'undefined' && window.dispatchEvent) {
             window.dispatchEvent(new CustomEvent('authStateChanged', { 
                 detail: { user, isReady: true } 
             }));
-        });
-        
-        console.log('✅ Authentication configurée');
-    }, 'Configuration Auth');
-}
-
-// Configuration de la base de données
-async function setupDatabase() {
-    return RetryManager.executeWithRetry(async () => {
-        const database = firebase.database();
-        
-        // Surveillance de la connexion
-        database.ref('.info/connected').on('value', (snapshot) => {
-            const connected = snapshot.val();
-            window.firebaseState.connected = connected;
-            
-            if (connected) {
-                console.log('✅ Database connectée');
-                window.firebaseState.retryCount = 0; // Reset sur succès
-                
-                // Événement personnalisé
-                window.dispatchEvent(new CustomEvent('databaseConnected'));
-            } else {
-                console.log('❌ Database déconnectée');
-                window.dispatchEvent(new CustomEvent('databaseDisconnected'));
-            }
-            
-            updateConnectionStatus(connected);
-        });
-        
-        // Gestion des erreurs de permissions
-        database.ref('.info/connected').on('value', () => {}, (error) => {
-            if (error.code === 'PERMISSION_DENIED') {
-                FirebaseErrorHandler.logError(error, 'Permissions Database');
-                console.warn('⚠️ Permissions limitées - Certaines fonctionnalités peuvent être indisponibles');
-            }
-        });
-        
-        console.log('✅ Database configurée');
-    }, 'Configuration Database');
+        }
+    });
 }
 
 // Mettre à jour l'activité utilisateur
@@ -291,7 +359,7 @@ async function updateUserActivity(uid) {
             .ref(`users/${uid}/lastActivity`)
             .set(firebase.database.ServerValue.TIMESTAMP);
     } catch (error) {
-        FirebaseErrorHandler.logError(error, 'Mise à jour activité', 'warn');
+        FirebaseManager.logError(error, 'Mise à jour activité');
     }
 }
 
@@ -299,10 +367,10 @@ async function updateUserActivity(uid) {
 function updateConnectionStatus(connected) {
     const statusElement = document.getElementById('connectionStatus');
     if (statusElement) {
-        if (connected && !FallbackManager.isActive()) {
+        if (connected && !window.firebaseState.fallbackMode) {
             statusElement.className = 'connection-status status-connected';
             statusElement.textContent = '🟢 Connecté';
-        } else if (FallbackManager.isActive()) {
+        } else if (window.firebaseState.fallbackMode) {
             statusElement.className = 'connection-status status-fallback';
             statusElement.textContent = '🟡 Mode Local';
         } else {
@@ -320,7 +388,7 @@ function updateConnectionStatus(connected) {
 
 // Nettoyage automatique des rooms
 function setupRoomCleanup() {
-    if (!window.firebaseState.connected) return;
+    if (!window.firebaseState.connected || window.firebaseState.fallbackMode) return;
     
     const cleanupInterval = 30 * 60 * 1000; // 30 minutes
     const roomMaxAge = 2 * 60 * 60 * 1000; // 2 heures
@@ -344,12 +412,12 @@ function setupRoomCleanup() {
                 console.log(`🧹 ${roomIds.length} rooms inactives supprimées`);
             }
         } catch (error) {
-            FirebaseErrorHandler.logError(error, 'Nettoyage rooms', 'warn');
+            FirebaseManager.logError(error, 'Nettoyage rooms');
         }
     }, cleanupInterval);
 }
 
-// Utilitaires pour les pages
+// Utilitaires Firebase
 window.FirebaseUtils = {
     // Vérifier si Firebase est prêt
     isReady() {
@@ -357,19 +425,22 @@ window.FirebaseUtils = {
     },
     
     // Attendre que Firebase soit prêt
-    waitForReady() {
-        return new Promise((resolve) => {
-            if (this.isReady()) {
-                resolve();
-                return;
-            }
+    waitForReady(timeout = 10000) {
+        return new Promise((resolve, reject) => {
+            const startTime = Date.now();
             
             const checkReady = () => {
                 if (this.isReady()) {
                     resolve();
-                } else {
-                    setTimeout(checkReady, 100);
+                    return;
                 }
+                
+                if (Date.now() - startTime > timeout) {
+                    reject(new Error('Timeout: Firebase non prêt'));
+                    return;
+                }
+                
+                setTimeout(checkReady, 100);
             };
             
             checkReady();
@@ -378,14 +449,14 @@ window.FirebaseUtils = {
     
     // Opération sécurisée avec fallback
     async safeOperation(operation, fallback = null) {
-        if (FallbackManager.isActive() && fallback) {
+        if (window.firebaseState.fallbackMode && fallback) {
             return fallback();
         }
         
         try {
             return await operation();
         } catch (error) {
-            FirebaseErrorHandler.logError(error, 'Opération sécurisée');
+            FirebaseManager.logError(error, 'Opération sécurisée');
             if (fallback) {
                 return fallback();
             }
@@ -393,38 +464,74 @@ window.FirebaseUtils = {
         }
     },
     
-    // Obtenir l'état de connexion
-    getConnectionState() {
+    // Obtenir l'état Firebase
+    getState() {
         return {
             ...window.firebaseState,
-            errors: FirebaseErrorHandler.getErrorSummary()
+            hasUser: firebase.auth && firebase.auth().currentUser !== null
         };
+    },
+    
+    // Forcer le mode fallback
+    enableFallback() {
+        FirebaseManager.enableFallbackMode();
+    },
+    
+    // Tester la connexion Firebase
+    async testConnection() {
+        if (window.firebaseState.fallbackMode) {
+            return { status: 'fallback', message: 'Mode fallback actif' };
+        }
+        
+        try {
+            const snapshot = await firebase.database().ref('.info/connected').once('value');
+            const connected = snapshot.val();
+            return { 
+                status: connected ? 'connected' : 'disconnected',
+                message: connected ? 'Connexion OK' : 'Connexion échouée'
+            };
+        } catch (error) {
+            return { 
+                status: 'error',
+                message: error.message
+            };
+        }
     }
 };
 
-// Initialiser Firebase quand le DOM est prêt
+// Gestion des événements de réseau
 if (typeof window !== 'undefined') {
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeFirebaseAdvanced);
-    } else {
-        initializeFirebaseAdvanced();
-    }
-    
-    // Gérer la perte de connexion internet
     window.addEventListener('offline', () => {
         console.warn('📱 Connexion internet perdue');
-        if (!FallbackManager.isActive()) {
-            FallbackManager.enable();
+        if (!window.firebaseState.fallbackMode) {
+            FirebaseManager.enableFallbackMode();
         }
     });
     
     window.addEventListener('online', () => {
         console.log('📱 Connexion internet rétablie');
-        // Réinitialiser Firebase si nécessaire
-        if (FallbackManager.isActive()) {
-            location.reload();
+        if (window.firebaseState.fallbackMode) {
+            window.firebaseState.retryCount = 0;
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
         }
     });
 }
 
-console.log('🎰 SIO Casino - Firebase Config Amélioré chargé');
+// Initialisation automatique
+if (typeof window !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(initializeFirebaseSecure, 100);
+        });
+    } else {
+        setTimeout(initializeFirebaseSecure, 100);
+    }
+}
+
+// Exports globaux
+window.initializeFirebaseSecure = initializeFirebaseSecure;
+window.FirebaseManager = FirebaseManager;
+
+console.log('🎰 SIO Casino - Firebase Config Complet chargé');
