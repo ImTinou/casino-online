@@ -1,10 +1,9 @@
-<!-- Fichier: index.html -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIO Casino - Le Casino en Ligne Nouvelle Génération</title>
+    <title>SIO Casino - Premium Gaming Platform</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -17,63 +16,22 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 25%, #16213e 50%, #0f1f1a 75%, #0a0a1a 100%);
-            color: white;
-            min-height: 100vh;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+            color: #e0e0e0;
             overflow-x: hidden;
-            position: relative;
+            min-height: 100vh;
         }
 
-        /* Animations de fond */
-        .background-animation {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        .floating-icon {
-            position: absolute;
-            font-size: 2rem;
-            opacity: 0.1;
-            animation: float 15s infinite linear;
-            color: #00d4ff;
-        }
-
-        @keyframes float {
-            0% { transform: translateY(100vh) rotate(0deg); }
-            100% { transform: translateY(-100px) rotate(360deg); }
-        }
-
-        .floating-icon:nth-child(odd) {
-            color: #ff00d4;
-            animation-duration: 20s;
-        }
-
-        .floating-icon:nth-child(3n) {
-            color: #00ff88;
-            animation-duration: 18s;
-        }
-
-        /* Header */
         .header {
+            background: rgba(15, 15, 30, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             position: fixed;
             top: 0;
             width: 100%;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(15px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             z-index: 1000;
             transition: all 0.3s ease;
-        }
-
-        .header.scrolled {
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(20px);
         }
 
         .nav-container {
@@ -82,26 +40,22 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1rem 2rem;
+            padding: 0 2rem;
+            height: 70px;
         }
 
         .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #00d4aa;
+            text-decoration: none;
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            font-size: 2rem;
-            font-weight: bold;
-            background: linear-gradient(45deg, #00d4ff, #ff00d4, #00ff88);
-            background-size: 300% 300%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: gradient-shift 3s ease-in-out infinite;
         }
 
-        @keyframes gradient-shift {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
+        .logo span {
+            color: #ffffff;
         }
 
         .nav-menu {
@@ -112,86 +66,74 @@
         }
 
         .nav-link {
-            color: white;
+            color: rgba(255, 255, 255, 0.7);
             text-decoration: none;
             font-weight: 500;
-            transition: all 0.3s ease;
+            transition: color 0.3s ease;
             position: relative;
             padding: 0.5rem 0;
         }
 
-        .nav-link::before {
+        .nav-link:hover {
+            color: #00d4aa;
+        }
+
+        .nav-link::after {
             content: '';
             position: absolute;
             bottom: 0;
             left: 0;
             width: 0;
             height: 2px;
-            background: linear-gradient(45deg, #00d4ff, #ff00d4);
+            background: #00d4aa;
             transition: width 0.3s ease;
         }
 
-        .nav-link:hover::before {
+        .nav-link:hover::after {
             width: 100%;
-        }
-
-        .nav-link:hover {
-            color: #00d4ff;
-            transform: translateY(-2px);
         }
 
         .auth-buttons {
             display: flex;
             gap: 1rem;
+            align-items: center;
         }
 
         .btn {
-            padding: 10px 20px;
+            padding: 0.75rem 1.5rem;
             border: none;
-            border-radius: 25px;
-            font-weight: bold;
+            border-radius: 8px;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             text-decoration: none;
-            display: inline-block;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.5s;
-        }
-
-        .btn:hover::before {
-            left: 100%;
-        }
-
-        .btn-primary {
-            background: linear-gradient(45deg, #00d4ff, #0099cc);
-            color: white;
-            border: 1px solid rgba(0, 212, 255, 0.5);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
         }
 
         .btn-outline {
             background: transparent;
-            color: #00d4ff;
-            border: 2px solid #00d4ff;
+            color: #00d4aa;
+            border: 1px solid #00d4aa;
         }
 
-        .btn:hover {
+        .btn-outline:hover {
+            background: #00d4aa;
+            color: #0f0f1e;
+        }
+
+        .btn-primary {
+            background: #00d4aa;
+            color: #0f0f1e;
+        }
+
+        .btn-primary:hover {
+            background: #00b894;
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0, 212, 255, 0.3);
         }
 
-        /* Hero Section */
         .hero {
             min-height: 100vh;
             display: flex;
@@ -199,81 +141,57 @@
             justify-content: center;
             text-align: center;
             position: relative;
-            z-index: 2;
-            background: radial-gradient(ellipse at center, rgba(0, 212, 255, 0.1) 0%, transparent 70%);
+            padding: 5rem 2rem 2rem;
         }
 
         .hero-content {
-            max-width: 1000px;
-            padding: 0 2rem;
+            max-width: 800px;
+            z-index: 2;
+            position: relative;
         }
 
         .hero h1 {
-            font-size: clamp(3rem, 8vw, 6rem);
-            margin-bottom: 1rem;
-            background: linear-gradient(45deg, #00d4ff, #ff00d4, #00ff88, #ffaa00);
-            background-size: 400% 400%;
+            font-size: clamp(3rem, 8vw, 5rem);
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            color: #ffffff;
+            line-height: 1.1;
+        }
+
+        .hero-gradient {
+            background: linear-gradient(135deg, #00d4aa, #ffffff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            animation: rainbow 4s ease-in-out infinite;
-            text-shadow: 0 0 50px rgba(0, 212, 255, 0.5);
-        }
-
-        @keyframes rainbow {
-            0%, 100% { background-position: 0% 50%; }
-            25% { background-position: 100% 50%; }
-            50% { background-position: 100% 100%; }
-            75% { background-position: 0% 100%; }
         }
 
         .hero-subtitle {
-            font-size: clamp(1.2rem, 3vw, 2rem);
+            font-size: 1.3rem;
+            color: rgba(255, 255, 255, 0.8);
             margin-bottom: 2rem;
-            opacity: 0.9;
-            font-weight: 300;
-        }
-
-        .hero-description {
-            font-size: 1.2rem;
-            margin-bottom: 3rem;
-            opacity: 0.8;
             line-height: 1.6;
+            font-weight: 400;
         }
 
         .hero-buttons {
             display: flex;
-            gap: 2rem;
+            gap: 1rem;
             justify-content: center;
             flex-wrap: wrap;
+            margin-bottom: 3rem;
         }
 
         .btn-hero {
-            padding: 15px 40px;
+            padding: 1rem 2rem;
             font-size: 1.1rem;
-            border-radius: 50px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            border-radius: 12px;
+            min-width: 180px;
         }
 
-        .btn-glow {
-            background: linear-gradient(45deg, #00d4ff, #0099cc);
-            box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
-            animation: pulse-glow 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 30px rgba(0, 212, 255, 0.5); }
-            50% { box-shadow: 0 0 50px rgba(0, 212, 255, 0.8); }
-        }
-
-        /* Stats Section */
         .stats-section {
-            padding: 4rem 2rem;
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
-            position: relative;
-            z-index: 2;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 3rem 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .stats-container {
@@ -285,95 +203,72 @@
         }
 
         .stat-card {
-            text-align: center;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
             padding: 2rem;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
             transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.1), transparent);
-            transition: left 1s;
-        }
-
-        .stat-card:hover::before {
-            left: 100%;
         }
 
         .stat-card:hover {
-            transform: translateY(-10px);
-            border-color: rgba(0, 212, 255, 0.5);
-            box-shadow: 0 20px 40px rgba(0, 212, 255, 0.2);
+            transform: translateY(-8px);
+            border-color: rgba(0, 212, 170, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 212, 170, 0.1);
         }
 
         .stat-icon {
-            font-size: 3rem;
+            font-size: 2.5rem;
             margin-bottom: 1rem;
-            color: #00d4ff;
+            color: #00d4aa;
         }
 
         .stat-number {
             font-size: 2.5rem;
-            font-weight: bold;
-            color: #00ff88;
+            font-weight: 700;
+            color: #ffffff;
             margin-bottom: 0.5rem;
         }
 
         .stat-label {
-            font-size: 1.1rem;
-            opacity: 0.8;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1rem;
+            font-weight: 500;
         }
 
-        /* Games Section */
         .games-section {
-            padding: 6rem 2rem;
-            position: relative;
-            z-index: 2;
+            padding: 5rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
         .section-title {
             text-align: center;
-            font-size: 3rem;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #ffffff;
             margin-bottom: 3rem;
-            background: linear-gradient(45deg, #00d4ff, #ff00d4);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
         }
 
         .games-grid {
-            max-width: 1400px;
-            margin: 0 auto;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
             gap: 2rem;
         }
 
         .game-card {
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 20px;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.1);
             transition: all 0.4s ease;
-            position: relative;
             cursor: pointer;
-            backdrop-filter: blur(10px);
         }
 
         .game-card:hover {
-            transform: translateY(-15px) scale(1.02);
-            border-color: rgba(0, 212, 255, 0.5);
-            box-shadow: 0 25px 50px rgba(0, 212, 255, 0.3);
+            transform: translateY(-12px);
+            border-color: rgba(0, 212, 170, 0.4);
+            box-shadow: 0 25px 50px rgba(0, 212, 170, 0.15);
         }
 
         .game-image {
@@ -386,27 +281,10 @@
             overflow: hidden;
         }
 
-        .game-image::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(45deg, transparent, rgba(0, 212, 255, 0.1), transparent);
-            transform: translateX(-100%);
-            transition: transform 0.8s;
-        }
-
-        .game-card:hover .game-image::before {
-            transform: translateX(100%);
-        }
-
         .game-icon {
             font-size: 4rem;
-            color: #00d4ff;
+            color: #00d4aa;
             z-index: 1;
-            position: relative;
         }
 
         .game-content {
@@ -415,15 +293,15 @@
 
         .game-title {
             font-size: 1.5rem;
-            font-weight: bold;
+            font-weight: 600;
+            color: #ffffff;
             margin-bottom: 1rem;
-            color: #00d4ff;
         }
 
         .game-description {
-            opacity: 0.8;
-            margin-bottom: 1.5rem;
+            color: rgba(255, 255, 255, 0.7);
             line-height: 1.6;
+            margin-bottom: 1.5rem;
         }
 
         .game-features {
@@ -433,43 +311,68 @@
 
         .game-features li {
             padding: 0.3rem 0;
-            color: #00ff88;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
         }
 
         .game-features li::before {
-            content: '✓ ';
-            color: #00ff88;
+            content: '✓';
+            color: #00d4aa;
             font-weight: bold;
+            margin-right: 0.5rem;
         }
 
         .game-status {
             display: inline-block;
             padding: 0.5rem 1rem;
-            border-radius: 15px;
-            font-size: 0.9rem;
-            font-weight: bold;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
             margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .status-available {
-            background: rgba(0, 255, 136, 0.2);
-            color: #00ff88;
-            border: 1px solid rgba(0, 255, 136, 0.3);
+            background: rgba(0, 212, 170, 0.2);
+            color: #00d4aa;
+            border: 1px solid rgba(0, 212, 170, 0.3);
         }
 
         .status-coming-soon {
-            background: rgba(255, 170, 0, 0.2);
-            color: #ffaa00;
-            border: 1px solid rgba(255, 170, 0, 0.3);
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+            border: 1px solid rgba(255, 193, 7, 0.3);
         }
 
-        /* Footer */
+        .game-button {
+            width: 100%;
+            padding: 1rem;
+            background: #00d4aa;
+            color: #0f0f1e;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .game-button:hover {
+            background: #00b894;
+            transform: translateY(-2px);
+        }
+
+        .game-button:disabled {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+            cursor: not-allowed;
+        }
+
         .footer {
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(15, 15, 30, 0.8);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
             padding: 3rem 2rem 2rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            position: relative;
-            z-index: 2;
+            margin-top: 5rem;
         }
 
         .footer-content {
@@ -481,8 +384,10 @@
         }
 
         .footer-section h3 {
-            color: #00d4ff;
+            color: #00d4aa;
             margin-bottom: 1rem;
+            font-size: 1.1rem;
+            font-weight: 600;
         }
 
         .footer-section a {
@@ -494,45 +399,56 @@
         }
 
         .footer-section a:hover {
-            color: #00d4ff;
+            color: #00d4aa;
         }
 
         .footer-bottom {
             text-align: center;
             margin-top: 2rem;
             padding-top: 2rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            opacity: 0.7;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.6);
         }
 
-        /* Responsive */
-        @media (max-width: 768px) {
-            .nav-menu {
-                display: none;
-            }
-            
-            .hero-buttons {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .btn-hero {
-                width: 250px;
-            }
-            
-            .games-grid {
-                grid-template-columns: 1fr;
-            }
+        .user-panel {
+            position: fixed;
+            top: 80px;
+            right: 2rem;
+            background: rgba(15, 15, 30, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: none;
+            z-index: 999;
+            min-width: 200px;
         }
 
-        /* Loading Animation */
+        .user-panel.show {
+            display: block;
+        }
+
+        .balance-display {
+            color: #00d4aa;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .user-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
         .loading {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #0a0a1a, #1a0a2e);
+            background: #0f0f1e;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -545,11 +461,11 @@
             pointer-events: none;
         }
 
-        .loading-spinner {
-            width: 60px;
-            height: 60px;
-            border: 3px solid rgba(0, 212, 255, 0.3);
-            border-top: 3px solid #00d4ff;
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(0, 212, 170, 0.3);
+            border-top: 3px solid #00d4aa;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -559,64 +475,51 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* User Panel */
-        .user-panel {
-            position: fixed;
-            top: 80px;
-            right: 2rem;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 1rem;
-            border-radius: 15px;
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            backdrop-filter: blur(10px);
-            display: none;
-            z-index: 999;
-        }
-
-        .user-panel.show {
-            display: block;
-            animation: slideIn 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        .balance-display {
-            color: #00ff88;
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
+        @media (max-width: 768px) {
+            .nav-menu {
+                display: none;
+            }
+            
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn-hero {
+                width: 100%;
+                max-width: 300px;
+            }
+            
+            .games-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Loading Screen -->
     <div class="loading" id="loading">
-        <div class="loading-spinner"></div>
+        <div class="spinner"></div>
     </div>
 
-    <!-- Background Animation -->
-    <div class="background-animation" id="backgroundAnimation"></div>
-
-    <!-- Header -->
     <header class="header" id="header">
         <nav class="nav-container">
-            <div class="logo">
-                🎰 SIO Casino
-            </div>
+            <a href="#" class="logo">
+                SIO <span>CASINO</span>
+            </a>
             <ul class="nav-menu">
                 <li><a href="#home" class="nav-link">Accueil</a></li>
                 <li><a href="#games" class="nav-link">Jeux</a></li>
                 <li><a href="#tournaments" class="nav-link">Tournois</a></li>
-                <li><a href="#promotions" class="nav-link">Promotions</a></li>
                 <li><a href="#support" class="nav-link">Support</a></li>
             </ul>
             <div class="auth-buttons">
                 <div id="authButtons">
-                    <button class="btn btn-outline" onclick="showAuth('login')">Connexion</button>
-                    <button class="btn btn-primary" onclick="showAuth('register')">S'inscrire</button>
+                    <a href="login.html" class="btn btn-outline">Connexion</a>
+                    <a href="register.html" class="btn btn-primary">S'inscrire</a>
                 </div>
                 <div id="userInfo" style="display: none;">
                     <span id="userBalance" class="balance-display">1000€</span>
@@ -626,40 +529,38 @@
         </nav>
     </header>
 
-    <!-- User Panel -->
     <div class="user-panel" id="userPanel">
-        <div class="balance-display" id="userPanelBalance">Balance: 1000€</div>
-        <button class="btn btn-primary" style="width: 100%; margin-bottom: 0.5rem;">Dépôt</button>
-        <button class="btn btn-outline" style="width: 100%;">Retrait</button>
+        <div class="balance-display" id="userPanelBalance">1000€</div>
+        <div class="user-actions">
+            <button class="btn btn-primary">Dépôt</button>
+            <button class="btn btn-outline">Retrait</button>
+        </div>
     </div>
 
-    <!-- Hero Section -->
     <section class="hero" id="home">
         <div class="hero-content">
-            <h1>SIO CASINO</h1>
-            <p class="hero-subtitle">L'Expérience Casino Nouvelle Génération</p>
-            <p class="hero-description">
-                Découvrez l'avenir du jeu en ligne avec des graphismes époustouflants, 
-                des parties multijoueurs en temps réel et des gains crypto instantanés.
+            <h1>L'Avenir du <span class="hero-gradient">Gaming</span></h1>
+            <p class="hero-subtitle">
+                Découvrez une expérience de jeu premium avec des graphismes de nouvelle génération, 
+                des parties multijoueurs instantanées et des retraits crypto ultra-rapides.
             </p>
             <div class="hero-buttons">
-                <button class="btn btn-hero btn-glow" onclick="startPlaying()">
-                    🚀 Commencer à Jouer
+                <button class="btn btn-primary btn-hero" onclick="startPlaying()">
+                    Commencer
                 </button>
-                <button class="btn btn-hero btn-outline" onclick="scrollToGames()">
-                    🎮 Découvrir les Jeux
+                <button class="btn btn-outline btn-hero" onclick="scrollToGames()">
+                    Découvrir
                 </button>
             </div>
         </div>
     </section>
 
-    <!-- Stats Section -->
     <section class="stats-section">
         <div class="stats-container">
             <div class="stat-card">
                 <div class="stat-icon">👥</div>
                 <div class="stat-number" id="playersOnline">247</div>
-                <div class="stat-label">Joueurs en ligne</div>
+                <div class="stat-label">Joueurs actifs</div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon">💰</div>
@@ -679,9 +580,8 @@
         </div>
     </section>
 
-    <!-- Games Section -->
     <section class="games-section" id="games">
-        <h2 class="section-title">🎮 Nos Jeux</h2>
+        <h2 class="section-title">Jeux Disponibles</h2>
         <div class="games-grid">
             <div class="game-card" onclick="playGame('blackjack')">
                 <div class="game-image">
@@ -691,16 +591,37 @@
                     <div class="game-status status-available">Disponible</div>
                     <h3 class="game-title">Blackjack Multijoueur</h3>
                     <p class="game-description">
-                        Affrontez le croupier avec jusqu'à 5 joueurs simultanément. 
-                        Stratégie, chance et adrénaline garanties !
+                        Affrontez le croupier dans des parties jusqu'à 5 joueurs simultanément. 
+                        Stratégie pure et adrénaline garantie.
                     </p>
                     <ul class="game-features">
                         <li>Parties en temps réel</li>
                         <li>Jusqu'à 5 joueurs</li>
-                        <li>Système de rooms privées</li>
+                        <li>Rooms privées</li>
                         <li>Interface moderne</li>
                     </ul>
-                    <button class="btn btn-primary" style="width: 100%;">Jouer Maintenant</button>
+                    <button class="game-button">Jouer Maintenant</button>
+                </div>
+            </div>
+
+            <div class="game-card" onclick="playGame('plinko')">
+                <div class="game-image">
+                    <div class="game-icon">🎯</div>
+                </div>
+                <div class="game-content">
+                    <div class="game-status status-available">Disponible</div>
+                    <h3 class="game-title">Plinko</h3>
+                    <p class="game-description">
+                        Lâchez la bille et regardez-la rebondir pour décrocher 
+                        des multiplicateurs jusqu'à 1000x votre mise.
+                    </p>
+                    <ul class="game-features">
+                        <li>Multiplicateurs jusqu'à 1000x</li>
+                        <li>Physique réaliste</li>
+                        <li>Plusieurs niveaux de difficulté</li>
+                        <li>Gains instantanés</li>
+                    </ul>
+                    <button class="game-button">Jouer Maintenant</button>
                 </div>
             </div>
 
@@ -712,8 +633,8 @@
                     <div class="game-status status-coming-soon">Bientôt</div>
                     <h3 class="game-title">Machines à Sous</h3>
                     <p class="game-description">
-                        Des slots modernes avec des jackpots progressifs 
-                        et des animations 3D époustouflantes.
+                        Slots modernes avec jackpots progressifs et animations 3D 
+                        époustouflantes pour une expérience immersive.
                     </p>
                     <ul class="game-features">
                         <li>Jackpots progressifs</li>
@@ -721,7 +642,7 @@
                         <li>Bonus multiples</li>
                         <li>Thèmes variés</li>
                     </ul>
-                    <button class="btn btn-outline" style="width: 100%;" disabled>Bientôt disponible</button>
+                    <button class="game-button" disabled>Bientôt Disponible</button>
                 </div>
             </div>
 
@@ -734,7 +655,7 @@
                     <h3 class="game-title">Roulette Live</h3>
                     <p class="game-description">
                         Roulette européenne en direct avec croupiers réels 
-                        et diffusion HD 24h/24.
+                        et diffusion HD 24h/24 pour une ambiance casino authentique.
                     </p>
                     <ul class="game-features">
                         <li>Croupiers en direct</li>
@@ -742,167 +663,114 @@
                         <li>Chat en temps réel</li>
                         <li>Statistiques avancées</li>
                     </ul>
-                    <button class="btn btn-outline" style="width: 100%;" disabled>Bientôt disponible</button>
-                </div>
-            </div>
-
-            <div class="game-card">
-                <div class="game-image">
-                    <div class="game-icon">🂡</div>
-                </div>
-                <div class="game-content">
-                    <div class="game-status status-coming-soon">Bientôt</div>
-                    <h3 class="game-title">Poker Texas Hold'em</h3>
-                    <p class="game-description">
-                        Tournois de poker multijoueurs avec des buy-ins 
-                        pour tous les niveaux.
-                    </p>
-                    <ul class="game-features">
-                        <li>Tournois quotidiens</li>
-                        <li>Cash games</li>
-                        <li>Classements</li>
-                        <li>Replay des mains</li>
-                    </ul>
-                    <button class="btn btn-outline" style="width: 100%;" disabled>Bientôt disponible</button>
-                </div>
-            </div>
-
-            <div class="game-card">
-                <div class="game-image">
-                    <div class="game-icon">💎</div>
-                </div>
-                <div class="game-content">
-                    <div class="game-status status-coming-soon">Bientôt</div>
-                    <h3 class="game-title">Crash</h3>
-                    <p class="game-description">
-                        Le jeu de crypto le plus addictif ! Misez et encaissez 
-                        avant que le multiplicateur crash.
-                    </p>
-                    <ul class="game-features">
-                        <li>Multiplicateurs jusqu'à 1000x</li>
-                        <li>Auto cash-out</li>
-                        <li>Historique détaillé</li>
-                        <li>Mode rapide</li>
-                    </ul>
-                    <button class="btn btn-outline" style="width: 100%;" disabled>Bientôt disponible</button>
-                </div>
-            </div>
-
-            <div class="game-card" onclick="window.location.href='plinko.html'">
-                <div class="game-image">
-                    <div class="game-icon">🎯</div>
-                </div>
-                <div class="game-content">
-                    <div class="game-status status-available">Disponible</div>
-                    <h3 class="game-title">Plinko</h3>
-                    <p class="game-description">
-                        Tente ta chance et fais rebondir la bille pour décrocher le meilleur multiplicateur !
-                    </p>
-                    <ul class="game-features">
-                        <li>Jeu de hasard dynamique</li>
-                        <li>Multiplicateurs variés</li>
-                        <li>Effets visuels modernes</li>
-                        <li>Accessible à tous</li>
-                    </ul>
-                    <button class="btn btn-primary" style="width: 100%;">Jouer Maintenant</button>
+                    <button class="game-button" disabled>Bientôt Disponible</button>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Footer -->
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-section">
                 <h3>SIO Casino</h3>
-                <p>L'expérience casino nouvelle génération avec la technologie blockchain.</p>
+                <p>Plateforme de gaming premium avec technologie blockchain nouvelle génération.</p>
             </div>
             <div class="footer-section">
                 <h3>Jeux</h3>
                 <a href="rooms.html">Blackjack</a>
-                <a href="#" onclick="alert('Bientôt disponible!')">Machines à Sous</a>
-                <a href="#" onclick="alert('Bientôt disponible!')">Roulette</a>
-                <a href="#" onclick="alert('Bientôt disponible!')">Poker</a>
+                <a href="plinko.html">Plinko</a>
+                <a href="#">Machines à Sous</a>
+                <a href="#">Roulette</a>
             </div>
             <div class="footer-section">
                 <h3>Compte</h3>
                 <a href="login.html">Connexion</a>
                 <a href="register.html">Inscription</a>
                 <a href="dashboard.html">Dashboard</a>
-                <a href="#" onclick="alert('Bientôt disponible!')">Profil</a>
+                <a href="#">Profil</a>
             </div>
             <div class="footer-section">
                 <h3>Support</h3>
-                <a href="#" onclick="alert('Bientôt disponible!')">Centre d'aide</a>
-                <a href="#" onclick="alert('Bientôt disponible!')">Chat en direct</a>
-                <a href="#" onclick="alert('Bientôt disponible!')">Contactez-nous</a>
-                <a href="#" onclick="alert('Bientôt disponible!')">FAQ</a>
-            </div>
-            <div class="footer-section">
-                <h3>Légal</h3>
-                <a href="#">Conditions d'utilisation</a>
-                <a href="#">Politique de confidentialité</a>
-                <a href="#">Jeu responsable</a>
-                <a href="#">Licences</a>
+                <a href="#">Centre d'aide</a>
+                <a href="#">Chat en direct</a>
+                <a href="#">Contactez-nous</a>
+                <a href="#">FAQ</a>
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; 2024 SIO Casino. Tous droits réservés. | Jeu responsable +18 ans</p>
+            <p>&copy; 2024 SIO Casino. Tous droits réservés. Jeu responsable +18 ans</p>
         </div>
     </footer>
 
     <script>
-        // Firebase est déjà initialisé par firebase-config.js
-        const database = firebase.database();
-        const auth = firebase.auth();
-
-        // État de l'application
+        let database, auth;
         let currentUser = null;
         let userBalance = 1000;
+        let isConnected = false;
 
-        // Animation de fond
-        function createFloatingIcons() {
-            const icons = ['🎰', '🃏', '💎', '🎲', '🎯', '💰', '⭐', '🔥'];
-            const container = document.getElementById('backgroundAnimation');
-            
-            setInterval(() => {
-                const icon = document.createElement('div');
-                icon.className = 'floating-icon';
-                icon.textContent = icons[Math.floor(Math.random() * icons.length)];
-                icon.style.left = Math.random() * 100 + '%';
-                icon.style.animationDelay = Math.random() * 2 + 's';
+        function initializeApp() {
+            if (window.FirebaseUtils && window.FirebaseUtils.isReady()) {
+                database = firebase.database();
+                auth = firebase.auth();
                 
-                container.appendChild(icon);
+                database.ref('.info/connected').on('value', (snapshot) => {
+                    isConnected = snapshot.val();
+                    updateConnectionStatus();
+                });
                 
-                setTimeout(() => {
-                    if (icon.parentNode) {
-                        icon.parentNode.removeChild(icon);
-                    }
-                }, 20000);
-            }, 3000);
+                auth.onAuthStateChanged((user) => {
+                    currentUser = user;
+                    updateUserInterface();
+                });
+                
+                hideLoading();
+                updateStats();
+                setInterval(updateStats, 10000);
+            } else {
+                setTimeout(initializeApp, 100);
+            }
         }
 
-        // Effet de scroll sur le header
-        function initScrollEffects() {
-            const header = document.getElementById('header');
-            
-            window.addEventListener('scroll', () => {
-                if (window.scrollY > 100) {
-                    header.classList.add('scrolled');
-                } else {
-                    header.classList.remove('scrolled');
-                }
-            });
+        function updateConnectionStatus() {
+            if (isConnected) {
+                hideLoading();
+            }
         }
 
-        // Navigation smooth
+        function updateUserInterface() {
+            const authButtons = document.getElementById('authButtons');
+            const userInfo = document.getElementById('userInfo');
+            const userBalance = document.getElementById('userBalance');
+            
+            if (currentUser) {
+                authButtons.style.display = 'none';
+                userInfo.style.display = 'flex';
+                userBalance.textContent = '1000€';
+            } else {
+                authButtons.style.display = 'flex';
+                userInfo.style.display = 'none';
+            }
+        }
+
+        function updateStats() {
+            const playersElement = document.getElementById('playersOnline');
+            const baseCount = 200;
+            const variation = Math.floor(Math.random() * 100);
+            playersElement.textContent = baseCount + variation;
+        }
+
+        function hideLoading() {
+            setTimeout(() => {
+                document.getElementById('loading').classList.add('hidden');
+            }, 1000);
+        }
+
         function scrollToGames() {
             document.getElementById('games').scrollIntoView({ 
                 behavior: 'smooth' 
             });
         }
 
-        // Commencer à jouer
         function startPlaying() {
             if (currentUser) {
                 window.location.href = 'dashboard.html';
@@ -911,31 +779,24 @@
             }
         }
 
-        // Jouer à un jeu
         function playGame(gameType) {
+            if (!currentUser) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
             switch(gameType) {
                 case 'blackjack':
-                    if (currentUser) {
-                        window.location.href = 'rooms.html.html';
-                    } else {
-                        window.location.href = 'login.html?redirect=rooms.html';
-                    }
+                    window.location.href = 'rooms.html';
+                    break;
+                case 'plinko':
+                    window.location.href = 'plinko.html';
                     break;
                 default:
-                    alert('Ce jeu sera bientôt disponible ! 🚀');
+                    alert('Jeu bientôt disponible');
             }
         }
 
-        // Authentification
-        function showAuth(type) {
-            if (type === 'login') {
-                window.location.href = 'login.html';
-            } else {
-                window.location.href = 'register.html';
-            }
-        }
-
-        // Déconnexion
         async function logout() {
             if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
                 try {
@@ -948,85 +809,7 @@
             }
         }
 
-        // Mettre à jour l'interface utilisateur
-        function updateUserInterface() {
-            const authButtons = document.getElementById('authButtons');
-            const userInfo = document.getElementById('userInfo');
-            const userBalance = document.getElementById('userBalance');
-            
-            if (currentUser) {
-                authButtons.style.display = 'none';
-                userInfo.style.display = 'flex';
-                userBalance.textContent = (currentUser.balance || 1000) + '€';
-            } else {
-                authButtons.style.display = 'flex';
-                userInfo.style.display = 'none';
-            }
-        }
-
-        // Sauvegarder l'utilisateur dans Firebase
-        function saveUserToFirebase() {
-            if (currentUser) {
-                database.ref('users/' + currentUser.uid).set({
-                    displayName: currentUser.displayName,
-                    balance: currentUser.balance,
-                    lastLogin: firebase.database.ServerValue.TIMESTAMP
-                });
-            }
-        }
-
-        // Mettre à jour les statistiques en temps réel
-        function updateStats() {
-            // Simulation de joueurs en ligne
-            const playersElement = document.getElementById('playersOnline');
-            const baseCount = 200;
-            const variation = Math.floor(Math.random() * 100);
-            playersElement.textContent = baseCount + variation;
-        }
-
-        // Animation de chargement
-        function hideLoading() {
-            setTimeout(() => {
-                document.getElementById('loading').classList.add('hidden');
-            }, 1500);
-        }
-
-        // Initialisation
-        function init() {
-            createFloatingIcons();
-            initScrollEffects();
-            updateStats();
-            // Mettre à jour les stats toutes les 10 secondes
-            setInterval(updateStats, 10000);
-            // Connexion automatique pour la démo (à supprimer en production)
-            setTimeout(() => {
-                const savedUser = localStorage.getItem('demoUser');
-                if (savedUser) {
-                    currentUser = JSON.parse(savedUser);
-                    updateUserInterface();
-                }
-            }, 2000);
-        }
-
-        // Sauvegarde automatique pour la démo
-        setInterval(() => {
-            if (currentUser) {
-                localStorage.setItem('demoUser', JSON.stringify(currentUser));
-            }
-        }, 5000);
-
-        // Gestion des erreurs Firebase
-        database.ref('.info/connected').on('value', (snapshot) => {
-            if (snapshot.val() === true) {
-                console.log('✅ Connecté à Firebase');
-                hideLoading(); // On masque le loader uniquement quand connecté
-            } else {
-                console.log('❌ Déconnecté de Firebase');
-            }
-        });
-        
-        // Initialisation de l'application au chargement du DOM
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
 </body>
 </html>
