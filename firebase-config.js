@@ -529,6 +529,156 @@ if (typeof window !== 'undefined') {
         setTimeout(initializeFirebaseSecure, 100);
     }
 }
+// CORRECTIF IMMÉDIAT - À ajouter à la fin de firebase-config.js
+
+// Protection contre les appels Firebase prématurés
+(function() {
+    console.log('🛡️ Activation de la protection Firebase...');
+    
+    // Sauvegarder le Firebase original
+    let originalFirebase = window.firebase;
+    
+    // Créer un proxy Firebase qui attend l'initialisation
+    const firebaseProxy = {
+        get apps() {
+            if (originalFirebase && originalFirebase.apps) {
+                return originalFirebase.apps;
+            }
+            return [];
+        },
+        
+        auth() {
+            if (originalFirebase && originalFirebase.apps && originalFirebase.apps.length > 0) {
+                return originalFirebase.auth();
+            }
+            
+            // Attendre l'initialisation
+            return new Promise((resolve, reject) => {
+                const maxWait = 10000;
+                const startTime = Date.now();
+                
+                const checkAuth = () => {
+                    if (originalFirebase && originalFirebase.apps && originalFirebase.apps.length > 0) {
+                        resolve(originalFirebase.auth());
+                    } else if (Date.now() - startTime > maxWait) {
+                        reject(new Error('Firebase auth timeout'));
+                    } else {
+                        setTimeout(checkAuth, 100);
+                    }
+                };
+                
+                checkAuth();
+            });
+        },
+        
+        database() {
+            if (originalFirebase && originalFirebase.apps && originalFirebase.apps.length > 0) {
+                return originalFirebase.database();
+            }
+            
+            // Attendre l'initialisation
+            return new Promise((resolve, reject) => {
+                const maxWait = 10000;
+                const startTime = Date.now();
+                
+                const checkDatabase = () => {
+                    if (originalFirebase && originalFirebase.apps && originalFirebase.apps.length > 0) {
+                        resolve(originalFirebase.database());
+                    } else if (Date.now() - startTime > maxWait) {
+                        reject(new Error('Firebase database timeout'));
+                    } else {
+                        setTimeout(checkDatabase, 100);
+                    }
+                };
+                
+                checkDatabase();
+            });
+        }
+    };
+    
+    // Remplacer Firebase par le proxy temporairement
+    window.firebase = firebaseProxy;
+    
+    // Restaurer Firebase une fois initialisé
+    function restoreFirebase() {
+        if (originalFirebase && originalFirebase.apps && originalFirebase.apps.length > 0) {
+            window.firebase = originalFirebase;
+            console.log('✅ Firebase restauré après initialisation');
+            return true;
+        }
+        return false;
+    }
+    
+    // Vérifier périodiquement si Firebase est prêt
+    const checkInterval = setInterval(() => {
+        if (restoreFirebase()) {
+            clearInterval(checkInterval);
+        }
+    }, 100);
+    
+    // Nettoyer après 15 secondes maximum
+    setTimeout(() => {
+        clearInterval(checkInterval);
+        if (window.firebase === firebaseProxy) {
+            console.warn('⚠️ Timeout protection Firebase, restauration forcée');
+            window.firebase = originalFirebase;
+        }
+    }, 15000);
+    
+    console.log('✅ Protection Firebase activée');
+})();
+
+// Fonction helper pour les autres fichiers
+window.waitForFirebase = async function() {
+    const maxWait = 10000; // 10 secondes
+    const startTime = Date.now();
+    
+    return new Promise((resolve, reject) => {
+        const checkFirebase = () => {
+            if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+                resolve();
+            } else if (Date.now() - startTime > maxWait) {
+                reject(new Error('Firebase timeout'));
+            } else {
+                setTimeout(checkFirebase, 100);
+            }
+        };
+        
+        checkFirebase();
+    });
+};
+
+// Auto-correction pour les fichiers existants
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        if (window.firebase && window.firebase.apps && window.firebase.apps.length > 0) {
+            console.log('🔧 Auto-correction Firebase...');
+            
+            // Réinitialiser les listeners qui ont pu échouer
+            if (typeof database !== 'undefined' && database) {
+                try {
+                    database.ref('.info/connected').on('value', (snapshot) => {
+                        console.log('📡 Connexion Firebase:', snapshot.val() ? 'OK' : 'KO');
+                    });
+                } catch (error) {
+                    console.warn('⚠️ Erreur listener connexion:', error.message);
+                }
+            }
+            
+            if (typeof auth !== 'undefined' && auth) {
+                try {
+                    auth.onAuthStateChanged((user) => {
+                        console.log('👤 État auth:', user ? 'Connecté' : 'Déconnecté');
+                    });
+                } catch (error) {
+                    console.warn('⚠️ Erreur listener auth:', error.message);
+                }
+            }
+        }
+    }, 2000);
+});
+
+console.log('🎰 Correctif Firebase appliqué - Rechargez maintenant votre page');
 
 // Exports globaux
 window.initializeFirebaseSecure = initializeFirebaseSecure;

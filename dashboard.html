@@ -1,4 +1,4 @@
-<!-- Fichier: dashboard.html -->
+<!-- Fichier: dashboard.html - VERSION CORRIGÉE -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -854,27 +854,100 @@
         let userData = null;
         let userStats = null;
 
-        // Initialisation après chargement de firebase-config.js
-        document.addEventListener('DOMContentLoaded', () => {
-            // Firebase est déjà initialisé par firebase-config.js
-            auth = firebase.auth();
-            database = firebase.database();
+        // Initialisation CORRIGÉE - Attendre Firebase avant d'y accéder
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🔥 Dashboard - Initialisation...');
             
-            // Gestion de l'authentification (unique)
-            auth.onAuthStateChanged(async (user) => {
-                if (user) {
-                    currentUser = user;
-                    await loadUserData();
-                    await loadUserStats();
-                    await loadRecentGames();
-                    updateUI();
-                    hideLoading();
+            try {
+                // Attendre que Firebase soit prêt
+                if (window.FirebaseUtils) {
+                    await window.FirebaseUtils.waitForReady();
+                    console.log('✅ Firebase prêt pour Dashboard');
                 } else {
-                    // Utilisateur non connecté, rediriger vers login
-                    window.location.href = 'login.html';
+                    // Fallback si FirebaseUtils n'est pas disponible
+                    await waitForFirebase();
+                    console.log('✅ Firebase prêt (fallback)');
                 }
-            });
+                
+                // Maintenant on peut accéder à Firebase en toute sécurité
+                auth = firebase.auth();
+                database = firebase.database();
+                
+                // Gestion de l'authentification (unique)
+                auth.onAuthStateChanged(async (user) => {
+                    if (user) {
+                        currentUser = user;
+                        await loadUserData();
+                        await loadUserStats();
+                        await loadRecentGames();
+                        updateUI();
+                        hideLoading();
+                    } else {
+                        // Utilisateur non connecté, rediriger vers login
+                        window.location.href = 'login.html';
+                    }
+                });
+                
+            } catch (error) {
+                console.error('❌ Erreur initialisation Dashboard:', error);
+                
+                // Mode fallback si Firebase échoue
+                hideLoading();
+                
+                // Afficher un message d'erreur utilisateur
+                const errorMessage = document.createElement('div');
+                errorMessage.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: rgba(255, 68, 68, 0.9);
+                    color: white;
+                    padding: 2rem;
+                    border-radius: 15px;
+                    text-align: center;
+                    z-index: 10000;
+                    max-width: 400px;
+                `;
+                errorMessage.innerHTML = `
+                    <h3>⚠️ Erreur de connexion</h3>
+                    <p>Impossible de se connecter à Firebase.</p>
+                    <p>Veuillez recharger la page.</p>
+                    <button onclick="location.reload()" style="
+                        background: white;
+                        color: #ff4444;
+                        border: none;
+                        padding: 10px 20px;
+                        border-radius: 5px;
+                        margin-top: 1rem;
+                        cursor: pointer;
+                    ">Recharger</button>
+                `;
+                document.body.appendChild(errorMessage);
+            }
         });
+
+        // Fonction utilitaire pour attendre Firebase (au cas où FirebaseUtils n'est pas disponible)
+        function waitForFirebase() {
+            return new Promise((resolve, reject) => {
+                const maxAttempts = 50; // 5 secondes max
+                let attempts = 0;
+                
+                const checkFirebase = () => {
+                    attempts++;
+                    
+                    if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+                        resolve();
+                    } else if (attempts >= maxAttempts) {
+                        reject(new Error('Firebase initialization timeout'));
+                    } else {
+                        setTimeout(checkFirebase, 100);
+                    }
+                };
+                
+                checkFirebase();
+            });
+        }
 
         // Éléments DOM
         const elements = {
@@ -967,7 +1040,7 @@
                 
                 const games = [];
                 snapshot.forEach((child) => {
-                    games.unshift(child.val()); // Inverser l'ordre pour avoir les plus récents en premier
+                    games.unshift(child.val());
                 });
 
                 displayRecentGames(games);
@@ -992,7 +1065,7 @@
             // Niveau et expérience
             const level = userData.level || 1;
             const experience = userData.experience || 0;
-            const nextLevelXP = level * 100; // 100 XP par niveau
+            const nextLevelXP = level * 100;
             const progressPercent = (experience / nextLevelXP) * 100;
             
             elements.userLevel.textContent = level;
@@ -1024,19 +1097,16 @@
             elements.totalWinnings.textContent = (userStats.totalWinnings || 0) + '€';
             elements.winStreak.textContent = userStats.currentStreak || 0;
 
-            // Mettre à jour les tendances
             updateTrends();
         }
 
         // Mettre à jour les tendances
         function updateTrends() {
-            // Simulation de tendances (dans un vrai projet, ces données viendraient de la base)
             const winrateTrend = document.getElementById('winrateTrend');
             const gamesTrend = document.getElementById('gamesTrend');
             const winningsTrend = document.getElementById('winningsTrend');
             const streakTrend = document.getElementById('streakTrend');
             
-            // Exemple de logique pour les tendances
             if (userStats && userStats.gamesWon > 0) {
                 winrateTrend.textContent = '+' + Math.floor(Math.random() * 10) + '%';
                 winrateTrend.className = 'stat-trend trend-up';
@@ -1130,11 +1200,9 @@
         function showDeposit() {
             const amount = prompt('Montant du dépôt (€):', '50');
             if (amount && !isNaN(amount) && amount > 0) {
-                // Simulation de dépôt
                 const newBalance = userData.balance + parseInt(amount);
                 database.ref('users/' + currentUser.uid + '/balance').set(newBalance);
                 
-                // Ajouter de l'expérience
                 const newXP = (userData.experience || 0) + Math.floor(amount / 10);
                 database.ref('users/' + currentUser.uid + '/experience').set(newXP);
                 
@@ -1148,7 +1216,6 @@
             
             if (amount && !isNaN(amount) && amount > 0) {
                 if (parseInt(amount) <= maxAmount) {
-                    // Simulation de retrait
                     const newBalance = userData.balance - parseInt(amount);
                     database.ref('users/' + currentUser.uid + '/balance').set(newBalance);
                     alert(`Retrait de ${amount}€ effectué avec succès !`);
@@ -1184,14 +1251,12 @@
         // Mise à jour automatique des données
         setInterval(() => {
             if (currentUser && userData) {
-                // Mettre à jour l'activité utilisateur
                 database.ref('users/' + currentUser.uid + '/lastActivity').set(firebase.database.ServerValue.TIMESTAMP);
             }
-        }, 30000); // Toutes les 30 secondes
+        }, 30000);
 
         // Initialisation
         function init() {
-            // Vérifier la connexion internet
             if (!navigator.onLine) {
                 alert('Connexion internet requise pour accéder au dashboard');
             }
